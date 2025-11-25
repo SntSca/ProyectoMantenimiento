@@ -1,0 +1,645 @@
+// ===========================
+// MIXINS SCSS - OPTIMIZADO Y LIMPIO
+// ===========================
+
+@use 'sass:color';
+@use 'sass:list';
+@use 'variables' as *;
+
+// ===========================
+// UTILITIES BÁSICOS
+// ===========================
+
+// Flex utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Container utilities
+@mixin container-base {
+  min-height: 100vh;
+  padding: $spacing-xl $spacing-md;
+  position: relative;
+}
+
+// Gradient utilities
+@mixin gradient-background($color1, $color2, $direction: 135deg) {
+  background: linear-gradient($direction, $color1 0%, $color2 100%);
+}
+
+@mixin gradient-text($color1, $color2, $direction: 135deg) {
+  background: linear-gradient($direction, $color1 0%, $color2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// ===========================
+// SISTEMA DE BOTONES OPTIMIZADO
+// ===========================
+
+// Mixin base para botones legacy (usado en photo.scss)
+@mixin button-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-xl;
+  border-radius: $border-radius;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all $transition-normal;
+  text-decoration: none;
+  border: none;
+  font-family: inherit;
+}
+
+// Mixin base moderno para todos los botones del sistema
+@mixin button-system-base {
+  padding: 0.875rem $spacing-lg !important;
+  border-radius: 12px !important;
+  font-size: $font-size-sm !important;
+  text-transform: none !important;
+  letter-spacing: 0.25px !important;
+  margin-top: $spacing-md !important;
+  transition: all $transition-normal !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: $spacing-sm !important;
+  font-weight: 600 !important;
+  border: 2px solid transparent !important;
+  width: 100% !important;
+  cursor: pointer !important;
+
+  // Estilos para botón deshabilitado
+  &:disabled {
+    opacity: 0.5 !important;
+    background: $gray-300 !important;
+    color: $gray-600 !important;
+    border-color: $gray-300 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+
+    &:hover {
+      background: $gray-300 !important;
+      color: $gray-600 !important;
+      border-color: $gray-300 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+// Mixin para botones primarios con gradiente
+@mixin button-primary($primary-color, $secondary-color, $shadow-color: null) {
+  $shadow: if($shadow-color, $shadow-color, $primary-color);
+  
+  background: linear-gradient(135deg, $primary-color, $secondary-color) !important;
+  border-color: $primary-color !important;
+  box-shadow: 0 4px 15px rgba($shadow, 0.2) !important;
+  color: $white !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $secondary-color, $primary-color) !important;
+    border-color: $secondary-color !important;
+    box-shadow: 0 8px 25px rgba($shadow, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  &:disabled {
+    opacity: 0.4 !important;
+    background: linear-gradient(135deg, $gray-300, $gray-200) !important;
+    border-color: $gray-300 !important;
+    color: $gray-600 !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+
+    &:hover {
+      background: linear-gradient(135deg, $gray-300, $gray-200) !important;
+      border-color: $gray-300 !important;
+      color: $gray-600 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+// Mixin para botones usuario secundarios (fondo blanco, borde primario, hover como usuario-btn)
+@mixin button-usuario-secondary {
+  background: $white !important;
+  border-color: $user-primary-color !important;
+  color: $user-primary-color !important;
+  box-shadow: 0 4px 15px rgba($user-primary-color, 0.1) !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $user-secondary-color, $user-primary-color) !important;
+    border-color: $user-secondary-color !important;
+    color: $white !important;
+    box-shadow: 0 8px 25px rgba($user-primary-color, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  &:disabled {
+    opacity: 0.4 !important;
+    background: $gray-100 !important;
+    border-color: $gray-300 !important;
+    color: $gray-600 !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+
+    &:hover {
+      background: $gray-100 !important;
+      border-color: $gray-300 !important;
+      color: $gray-600 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+// Mixin para botones gestor secundarios (fondo blanco, borde primario, hover como gestor-btn)
+@mixin button-gestor-secondary {
+  background: $white !important;
+  border-color: $gestor-primary-color !important;
+  color: $gestor-primary-color !important;
+  box-shadow: 0 4px 15px rgba($gestor-primary-color, 0.1) !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $gestor-secondary-color, $gestor-primary-color) !important;
+    border-color: $gestor-secondary-color !important;
+    color: $white !important;
+    box-shadow: 0 8px 25px rgba($gestor-primary-color, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  &:disabled {
+    opacity: 0.4 !important;
+    background: $gray-100 !important;
+    border-color: $gray-300 !important;
+    color: $gray-600 !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+
+    &:hover {
+      background: $gray-100 !important;
+      border-color: $gray-300 !important;
+      color: $gray-600 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+@mixin button-login-secondary {
+   background: $white !important;
+  border-color: $user-secondary-color !important;
+  color: $user-secondary-color !important;
+  box-shadow: 0 4px 15px rgba($user-secondary-color, 0.1) !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $gestor-primary-color, $user-primary-color) !important;
+    border-color: $gestor-primary-color !important;
+    color: $white !important;
+    box-shadow: 0 8px 25px rgba($gestor-primary-color, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  &:disabled {
+    opacity: 0.4 !important;
+    background: $gray-100 !important;
+    border-color: $gray-300 !important;
+    color: $gray-600 !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+
+    &:hover {
+      background: $gray-100 !important;
+      border-color: $gray-300 !important;
+      color: $gray-600 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+// Mixin para botones VIP con efectos especiales premium
+@mixin button-vip-effects($gradient-colors, $border-color, $shadow-colors, $text-shadow: true, $scale-on-hover: false) {
+  background: linear-gradient(135deg, $gradient-colors...) !important;
+  border-color: $border-color !important;
+  position: relative;
+  overflow: hidden;
+  
+  @if list.length($shadow-colors) == 1 {
+    box-shadow: 
+      0 4px 15px rgba(list.nth($shadow-colors, 1), 0.4),
+      0 0 20px rgba(list.nth($shadow-colors, 1), 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  } @else {
+    box-shadow: 
+      0 4px 15px rgba(list.nth($shadow-colors, 1), 0.4),
+      0 0 20px rgba(list.nth($shadow-colors, 2), 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  }
+
+  @if $text-shadow {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  // Efecto shimmer premium
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s ease;
+    z-index: 1;
+  }
+
+  // Asegurar que el texto esté encima del shimmer
+  .btn-text,
+  .btn-icon {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:hover {
+    @if $scale-on-hover {
+      transform: translateY(-3px) scale(1.02) !important;
+    } @else {
+      transform: translateY(-2px) !important;
+    }
+    
+    box-shadow: 
+      0 8px 25px rgba(list.nth($shadow-colors, 1), 0.6),
+      0 0 30px rgba(list.nth($shadow-colors, 1), 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+
+    // Activar efecto shimmer en hover
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.98) !important;
+  }
+
+  .btn-icon {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    animation: vip-glow 2s ease-in-out infinite alternate;
+  }
+}
+
+// Animación de brillo para iconos VIP
+@keyframes vip-glow {
+  from {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 5px currentColor);
+  }
+}
+
+// ===========================
+// COMPONENTES UI
+// ===========================
+
+// Form utilities
+@mixin form-input-base {
+  padding: 0.75rem;
+  border: 2px solid $gray-200;
+  border-radius: $border-radius;
+  font-size: $font-size-base;
+  font-family: inherit;
+  transition: all $transition-fast;
+  background: $white;
+
+  &:focus {
+    outline: none;
+    border-color: $gestor-accent-color;
+    box-shadow: 0 0 0 3px rgba($gestor-primary, 0.1);
+  }
+
+  &:hover {
+    border-color: $gray-300;
+  }
+
+  &::placeholder {
+    color: $gray-600;
+  }
+}
+
+// Card utilities
+@mixin card-base {
+  background: $white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: $default-shadow;
+}
+
+// Avatar utilities
+@mixin avatar-base($size: 80px) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: all $transition-normal;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+// ===========================
+// UTILITIES AVANZADOS
+// ===========================
+
+// Responsive utilities
+@mixin responsive($breakpoint) {
+  @if $breakpoint == sm {
+    @media (max-width: $breakpoint-sm) { @content; }
+  }
+  @if $breakpoint == md {
+    @media (max-width: $breakpoint-md) { @content; }
+  }
+  @if $breakpoint == lg {
+    @media (max-width: $breakpoint-lg) { @content; }
+  }
+  @if $breakpoint == xl {
+    @media (max-width: $breakpoint-xl) { @content; }
+  }
+}
+
+// Animation utilities
+@mixin slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+// Glassmorphism effect
+@mixin glassmorphism($alpha: 0.9) {
+  background: rgba(255, 255, 255, $alpha);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+// ===========================
+// MIXINS PARA TEMAS
+// ===========================
+
+// Contenedor de tema
+@mixin theme-container($primary-color, $secondary-color: null) {
+  $bg-color: if($secondary-color, $secondary-color, $primary-color);
+  background: linear-gradient(135deg, $primary-color 0%, $bg-color 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+}
+
+// Estilo de tarjeta temática
+@mixin theme-card($secondary-color, $shadow, $primary-color: null) {
+  border: 3px solid $secondary-color;
+  box-shadow: $shadow;
+  
+  &::before {
+    $overlay-color: if($primary-color, $primary-color, $secondary-color);
+    background: linear-gradient(135deg, rgba($overlay-color, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%);
+  }
+}
+
+// Header temático - Acepta 3 colores para crear gradientes personalizados
+@mixin theme-header($primary-color, $secondary-color: null, $middle-color: null) {
+  // Si no se proporciona color secundario, usa el comportamiento anterior
+  @if $secondary-color == null {
+    background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, rgba(0, 0, 0, 0.02) 100%);
+  } 
+  // Si se proporciona secundario pero no middle, gradiente simple
+  @else if $middle-color == null {
+    background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, rgba($secondary-color, 0.05) 100%);
+  }
+  // Si se proporcionan los 3 colores, gradiente de 3 paradas
+  @else {
+    background: linear-gradient(135deg, 
+      rgba($primary-color, 0.05) 0%, 
+      rgba($middle-color, 0.03) 50%, 
+      rgba($secondary-color, 0.05) 100%);
+  }
+}
+
+// Variante específica para tema común (primario - negro - secundario)
+@mixin theme-header-comun($primary-color, $secondary-color) {
+  background: linear-gradient(135deg, 
+    rgba($primary-color, 0.05) 0%, 
+    rgba(0, 0, 0, 0.02) 50%, 
+    rgba($secondary-color, 0.05) 100%);
+}
+
+// Campos de formulario temáticos
+@mixin theme-form-fields($primary-color, $secondary-color) {
+  .form-input,
+  .form-select,
+  .form-textarea {
+    &:focus {
+      border-color: $secondary-color !important;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1) !important;
+    }
+
+    &:hover {
+      border-color: $primary-color !important;
+    }
+  }
+
+  .field-label .required {
+    color: $secondary-color !important;
+  }
+}
+
+// Botones temáticos  
+@mixin theme-buttons($primary-color, $secondary-color, $shadow) {
+  .btn-primary {
+    background: linear-gradient(135deg, $secondary-color 0%, $primary-color 100%) !important;
+    box-shadow: 0 4px 15px rgba($primary-color, 0.3);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%) !important;
+      box-shadow: $shadow !important;
+    }
+  }
+
+  .btn-secondary {
+    border-color: $primary-color;
+    color: $primary-color;
+
+    &:hover {
+      border-color: $secondary-color;
+      background: linear-gradient(135deg, rgba($primary-color, 0.1) 0%, rgba($secondary-color, 0.05) 100%);
+      color: $secondary-color;
+    }
+  }
+}
+
+// Links temáticos
+@mixin theme-links($primary-color, $secondary-color, $shadow) {
+  .login-link {
+    border-color: $primary-color !important;
+    color: $primary-color !important;
+    background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, $white 100%) !important;
+
+    &:hover {
+      color: $white !important;
+      border-color: $secondary-color !important;
+      background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%) !important;
+      box-shadow: $shadow !important;
+    }
+  }
+}
+
+// Subida de fotos temática
+@mixin theme-photo-upload($primary-color, $secondary-color) {
+  .photo-upload {
+    border-color: $primary-color;
+    background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, rgba($primary-color, 0.02) 100%);
+
+    &:hover {
+      border-color: $secondary-color;
+      background: linear-gradient(135deg, rgba($primary-color, 0.08) 0%, rgba($primary-color, 0.04) 100%);
+    }
+  }
+
+  .avatar {
+    border: 3px solid $secondary-color;
+    box-shadow: 0 4px 12px rgba($primary-color, 0.2);
+
+    &:hover {
+      border-color: $primary-color;
+      box-shadow: 0 8px 20px rgba($primary-color, 0.4);
+      transform: scale(1.05);
+    }
+  }
+}
+
+// Panel de tips temático
+@mixin theme-tips($primary-color, $accent-color, $secondary-color) {
+  .tips-section {
+    border-left: 5px solid $secondary-color !important;
+    background: linear-gradient(135deg, $primary-color 0%, $accent-color 100%) !important;
+    
+    .tips-title {
+      color: $white !important;
+      border-bottom: 2px solid $white;
+    }
+
+    .tip-item {
+      color: $white !important;
+
+      &:hover {
+        border-left-color: $white;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      }
+    }
+
+    .tip-icon {
+      background: linear-gradient(135deg, $secondary-color 0%, $primary-color 100%) !important;
+    }
+  }
+}
+
+// ===========================
+// DASHBOARD THEME MIXIN
+// ===========================
+@mixin theme-dashboard($primary-color, $accent-color, $shadow) {
+  // Variables CSS para el dashboard
+  --dashboard-bg: linear-gradient(135deg, #{rgba($primary-color, 0.05)} 0%, #{rgba($accent-color, 0.03)} 100%);
+  --sidebar-bg: #{$white};
+  --sidebar-border: #{rgba($primary-color, 0.1)};
+  --sidebar-shadow: #{$shadow};
+  
+  // Profile colors
+  --avatar-border: #{$primary-color};
+  --user-name-color: #{$primary-color};
+  --user-email-color: #{$text-secondary};
+  --user-status-color: #{$accent-color};
+  
+  // Menu colors
+  --menu-color: #{$text-secondary};
+  --menu-hover-color: #{$primary-color};
+  --menu-hover-bg: #{rgba($primary-color, 0.05)};
+  --menu-active-color: #{$primary-color};
+  --menu-active-bg: #{rgba($primary-color, 0.1)};
+  --menu-separator: #{rgba($primary-color, 0.1)};
+  --logout-color: #{$error-color};
+  --logout-hover-color: #{color.adjust($error-color, $lightness: -10%)};
+  
+  // Header colors
+  --header-bg: #{$white};
+  --header-border: #{rgba($primary-color, 0.1)};
+  --header-shadow: #{rgba($primary-color, 0.05)} 0 2px 4px;
+  --search-border: #{rgba($primary-color, 0.2)};
+  --search-focus-border: #{$primary-color};
+  --search-focus-shadow: #{rgba($primary-color, 0.1)} 0 0 0 3px;
+  
+  // Content colors
+  --content-bg: #{rgba($primary-color, 0.02)};
+  --main-bg: #{rgba($primary-color, 0.02)};
+  --filters-bg: #{$white};
+  --filters-border: #{rgba($primary-color, 0.1)};
+  
+  // Search colors
+  --search-bg: #{$white};
+  --search-btn-bg: #{$primary-color};
+  --search-btn-text: #{$white};
+  --search-btn-border: #{$primary-color};
+  --search-btn-hover: #{$accent-color};
+  --search-placeholder: #{$text-secondary};
+  
+  // Filter buttons
+  --filter-btn-bg: #{$white};
+  --filter-btn-text: #{$text-secondary};
+  --filter-btn-border: #{rgba($primary-color, 0.2)};
+  --filter-btn-hover-bg: #{rgba($primary-color, 0.05)};
+  --filter-btn-hover-border: #{$primary-color};
+  --filter-btn-active-bg: #{$primary-color};
+  --filter-btn-active-text: #{$white};
+  --filter-btn-active-border: #{$primary-color};
+  
+  // Divider colors
+  --divider-color: #{rgba($primary-color, 0.15)};
+  --divider-dot: #{rgba($primary-color, 0.3)};
+  
+  // Category buttons
+  --category-btn-bg: #{rgba($primary-color, 0.05)};
+  --category-btn-color: #{$text-secondary};
+  --category-btn-border: #{rgba($primary-color, 0.2)};
+  --category-btn-hover-bg: #{rgba($primary-color, 0.1)};
+  --category-btn-hover-color: #{$primary-color};
+  --category-btn-active-bg: #{$primary-color};
+  --category-btn-active-color: #{$white};
+  --category-btn-active-border: #{$primary-color};
+  
+  // Card colors
+  --card-bg: #{$white};
+  --card-border: #{rgba($primary-color, 0.1)};
+  --card-shadow: #{rgba($primary-color, 0.08)};
+  --card-hover-shadow: #{$shadow};
+  --thumbnail-bg: #{rgba($primary-color, 0.05)};
+  --card-title: #{$text-primary};
+  --card-creator: #{$accent-color};
+  --card-stats: #{$text-secondary};
+}

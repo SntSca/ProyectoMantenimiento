@@ -1,0 +1,279 @@
+<div class="registro-container usuario-variant">
+  <!-- Botón de volver -->
+  <button type="button" class="back-to-home" [routerLink]="USUARIO_ROUTES.inicio">
+    <span class="btn-icon">←</span>
+    <span class="btn-text">Volver al Dashboard</span>
+  </button>
+
+  <main class="perfil-card usuario-variant">
+    <!-- SECCIÓN 1: HEADER CON TÍTULO -->
+    <header class="app-header ">
+      <div class="header-content">
+        <h2>Mi Perfil de Usuario</h2>
+        <p class="header-subtitle">Gestiona tu información personal y configuración</p>
+      </div>
+    </header>
+
+    <!-- SECCIÓN 2: INFORMACIÓN DEL PERFIL -->
+    <section class="profile-info-section">
+      <div class="profile-layout">
+        <!-- Columna izquierda: Avatar y datos básicos -->
+        <div class="profile-sidebar">
+          <div class="photo-upload">
+            <div class="avatar-container">
+              <img [src]="userProfile.fotoPerfil || 'assets/porDefecto.jpg'" [alt]="'Avatar de ' + userProfile.nombre" class="avatar">
+            </div>
+            <div class="upload-actions" *ngIf="isEditMode">
+              <label for="foto-perfil" class="upload-btn">
+                📷 Cambiar Foto
+                <input type="file" id="foto-perfil" accept="image/*" (change)="onPhotoUpload($event)" hidden>
+              </label>
+            </div>
+          </div>
+          
+          <div class="user-identity">
+            <h3 class="user-name">{{ userProfile.nombre }} {{ userProfile.primerApellido }} {{userProfile.segundoApellido}}</h3>
+            <p class="user-email">{{ '@' + userProfile.alias }}</p>
+            <div class="user-status" *ngIf="userProfile.flagVIP">
+              <span class="status-badge vip">👑 Usuario VIP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: Información detallada -->
+        <div class="profile-content">
+          <form [formGroup]="profileForm" *ngIf="isEditMode; else displayMode">
+            <div class="info-display edit-mode">
+              <div class="info-item">
+                <label class="field-label" for="nombre">Nombre</label>
+                <input 
+                  type="text" 
+                  id="nombre"
+                  class="info-input" 
+                  formControlName="nombre"
+                  [class.input-error]="isFieldInvalid('nombre')"
+                  placeholder="Ingresa tu nombre">
+                <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                  {{ getFieldError('nombre') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="primerApellido">Primer Apellido</label>
+                <input 
+                  type="text" 
+                  id="primerApellido"
+                  class="info-input" 
+                  formControlName="primerApellido"
+                  [class.input-error]="isFieldInvalid('primerApellido')"
+                  placeholder="Ingresa tu primer apellido">
+                <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                  {{ getFieldError('primerApellido') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="segundoApellido">Segundo Apellido (opcional)</label>
+                <input 
+                  type="text" 
+                  id="segundoApellido"
+                  class="info-input" 
+                  formControlName="segundoApellido"
+                  [class.input-error]="isFieldInvalid('segundoApellido')"
+                  placeholder="Ingresa tu segundo apellido">
+                <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                  {{ getFieldError('segundoApellido') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="alias">Alias</label>
+                <input 
+                  type="text" 
+                  id="alias"
+                  class="info-input" 
+                  formControlName="alias"
+                  [class.input-error]="isFieldInvalid('alias')"
+                  placeholder="Ingresa tu alias"
+                  maxlength="12">
+                <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                  {{ getFieldError('alias') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="fechaNacimiento">Fecha de Nacimiento</label>
+                <input 
+                  type="date" 
+                  id="fechaNacimiento"
+                  class="info-input" 
+                  formControlName="fechaNacimiento"
+                  [class.input-error]="isFieldInvalid('fechaNacimiento')"
+                  (keydown)="preventKeyboardInput($event)"
+                  (paste)="$event.preventDefault()">
+                <div class="error-message" *ngIf="isFieldInvalid('fechaNacimiento')">
+                  {{ getFieldError('fechaNacimiento') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Email</span>
+                <span class="info-value readonly">{{ userProfile.email }}</span>
+                <div class="info-message" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+                  El email no puede ser modificado
+                </div>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Tipo de Cuenta</span>
+                <span class="info-value">
+                  <span *ngIf="userProfile.flagVIP" class="status-badge vip">👑 Premium VIP</span>
+                  <span *ngIf="!userProfile.flagVIP" class="status-badge regular">👤 Usuario Regular</span>
+                </span>
+              </div>
+            </div>
+          </form>
+
+          <ng-template #displayMode>
+            <div class="info-display">
+              <div class="info-item">
+                <span class="field-label">Nombre Completo</span>
+                <span class="info-value">{{ userProfile.nombre }} {{ userProfile.primerApellido }} {{ userProfile.segundoApellido }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Email</span>
+                <span class="info-value">{{ userProfile.email }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Alias</span>
+                <span class="info-value">{{ '@' + userProfile.alias }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Fecha de Nacimiento</span>
+                <span class="info-value">{{ userProfile.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Tipo de Cuenta</span>
+                <span class="info-value">
+                  <span *ngIf="userProfile.flagVIP" class="status-badge vip">👑 Premium VIP</span>
+                  <span *ngIf="!userProfile.flagVIP" class="status-badge regular">👤 Usuario Regular</span>
+                </span>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: BOTONERA (3 BOTONES UNO AL LADO DEL OTRO) -->
+    <section class="profile-actions-section">
+      <div class="actions-container" *ngIf="!isEditMode">
+        <button type="button" class="usuario-btn" (click)="toggleEditMode()">
+          <span class="btn-icon">✏️</span>
+          <span class="btn-text">Modificar Perfil</span>
+        </button>
+        <button type="button" class="usuario-btn vip-golden" *ngIf="!userProfile.flagVIP" (click)="showUpgradeToVip()">
+          <span class="btn-icon">👑</span>
+          <span class="btn-text">Convertirse en VIP</span>
+        </button>
+        <button type="button" class="usuario-btn vip-cancel" *ngIf="userProfile.flagVIP" (click)="showCancelVip()">
+          <span class="btn-icon">👑</span>
+          <span class="btn-text">Cancelar VIP</span>
+        </button>
+        
+        <button type="button" class="usuario-btn" *ngIf="!userProfile.twoFactorEnabled" (click)="activate2FA()">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Activar 2FA</span>
+        </button>
+
+        <!-- Botón para activar 3FA (solo si 2FA está activado y 3FA desactivado) -->
+        <button type="button" class="usuario-btn" *ngIf="userProfile.twoFactorEnabled && !userProfile.thirdFactorEnabled" (click)="activate3FA()">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Activar 3FA</span>
+        </button>
+        
+        <!-- Botón para desactivar 2FA (solo si 2FA está activado y NO tiene 3FA) -->
+        <button type="button" class="usuario-btn secondary" *ngIf="userProfile.twoFactorEnabled && !userProfile.thirdFactorEnabled" (click)="disable2FA()">
+          <span class="btn-icon">🔓</span>
+          <span class="btn-text">Desactivar 2FA</span>
+        </button>
+
+        <!-- Botón para desactivar 3FA (solo si 3FA está activado) -->
+        <button type="button" class="usuario-btn secondary" *ngIf="userProfile.thirdFactorEnabled" (click)="disable3FA()">
+          <span class="btn-icon">🔓</span>
+          <span class="btn-text">Desactivar 3FA</span>
+        </button>
+        
+        <button type="button" class="usuario-btn secondary" (click)="showDeleteAccount()">
+          <span class="btn-icon">🗑️</span>
+          <span class="btn-text">Darse de Baja</span>
+        </button>
+      </div>
+
+      <div class="actions-container edit-mode" *ngIf="isEditMode">
+        <button 
+          type="button" 
+          class="usuario-btn" 
+          [disabled]="profileForm.invalid"
+          (click)="saveProfile()">
+          <span class="btn-icon">💾</span>
+          <span class="btn-text">Guardar Cambios</span>
+        </button>
+        <button type="button" class="usuario-btn" (click)="changePassword()">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Cambiar Contraseña</span>
+        </button>
+        <button type="button" class="usuario-btn secondary" (click)="cancelEdit()">
+          <span class="btn-icon">❌</span>
+          <span class="btn-text">Cancelar</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de confirmación de eliminación -->
+  <div class="modal-overlay" *ngIf="showDeleteConfirmation" (click)="cancelDelete()" (keydown)="cancelDelete()">
+    <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="cancelVipUpgrade()">
+      <header class="app-header compact minimal usuario-variant">
+        <div class="header-content">
+          <h3 class="header-title">⚠️ Confirmar Eliminación de Cuenta</h3>
+        </div>
+      </header>
+      <div class="modal-body">
+        <p class="modal-text">¿Estás seguro de que quieres eliminar tu cuenta?</p>
+        <p class="modal-warning">Esta acción no se puede deshacer. Perderás todos tus datos, favoritos, historial y suscripciones.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="usuario-btn" (click)="confirmDeleteAccount()" [routerLink]="APP_ROUTES.home">
+          <span class="btn-text">Si, Quiero eliminar mi cuenta</span>
+        </button>
+        <button type="button" class="usuario-btn secondary" (click)="cancelDelete()">
+          <span class="btn-text">Cancelar eliminación</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Componente VIP con modales de suscripción y cancelación -->
+  <app-vip
+    [showVipConfirmation]="showVipConfirmation"
+    [showCancelVipConfirmation]="showCancelVipConfirmation"
+    (confirmVipUpgrade)="toggleVipStatus()"
+    (cancelVipUpgrade)="cancelVipUpgrade()"
+    (confirmVipCancel)="toggleVipStatus()"
+    (cancelVipCancel)="cancelVipCancel()">
+  </app-vip>
+
+  <!-- Modal de cambiar contraseña usando componente compartido -->
+  <app-cambiar-password-modal
+    [visible]="showChangePasswordModal"
+    [passwordForm]="passwordForm"
+    [variant]="'usuario-variant'"
+    (confirm)="confirmChangePassword()"
+    (cancelChange)="cancelChangePassword()">
+  </app-cambiar-password-modal>
+</div>

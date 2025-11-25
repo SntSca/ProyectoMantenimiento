@@ -1,0 +1,282 @@
+// ===========================
+// TEMA COMÚN - GRADIENTE MIXTO USUARIO/GESTOR
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.comun-variant {
+  // Variables CSS para el tema común (gradiente mixto)
+  --primary-color: #{$user-primary-color};
+  --secondary-color: #{$gestor-primary-color};
+  --accent-color: #{$gestor-secondary-color};
+  --theme-shadow: #{$default-shadow};
+
+  // ===========================
+  // CONTENEDORES ESPECÍFICOS COMÚN
+  // ===========================
+  &.inicio-container {
+    @include theme-container($user-primary-color, $gestor-primary-color);
+  }
+  
+  // Fondos específicos para cada tipo de login
+  &.login-container.login-usuario {
+    @include theme-container($user-primary-color, $user-accent-color);
+  }
+  
+  &.login-container.login-gestor {
+    @include theme-container($gestor-primary-color, $gestor-accent-color);
+  }
+
+  // ===========================
+  // BRANDING MIXTO
+  // ===========================
+  .brand-name {
+    @include gradient-text($user-primary-color, $gestor-primary-color);
+  }
+
+  // ===========================
+  // ELEMENTOS ESPECÍFICOS DE PANTALLA INICIO
+  // ===========================
+  
+  // Botones de login en pantalla inicio
+  .login-section {
+    margin-bottom: $spacing-lg;
+    
+    .login-buttons {
+      display: flex;
+      gap: $spacing-lg;
+      justify-content: center;
+      align-items: stretch;
+      
+      .usuario-btn,
+      .gestor-btn {
+        flex: 1;
+        min-width: 280px;
+        max-width: 400px;
+      }
+      
+      @include responsive(md) {
+        flex-direction: column;
+        gap: $spacing-md;
+        
+        .usuario-btn,
+        .gestor-btn {
+          flex: none;
+          min-width: auto;
+          max-width: none;
+        }
+      }
+    }
+
+    // Contenido personalizado de botones de login
+    .login-content {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+
+      .login-text {
+        flex: 1;
+
+        .login-title {
+          color: $white;
+          font-weight: 600;
+          margin: 0 0 $spacing-xs 0;
+          font-size: $font-size-base;
+        }
+
+        .login-subtitle {
+          color: rgba($white, 0.9);
+          font-size: $font-size-sm;
+          margin: 0;
+        }
+      }
+
+      .login-arrow {
+        color: $white;
+        font-size: 1.2rem;
+        transition: transform 0.3s ease;
+      }
+    }
+  }
+
+  // ===========================
+  // FORMULARIOS Y ENLACES ESPECÍFICOS
+  // ===========================
+  .form-input {
+    border: 2px solid rgba($gestor-primary-color, 0.2);
+    background: linear-gradient(145deg, rgba($white, 0.95), rgba($user-primary-color, 0.02));
+    
+    &:hover:not(:focus) {
+      border-color: rgba($gestor-primary-color, 0.4);
+      background: linear-gradient(145deg, rgba($white, 0.98), rgba($user-primary-color, 0.04));
+      box-shadow: 0 2px 8px rgba($gestor-primary-color, 0.1);
+    }
+    
+    &:focus {
+      border-color: $user-primary-color !important;
+      background: $white;
+      box-shadow: 0 0 0 3px rgba($user-primary-color, 0.1), 0 4px 12px rgba($gestor-primary-color, 0.15) !important;
+    }
+  }
+  
+  // Botón toggle personalizado para tema común
+  .input-icon,
+  .toggle-password {
+    color: rgba($gestor-primary-color, 0.7);
+    
+    &:hover {
+      color: $user-primary-color !important;
+      background: linear-gradient(135deg, rgba($user-primary-color, 0.1), rgba($gestor-primary-color, 0.05)) !important;
+      box-shadow: 0 2px 4px rgba($user-primary-color, 0.2);
+    }
+    
+    &:focus {
+      box-shadow: 0 0 0 2px rgba($user-primary-color, 0.3) !important;
+    }
+  }
+
+  .forgot-password {
+    @include gradient-text($user-primary-color, $gestor-primary-color);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    
+    &:hover {
+      transform: translateY(-1px);
+      text-shadow: 0 2px 4px rgba($user-primary-color, 0.3);
+    }
+  }
+
+  // ===========================
+  // INCLUDES TEMÁTICOS MIXTOS
+  // ===========================
+  
+  // Campos de formulario
+  @include theme-form-fields($user-primary-color, $gestor-primary-color);
+
+  // Botones
+  @include theme-buttons($user-primary-color, $gestor-primary-color, $default-shadow);
+
+  // Links
+  @include theme-links($user-primary-color, $gestor-primary-color, $default-shadow);
+
+  // Subida de fotos
+  @include theme-photo-upload($user-primary-color, $gestor-primary-color);
+
+  // Panel de tips
+  @include theme-tips($user-primary-color, $gestor-secondary-color, $gestor-primary-color);
+
+  // Checkboxes temáticos mixtos personalizados
+  .checkbox-wrapper {
+    input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba($gestor-primary-color, 0.3);
+      border-radius: 3px;
+      background: linear-gradient(135deg, rgba($user-primary-color, 0.1), rgba($gestor-primary-color, 0.1));
+      cursor: pointer;
+      position: relative;
+      transition: all $transition-normal;
+      
+      &:hover:not(:checked) {
+        border-color: $user-primary-color;
+        background: linear-gradient(135deg, rgba($user-primary-color, 0.2), rgba($gestor-primary-color, 0.2));
+        box-shadow: 0 2px 4px rgba($user-primary-color, 0.1);
+      }
+      
+      &:checked {
+        background: linear-gradient(135deg, $user-primary-color, $gestor-primary-color);
+        border-color: $user-primary-color;
+        box-shadow: 0 2px 8px rgba($user-primary-color, 0.3);
+        
+        &::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: $white;
+          font-size: 12px;
+          font-weight: bold;
+        }
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba($user-primary-color, 0.2);
+        
+        &:checked {
+          box-shadow: 0 0 0 3px rgba($user-primary-color, 0.2), 0 2px 8px rgba($user-primary-color, 0.3);
+        }
+      }
+    }
+    
+    .checkbox-text {
+      color: $text-primary;
+      font-weight: 500;
+    }
+  }
+
+
+  // ===========================
+  // SEPARADORES TEMÁTICOS
+  // ===========================
+  .separator {
+    &::before,
+    &::after {
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba($user-primary-color, 0.3) 20%, 
+        rgba($gestor-primary-color, 0.6) 50%, 
+        rgba($user-primary-color, 0.3) 80%, 
+        transparent 100%) !important;
+    }
+  }
+
+  .separator-text {
+    background: linear-gradient(135deg, $user-primary-color 0%, $gestor-primary-color 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: $user-primary-color; // Fallback para navegadores antiguos
+    font-weight: 600;
+  }
+
+  // ===========================
+  // EFECTOS VISUALES MIXTOS ESPECÍFICOS
+  // ===========================
+  .logo-icon {
+    &:hover {
+      filter: drop-shadow(0 4px 12px rgba($user-primary-color, 0.4)) drop-shadow(0 4px 12px rgba($gestor-primary-color, 0.4)) !important;
+    }
+  }
+
+  .avatar {
+    border: 3px solid transparent;
+    background: linear-gradient($white, $white) padding-box,
+                linear-gradient(135deg, $user-primary-color 0%, $gestor-primary-color 100%) border-box;
+    box-shadow: 0 4px 12px rgba($user-primary-color, 0.2);
+
+    &:hover {
+      box-shadow: 0 20px 60px rgba($user-primary-color, 0.15), 0 20px 60px rgba($gestor-primary-color, 0.15);
+      transform: scale(1.05);
+    }
+  }
+
+
+
+  // ===========================
+  // ESTADÍSTICAS DEL FOOTER
+  // ===========================
+  .inicio-footer {
+    &::before {
+      background: linear-gradient(90deg, transparent 0%, $user-primary-color 25%, $gestor-primary-color 75%, transparent 100%);
+    }
+
+    .stats-container .stat-item .stat-number {
+      @include gradient-text($user-primary-color, $gestor-primary-color);
+    }
+  }
+}

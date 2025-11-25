@@ -1,0 +1,143 @@
+<div class="inicio-container comun-variant">
+  <div class="inicio-card">
+    <!-- Header del componente -->
+    <header class="app-header comun-variant">
+      <div class="login-logo">
+        <div class="logo-icon">🎬</div>
+        <h1 class="brand-name">esiMedia</h1>
+      </div>
+
+      <div class="header-content">
+        <!-- Modo QR -->
+        <div *ngIf="showQR">
+          <h2 class="header-title">Configurar Autenticación</h2>
+          <p class="header-subtitle">
+            Escanea este código QR con tu aplicación de autenticación para configurar 3FA.
+          </p>
+        </div>
+
+        <!-- Modo verificación -->
+        <div *ngIf="!showQR && !codeVerified">
+          <h2 class="header-title">Verificar Autenticador</h2>
+          <p class="header-subtitle">
+            Ingresa el código de 6 dígitos generado por tu aplicación de autenticación.
+          </p>
+        </div>
+
+        <!-- Mensaje de éxito -->
+        <div *ngIf="codeVerified">
+          <!-- Primera vez configurando 3FA (mostró QR) -->
+          <div *ngIf="canGoBackToQR">
+            <h2 class="header-title">¡Autenticación configurada!</h2>
+            <p class="header-subtitle">
+              La autenticación de dos factores ha sido configurada exitosamente. 
+              Tu cuenta ahora está más segura.
+            </p>
+          </div>
+          
+          <!-- Login con 3FA (no mostró QR) -->
+          <div *ngIf="!canGoBackToQR">
+            <h2 class="header-title">¡Código verificado!</h2>
+            <p class="header-subtitle">
+              Navegando al inicio...
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenido del QR Code -->
+    <div class="qr-content" *ngIf="showQR">
+      <div class="qr-container">
+        <div class="qr-code-wrapper">
+          <!-- QR Code real usando angularx-qrcode -->
+          <qrcode 
+            [qrdata]="qrCodeUrl" 
+            [width]="300" 
+            [errorCorrectionLevel]="errorLevel"
+            [margin]="4"
+            [colorDark]="darkColor"
+            [colorLight]="lightColor">
+          </qrcode>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de verificación -->
+    <form class="login-form" [formGroup]="qrVerifyForm" (ngSubmit)="onVerifyCode()" *ngIf="!showQR && !codeVerified">
+      <div class="form-group">
+        <label for="verificationCode" class="form-label">Código del Autenticador</label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="verificationCode"
+            class="form-input verification-code"
+            [class.invalid]="isFieldInvalid('verificationCode')"
+            placeholder="000000"
+            formControlName="verificationCode"
+            maxlength="6"
+            pattern="[0-9]{6}"
+          >
+        </div>
+        <div class="field-helper">
+          <span class="helper-text">Ingresa el código de 6 dígitos de tu autenticador</span>
+        </div>
+        <div class="error-message" *ngIf="isFieldInvalid('verificationCode')">
+          {{ getFieldError('verificationCode') }}
+        </div>
+        <div class="error-message" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="login-btn"
+        [disabled]="qrVerifyForm.invalid || isLoading"
+      >
+        <span class="btn-content" *ngIf="!isLoading">
+          <span class="btn-icon"></span>
+          <span class="btn-text">Verificar Código</span>
+        </span>
+        <span class="loading-spinner" *ngIf="isLoading">
+          <span class="spinner"></span>
+          <span class="loading-text">Verificando código...</span>
+        </span>
+      </button>
+    </form>
+
+    
+
+    <!-- Separador -->
+    <div class="separator" *ngIf="!codeVerified">
+        <div class="separator-text" *ngIf="showQR">
+          Mantén tu aplicación de autenticación segura y accesible.
+        </div>
+        <div class="separator-text" *ngIf="!showQR">
+          El código se actualiza cada 30 segundos.
+        </div>
+    </div>
+
+      <!-- Botón "Ya escaneé el QR" - Solo visible en modo QR -->
+      <button
+        type="button"
+        class="login-btn"
+        *ngIf="showQR"
+        (click)="onQRScanned()"
+      >
+        <span class="btn-icon">✓</span>
+        <span class="btn-text">Ya escaneé el código QR</span>
+      </button>
+
+      <!-- Botón "Ver QR de nuevo" - Solo si el usuario puede volver al QR -->
+      <button
+        type="button"
+        class="login-btn secondary"
+        *ngIf="!showQR && !codeVerified && canGoBackToQR"
+        (click)="backToQR()"
+      >
+        <span class="btn-icon">←</span>
+        <span class="btn-text">Ver código QR de nuevo</span>
+      </button>
+  </div>
+</div>

@@ -1,0 +1,256 @@
+<div class="registro-container gestor-variant">
+  <!-- Botón de volver -->
+  <button type="button" class="back-to-home" [routerLink]="GESTOR_ROUTES.inicio">
+    <span class="btn-icon">←</span>
+    <span class="btn-text">Volver al Dashboard</span>
+  </button>
+
+  <main class="perfil-card gestor-variant">
+    <!-- SECCIÓN 1: HEADER CON TÍTULO -->
+    <header class="app-header ">
+      <div class="header-content">
+        <h2>Mi Perfil de Gestor de Contenido</h2>
+        <p class="header-subtitle">Gestiona tu información personal y configuración</p>
+      </div>
+    </header>
+
+    <!-- SECCIÓN 2: INFORMACIÓN DEL PERFIL -->
+    <section class="profile-info-section">
+      <div class="profile-layout">
+        <!-- Columna izquierda: Avatar y datos básicos -->
+        <div class="profile-sidebar">
+          <div class="photo-upload">
+            <div class="avatar-container">
+              <img [src]="gestorProfile.fotoPerfil || 'assets/porDefecto.jpg'" [alt]="'Avatar de ' + gestorProfile.nombre" class="avatar">
+            </div>
+            <div class="upload-actions" *ngIf="isEditMode">
+              <label for="foto-perfil" class="upload-btn">
+                📷 Cambiar Foto
+                <input type="file" id="foto-perfil" accept="image/*" (change)="onFileSelected($event)" hidden>
+              </label>
+            </div>
+          </div>
+          
+          <div class="user-identity">
+            <h3 class="user-name">{{ gestorProfile.nombre }} {{ gestorProfile.primerApellido }} {{ gestorProfile.segundoApellido }}</h3>
+            <p class="user-email">{{ '@' + gestorProfile.alias }}</p>
+          </div>
+        </div>
+
+        <!-- Columna derecha: Información detallada -->
+        <div class="profile-content">
+          <form [formGroup]="gestorForm" *ngIf="isEditMode; else displayMode">
+            <div class="info-display edit-mode">
+              <div class="info-item">
+                <label class="field-label" for="nombre">Nombre</label>
+                <input 
+                  type="text" 
+                  id="nombre"
+                  class="info-input" 
+                  formControlName="nombre"
+                  [class.input-error]="isFieldInvalid('nombre')"
+                  placeholder="Ingresa tu nombre">
+                <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                  {{ getFieldError('nombre') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="primerApellido">Primer Apellido</label>
+                <input 
+                  type="text" 
+                  id="primerApellido"
+                  class="info-input" 
+                  formControlName="primerApellido"
+                  [class.input-error]="isFieldInvalid('primerApellido')"
+                  placeholder="Ingresa tu primer apellido">
+                <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                  {{ getFieldError('primerApellido') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="segundoApellido">Segundo Apellido (opcional)</label>
+                <input 
+                  type="text" 
+                  id="segundoApellido"
+                  class="info-input" 
+                  formControlName="segundoApellido"
+                  [class.input-error]="isFieldInvalid('segundoApellido')"
+                  placeholder="Ingresa tu segundo apellido">
+                <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                  {{ getFieldError('segundoApellido') }}
+                </div>
+              </div>
+
+              <div class="info-item">
+                <label class="field-label" for="alias">Alias</label>
+                <input 
+                  type="text" 
+                  id="alias"
+                  class="info-input" 
+                  formControlName="alias"
+                  [class.input-error]="isFieldInvalid('alias')"
+                  placeholder="Ingresa tu alias"
+                  maxlength="12">
+                <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                  {{ getFieldError('alias') }}
+                </div>
+              </div>
+
+            
+              <div class="info-item">
+                <span class="field-label">Email</span>
+                <span class="info-value readonly">{{ gestorProfile.email }} </span>
+                <div class="info-message" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+                  El email no puede ser modificado
+                </div>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Tipo de Contenido</span>
+                <span class="info-value readonly">{{ gestorProfile.tipoContenido }} </span>
+                <div class="info-message" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+                  El tipo de contenido no puede ser modificado
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <label class="field-label" for="especialidad">Especialidad</label>
+                <select
+                  id="especialidad"
+                  class="info-input"
+                  formControlName="especialidad"
+                  [class.input-error]="isFieldInvalid('especialidad')">
+                  <option value="" disabled>Selecciona una especialidad</option>
+                  <option *ngFor="let especialidad of especialidades" [value]="especialidad.nombre">{{ especialidad.nombre }}</option>
+                </select>
+                <div class="error-message" *ngIf="isFieldInvalid('especialidad')">
+                  {{ getFieldError('especialidad') }}
+                </div>
+              </div>
+
+                <div class="form-field description-field">
+                  <label class="info-item field-label" for="descripcion">Descripción</label>
+                  <textarea
+                    id="descripcion"
+                    class="form-textarea"
+                    formControlName="descripcion"
+                    [class.invalid]="isFieldInvalid('descripcion')"
+                    [value]="gestorProfile.descripcion"
+                    placeholder="{{ gestorProfile.descripcion }}"
+                    rows="7.5"
+                    maxlength="500">
+                  </textarea>
+                  <div class="error-message" *ngIf="isFieldInvalid('descripcion')">
+                    {{ getFieldError('descripcion') }}
+                  </div>
+                  <span class="field-helper">Mínimo 10 caracteres - Máximo 500 caracteres</span>
+              </div>
+                
+            </div>
+          </form>
+
+          <ng-template #displayMode>
+            <div class="info-display">
+              <div class="info-item">
+                <span class="field-label">Nombre Completo</span>
+                <span class="info-value">{{ gestorProfile.nombre }} {{ gestorProfile.primerApellido }} {{ gestorProfile.segundoApellido }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Email</span>
+                <span class="info-value">{{ gestorProfile.email }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="field-label">Alias</span>
+                <span class="info-value">{{ '@' + gestorProfile.alias }}</span>
+              </div>
+
+              <div class="info-item" >
+                <span class="field-label">Tipo de Contenido</span>
+                <span class="info-value">{{ gestorProfile.tipoContenido }}</span>
+              </div>
+
+              <div class="info-item" >
+                <span class="field-label">Especialidad</span>
+                <span class="info-value">{{ gestorProfile.especialidad }}</span>
+              </div>
+
+              <div class="info-item full-width">
+                <span class="field-label">Descripción</span>
+                <p class="info-value description">{{ gestorProfile.descripcion }}</p>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: BOTONERA (3 BOTONES UNO AL LADO DEL OTRO) -->
+    <section class="profile-actions-section">
+      <div class="actions-container" *ngIf="!isEditMode">
+        <button type="button" class="gestor-btn" (click)="toggleEditMode()">
+          <span class="btn-icon">✏️</span>
+          <span class="btn-text">Modificar Perfil</span>
+        </button>
+        <button type="button" class="gestor-btn secondary" (click)="showDeleteAccount()">
+          <span class="btn-icon">🗑️</span>
+          <span class="btn-text">Darse de Baja</span>
+        </button>
+      </div>
+
+      <div class="actions-container edit-mode" *ngIf="isEditMode">
+        <button 
+          type="button" 
+          class="gestor-btn" 
+          [disabled]="gestorForm.invalid"
+          (click)="saveProfile()">
+          <span class="btn-icon">💾</span>
+          <span class="btn-text">Guardar Cambios</span>
+        </button>
+        <button type="button" class="gestor-btn" (click)="changePassword()">
+          <span class="btn-icon">🔒</span>
+          <span class="btn-text">Cambiar Contraseña</span>
+        </button>
+        <button type="button" class="gestor-btn secondary" (click)="cancelEdit()">
+          <span class="btn-icon">❌</span>
+          <span class="btn-text">Cancelar</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de confirmación de eliminación -->
+  <div class="modal-overlay" *ngIf="showDeleteConfirmation" (click)="cancelDelete()" (keydown)="cancelDelete()">
+    <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="cancelDelete()">
+      <header class="app-header compact minimal gestor-variant">
+        <div class="header-content">
+          <h3 class="header-title">⚠️ Confirmar Eliminación de Cuenta</h3>
+        </div>
+      </header>
+      <div class="modal-body">
+        <p class="modal-text">¿Estás seguro de que quieres eliminar tu cuenta?</p>
+        <p class="modal-warning">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="gestor-btn" (click)="confirmDeleteAccount()" [routerLink]="APP_ROUTES.home">
+          <span class="btn-text">Si, Quiero eliminar mi cuenta</span>
+        </button>
+        <button type="button" class="gestor-btn secondary" (click)="cancelDelete()">
+          <span class="btn-text">Cancelar eliminación</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de cambiar contraseña usando componente compartido -->
+  <app-cambiar-password-modal
+    [visible]="showChangePasswordModal"
+    [passwordForm]="passwordForm"
+    [variant]="'gestor-variant'"
+    (confirm)="confirmChangePassword()"
+    (cancelChange)="cancelChangePassword()">
+  </app-cambiar-password-modal>
+</div>

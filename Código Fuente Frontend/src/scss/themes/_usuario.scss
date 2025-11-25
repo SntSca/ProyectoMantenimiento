@@ -1,0 +1,115 @@
+// ===========================
+// TEMA USUARIO
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.usuario-variant {
+  // Variables CSS personalizadas para el tema
+  --primary-color: #{$user-primary-color};
+  --secondary-color: #{$user-secondary-color};
+  --accent-color: #{$user-accent-color};
+  --theme-shadow: #{$user-shadow};
+
+  // Contenedores
+  &.registro-container,
+  &.login-container,
+  &.inicio-container {
+    @include theme-container($user-primary-color, $user-secondary-color);
+  }
+
+  // Dashboard de usuario
+  &.dashboard-container {
+    @include theme-dashboard($user-primary-color, $user-accent-color, $user-shadow);
+  }
+
+  // Tarjetas
+  .registro-card {
+    @include theme-card($user-secondary-color, $user-shadow, $user-primary-color);
+  }
+
+  // Headers
+  .form-header {
+    @include theme-header($user-primary-color);
+  }
+
+  // Brand
+  .brand-name {
+    @include gradient-text($user-secondary-color, $user-primary-color);
+  }
+
+  // Títulos
+  .form-title h2 {
+    color: $user-primary-color !important;
+  }
+
+  // Campos de formulario
+  @include theme-form-fields($user-primary-color, $user-secondary-color);
+
+  // Botones
+  @include theme-buttons($user-primary-color, $user-secondary-color, $user-shadow);
+
+  // Links
+  @include theme-links($user-primary-color, $user-secondary-color, $user-shadow);
+
+  // Subida de fotos
+  @include theme-photo-upload($user-primary-color, $user-secondary-color);
+
+  // Panel de tips
+  @include theme-tips($user-primary-color, $user-accent-color, $user-secondary-color);
+
+  // Checkboxes temáticos
+  input[type="checkbox"] {
+    accent-color: $user-primary-color;
+  }
+
+  .checkbox-field-centered {
+    background: rgba($user-primary-color, 0.05);
+    border-color: rgba($user-primary-color, 0.2);
+  }
+
+  // Requisitos de contraseña
+  .password-requirements-inline {
+    background: rgba($user-primary-color, 0.03);
+    border-left-color: rgba($user-primary-color, 0.3);
+  }
+
+
+  // Iconos personalizados de select para tema usuario
+  .form-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B5CF6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+
+  // ===========================
+  // PERFIL DE USUARIO - TEMA ESPECÍFICO
+  // ===========================
+  
+  // Sidebar del perfil
+  .profile-sidebar {
+    .user-name {
+      color: $user-primary-color;
+    }
+    
+    .avatar {
+      border-color: $user-primary-color;
+      box-shadow: 0 12px 40px rgba($user-primary-color, 0.25);
+      
+      &:hover {
+        border-color: $user-secondary-color;
+        box-shadow: 0 16px 48px rgba($user-primary-color, 0.4);
+        transform: scale(1.02);
+      }
+    }
+  }
+
+  // Labels de información del perfil
+  .profile-content .info-display .info-item .field-label {
+    color: $user-primary-color;
+  }
+
+  // Modales del perfil
+  .modal-card .modal-header {
+    background: linear-gradient(135deg, rgba($user-primary-color, 0.05) 0%, rgba($user-accent-color, 0.02) 100%);
+  }
+}

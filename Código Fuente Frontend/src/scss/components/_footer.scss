@@ -1,0 +1,83 @@
+// ===========================
+// COMPONENTES DE FOOTER
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ===========================
+// FOOTER DE INICIO
+// ===========================
+.inicio-footer {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-md;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, $gray-300 25%, $gray-600 75%, transparent 100%);
+  }
+
+  @include responsive(md) {
+    margin-top: $spacing-md;
+  }
+}
+
+// ===========================
+// CONTENEDOR DE ESTADÍSTICAS
+// ===========================
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  gap: $spacing-lg;
+
+  @include responsive(md) {
+    flex-direction: column;
+    gap: $spacing-md;
+    align-items: center;
+  }
+
+  @include responsive(sm) {
+    gap: $spacing-sm;
+  }
+}
+
+// ===========================
+// ELEMENTOS DE ESTADÍSTICA
+// ===========================
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  .stat-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: $spacing-xs;
+    color: var(--primary-color, $text-primary);
+
+    @include responsive(md) {
+      font-size: 1.25rem;
+    }
+
+    @include responsive(sm) {
+      font-size: 1.125rem;
+    }
+  }
+
+  .stat-label {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: 500;
+
+    @include responsive(sm) {
+      font-size: $font-size-xs;
+    }
+  }
+}

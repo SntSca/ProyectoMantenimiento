@@ -1,0 +1,45 @@
+name: CI Pipeline
+
+trigger:
+  branches:
+    include:
+    - Development
+    - releases
+
+pool:
+  name: 'UCLM-Sonar-scanner-Host'
+
+stages:
+
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: CompileAndBuild
+    displayName: 'Compile and Build with Maven'
+    steps:
+    - script: |
+        echo "Running Maven clean build..."
+        mvn clean compile
+      displayName: 'Compile and Build'
+
+- stage: Test
+  displayName: 'Test Stage'
+  jobs:
+  - job: RunTests
+    displayName: 'Run Tests with Maven'
+    steps:
+    - script: |
+        echo "Running Maven clean verify..."
+        mvn clean verify 
+      displayName: 'Run Tests'
+
+- stage: Sonarqube
+  displayName: Sonarqube Analysis
+  dependsOn: Test
+  jobs:
+  - job: Analysis
+    steps:
+    - checkout: none
+    - script: sonar-scanner -D sonar.token=$(SONAR_TOKEN)
+      displayName: 'Run SonarQube Scanner'
+

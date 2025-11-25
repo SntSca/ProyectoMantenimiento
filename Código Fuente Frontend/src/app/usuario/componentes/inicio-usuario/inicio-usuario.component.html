@@ -1,0 +1,240 @@
+<div class="dashboard-container usuario-variant">
+  <!-- Menu Lateral Izquierdo -->
+  <aside class="sidebar-menu">
+    <button type="button" class="user-profile" [routerLink]="USUARIO_ROUTES.perfil">
+      <div class="avatar-container">
+        <img src="{{ actualUser.fotoPerfil || 'assets/porDefecto.jpg' }}" alt="Avatar del usuario" class="user-avatar">
+      </div>
+      <div class="user-info">
+        <h3 class="user-name">{{ actualUser.nombre }} {{ actualUser.primerApellido }}</h3>
+        <p class="profile-hint">👤 Ver perfil</p>
+      </div>
+    </button>
+    
+    <nav class="menu-navigation">
+      <ul class="menu-list">
+        <li class="menu-item" [class.active]="isMenuSectionActive('inicio')">
+          <button type="button" class="menu-button" (click)="setActiveMenuSection('inicio')">
+            <div class="menu-text">
+              <span class="menu-icon">🏠</span>
+              <span>Inicio</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item" [class.active]="isMenuSectionActive('listas-publicas')">
+          <button type="button" class="menu-button" (click)="setActiveMenuSection('listas-publicas')">
+            <div class="menu-text">
+              <span class="menu-icon">🌐</span>
+              <span>Listas Públicas</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="USUARIO_ROUTES.listas" [queryParams]="{ tipo: 'privadas' }">
+            <div class="menu-text">
+              <span class="menu-icon">📋</span>
+              <span>Mis Listas</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="USUARIO_ROUTES.crearListaPrivada">
+            <div class="menu-text">
+              <span class="menu-icon">➕</span>
+              <span>Crear Lista Privada</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item" [class.active]="isMenuSectionActive('favoritos')">
+          <button type="button" class="menu-button" (click)="loadFavorites()">
+            <div class="menu-text">
+              <span class="menu-icon">⭐</span>
+              <span>Favoritos</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+      
+      <div class="menu-divider"></div>
+      
+      <ul class="menu-list">
+        <li class="menu-item logout">
+          <button (click)="logout()" class="logout-button">
+            <div class="menu-text">
+              <span class="menu-icon">🚪</span>
+              <span>Cerrar Sesión</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Barra de Búsqueda y Filtros -->
+    <header class="search-header">
+      <div class="search-container">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            placeholder="Buscar videos, creadores, tags..." 
+            [(ngModel)]="searchTermValue"
+            class="search-input">
+          <button class="search-button">
+            <span class="search-icon">🔍</span>
+          </button>
+        </div>
+      </div>
+
+    <!-- Botón para cambiar vista -->
+      <div class="view-toggle">
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="filtrarPorTipoContenidoContenidos(isTipoContenidoContenidos === null ? 'AUDIO' : isTipoContenidoContenidos === true ? 'VIDEO' : null); isTipoContenidoContenidos = isTipoContenidoContenidos === null ? true : isTipoContenidoContenidos === true ? false : null"
+          [attr.aria-label]="isTipoContenidoContenidos === null ? 'Filtrar por audio' : isTipoContenidoContenidos === true ? 'Filtrar por video' : 'Mostrar todos'">
+          <span class="view-icon">{{ isTipoContenidoContenidos === null ? '🎬' : isTipoContenidoContenidos === true ? '🎧' : '🎥' }}</span>
+          <span class="view-text">{{ isTipoContenidoContenidos === null ? 'Contenido' : isTipoContenidoContenidos === true ? 'Audio' : 'Video' }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="toggleRestriccionEdad()"
+          [attr.aria-label]="filtroRestriccionEdad === null ? 'Sin filtro de edad' : 'Máximo +' + filtroRestriccionEdad">
+          <span class="view-icon">🎯</span>
+          <span class="view-text">{{ filtroRestriccionEdad === null ? 'Edad' : '+' + filtroRestriccionEdad }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn reset-btn" 
+          (click)="restablecerFiltros()"
+          [attr.aria-label]="'Restablecer todos los filtros'">
+          <span class="view-icon">🔄</span>
+          <span class="view-text">Restablecer</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="toggleView()"
+          [attr.aria-label]="isListView ? 'Cambiar a vista de cuadrícula' : 'Cambiar a vista de lista'">
+          <span class="view-icon">{{ isListView ? '⊞' : '☰' }}</span>
+          <span class="view-text">{{ isListView ? 'Cuadrícula' : 'Lista' }}</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Filtros de Tags -->
+    <section class="filters-section">
+      <button 
+        type="button"
+        class="filters-toggle-btn"
+        (click)="toggleTagFilters()">
+        <span class="toggle-icon">{{ showTagFilters ? '▼' : '▶' }}</span>
+        <span class="toggle-text">Filtros por Tags</span>
+        <span class="filter-count" *ngIf="filtroTagsContenidos.length > 0">({{ filtroTagsContenidos.length }})</span>
+      </button>
+      
+      <div class="filters-container" [class.expanded]="showTagFilters">
+        <button 
+          class="filters-btn clear-btn"
+          *ngIf="filtroTagsContenidos.length > 0"
+          (click)="limpiarFiltrosTags()">
+          ✕ Limpiar filtros
+        </button>
+        <button *ngFor="let tag of tags; let i = index" 
+          class="filters-btn" 
+          [class.active]="isTagActive(tag.nombre)"
+          (click)="filtrarPorTags(tag.nombre)">
+          {{ tag.nombre }}
+        </button>
+      </div>
+    </section>
+
+
+    <!-- Contenido - Vista Grid -->
+    <div *ngIf="!isListView" class="content-grid">
+      <div *ngFor="let contenido of contenidosFiltrados" class="content-card" [class.favorites-mode]="showingFavorites" (click)="verContenido(contenido)" (keydown.enter)="verContenido(contenido)">
+        <div class="card-thumbnail">
+          <img [src]="contenido.miniatura" [alt]="contenido.titulo" class="thumbnail-image">
+          <span class="video-duration">{{ contenido.duracionFormateada }}</span>
+          <div class="content-badges">
+            <span class="badge vip" *ngIf="contenido.esVIP">👑 VIP</span>
+            <span class="badge type">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+            <span class="badge age age-{{ contenido.restriccionEdad }}">+{{ contenido.restriccionEdad }}</span>
+          </div>
+          <!-- Botón de eliminar favoritos -->
+          <button 
+            *ngIf="showingFavorites" 
+            class="remove-favorite-btn" 
+            (click)="removeFavorite($event, contenido)"
+            [attr.aria-label]="'Eliminar ' + contenido.titulo + ' de favoritos'">
+            ✕
+          </button>
+        </div>
+        <div class="card-info">
+          <div class="title-row">
+            <h3 class="card-title">{{ contenido.titulo }}</h3>
+          </div>
+          <div class="card-category-rating">
+            <div class="card-category">{{ contenido.especialidad }}</div>
+            <div class="stars">
+              <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+              </span>
+              <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+            </div>
+          </div>
+          <div class="card-tags">{{ contenido.tags.join(', ') }}</div>
+          <div class="card-stats">
+            <span class="stat-item">⏰ {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido - Vista Lista -->
+    <div *ngIf="isListView" class="list-view">
+      <ul class="content-list">
+        <li *ngFor="let contenido of contenidosFiltrados" class="list-item" [class.favorites-mode]="showingFavorites" (click)="verContenido(contenido)" (keydown.enter)="verContenido(contenido)">
+          <div class="list-thumbnail">
+            <img [src]="contenido.miniatura" [alt]="contenido.titulo">
+            <!-- Botón de eliminar favoritos -->
+            <button 
+              *ngIf="showingFavorites" 
+              class="remove-favorite-btn" 
+              (click)="removeFavorite($event, contenido)"
+              [attr.aria-label]="'Eliminar ' + contenido.titulo + ' de favoritos'">
+              ✕
+            </button>
+          </div>
+          <div class="list-content">
+            <div class="list-title-container">
+              <h3 class="list-title">{{ contenido.titulo }}</h3>
+              <div class="stars">
+                <span *ngFor="let star of getStarsArray(contenido.valoracionMedia)" class="star">
+                  {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                </span>
+                <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+              </div>
+            </div>
+            <div class="list-specialty-tags">
+              🏷️ {{ contenido.especialidad }} - 📝 {{ contenido.tags.join(', ') }}
+            </div>
+            <div class="list-details">
+              {{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }} {{ contenido.tipo }} - ⏱️ {{ contenido.duracionFormateada }} - ⏰ Expira: {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }} - 🎯 +{{ contenido.restriccionEdad }} - {{ contenido.esVIP ? '👑 VIP' : 'Estándar' }}
+            </div>
+          </div>
+        </li>
+      </ul>
+      
+      <!-- Estado vacío para lista -->
+      <div *ngIf="contenidosFiltrados.length === 0" class="list-empty-state">
+        <div class="empty-icon">📹</div>
+        <h3 class="empty-title">No se encontraron contenidos</h3>
+        <p class="empty-message">Intenta cambiar los filtros de búsqueda o verifica tu conexión.</p>
+      </div>
+    </div>
+
+  </main>
+</div>

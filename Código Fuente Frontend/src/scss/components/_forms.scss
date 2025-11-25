@@ -1,0 +1,858 @@
+// ===========================
+// COMPONENTES DE FORMULARIO
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+@use './buttons' as *;
+@use '../themes/gestor' as *;
+
+
+
+.logo {
+  @include flex-center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  @include flex-center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.brand-name {
+  font-size: $font-size-3xl;
+  font-weight: 800;
+  @include gradient-background(var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  @include responsive(md) {
+    font-size: 1.8rem;
+  }
+
+  @include responsive(sm) {
+    font-size: $font-size-xl;
+  }
+}
+
+
+// Campos individuales
+.form-field {
+  @include flex-column;
+  gap: $spacing-sm;
+  transition: all $transition-normal;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.field-label {
+  font-weight: 600;
+  color: $gray-700;
+  @include flex-center;
+  justify-content: flex-start;
+  gap: $spacing-xs;
+}
+
+.required {
+  color: $error-color;
+  font-weight: 700;
+}
+
+// Inputs y selects
+.form-input,
+.form-select {
+  @include form-input-base;
+}
+
+.form-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 3rem;
+  appearance: none;
+  @include slide-in-up;
+}
+
+// Textarea
+.form-textarea {
+  @include form-input-base;
+  resize: vertical;
+  min-height: 100px;
+  @include slide-in-up;
+
+  @include responsive(md) {
+    min-height: 80px;
+  }
+}
+
+// Helper text
+.field-helper {
+  font-size: $font-size-sm;
+  color: $gray-600;
+}
+
+// ===========================
+// FORMULARIOS DE REGISTRO - LAYOUT DE FILAS
+// ===========================
+
+// Fila de formulario - dos campos por fila
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-md;
+  width: 100%;
+}
+
+
+
+// Checkbox personalizado base
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: $spacing-md 0;
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  label {
+    font-size: $font-size-sm;
+    color: $text-primary;
+    cursor: pointer;
+    font-weight: 500;
+  }
+}
+
+// Checkbox centrado para campos especiales
+.checkbox-field-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  padding: $spacing-md;
+  border-radius: 8px;
+  border: 1px dashed rgba(var(--primary-color-rgb), 0.2);
+
+  input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    margin-bottom: $spacing-xs;
+  }
+
+  label {
+    font-size: $font-size-sm;
+    color: $text-primary;
+    cursor: pointer;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+}
+
+// Campo VIP especial
+.vip-field {
+  display: flex;
+  align-items: stretch;
+}
+
+
+
+// Requisitos de contraseña integrados (debajo del campo)
+.password-requirements-inline {
+  border-left: 3px solid rgba(var(--primary-color-rgb), 0.3);
+  padding: $spacing-xs $spacing-sm;
+  margin-top: $spacing-xs;
+  font-size: $font-size-xs;
+  border-radius: 0 4px 4px 0;
+  
+  .requirement {
+    color: $text-secondary;
+    margin: 1px 0;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+  }
+}
+
+// Responsivo para formularios
+@include responsive(md) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
+  }
+}
+
+// ===========================
+// ESTILOS PARA INPUT WRAPPER Y TOGGLE DE CONTRASEÑA
+// ===========================
+
+.input-wrapper {
+  position: relative;
+  
+  .form-input {
+    padding-right: 3rem; // Espacio para el botón toggle
+  }
+  
+  // Botón toggle para mostrar/ocultar contraseña
+  .input-icon,
+  .toggle-password {
+    position: absolute;
+    right: $spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: $spacing-xs;
+    border-radius: $spacing-xs;
+    font-size: 1.2rem;
+    transition: all $transition-normal;
+    color: $text-secondary;
+    
+    &:hover {
+      color: var(--primary-color, $gestor-accent-color);
+      background: rgba($gestor-primary, 0.1);
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($gestor-primary, 0.2);
+    }
+  }
+}
+
+// ===========================
+// FORMULARIOS DE LOGIN ESPECÍFICOS
+// ===========================
+.login-form {
+  margin-bottom: $spacing-xl;
+  
+  .form-group {
+    margin-bottom: $spacing-lg;
+    
+    @include responsive(md) {
+      margin-bottom: $spacing-md;
+    }
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+    font-size: $font-size-base;
+  }
+  
+  .input-wrapper {
+    position: relative;
+    margin-bottom: $spacing-xs;
+  }
+  
+  .form-input {
+    @include form-input-base;
+    width: 100%;
+    padding: $spacing-md;
+    
+    // Específico para login - usar variables CSS del tema
+    &:focus {
+      border-color: var(--primary-color, $gestor-accent-color);
+      box-shadow: 0 0 0 3px rgba($gestor-primary, 0.1);
+    }
+    
+    &::placeholder {
+      color: $text-secondary;
+    }
+  }
+  
+  // Cuando hay botón toggle, ajustar padding del input de contraseña
+  .input-wrapper .form-input[type="password"],
+  .input-wrapper .form-input[type="text"] {
+    padding-right: 3rem;
+  }
+  
+  // También aplicar a edit-input para componentes de dashboard
+  .input-wrapper .edit-input[type="password"],
+  .input-wrapper .edit-input[type="text"] {
+    padding-right: 3rem;
+  }
+  
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-xl;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    
+    @include responsive(sm) {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  
+  .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary-color, $user-primary);
+    }
+    
+    .checkbox-text {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+    }
+  }
+  
+  .forgot-password {
+    text-decoration: none;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    transition: all $transition-normal;
+    // Los estilos específicos de color están en los temas
+  }
+}
+
+// ===========================
+// FORMULARIOS ESPECÍFICOS DEL PERFIL
+// ===========================
+
+.form-actions {
+  margin-top: auto;
+  padding: $spacing-md $spacing-lg;
+  border-top: 2px solid rgba($gray-200, 0.6);
+  background: rgba($light-gray, 0.3);
+  
+  .button-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    
+    @include responsive(md) {
+      @include flex-column;
+      gap: $spacing-xs;
+      
+      button {
+        width: 100%;
+        max-width: 250px;
+      }
+    }
+    
+    button {
+      min-width: 140px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-xs;
+      font-size: $font-size-sm;
+      
+      .btn-icon {
+        font-size: $font-size-sm;
+      }
+      
+      .btn-text {
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.info-display {
+  .info-item .field-label {
+    display: block;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    opacity: 0.8;
+  }
+}
+
+// ===========================
+// ESTILOS GLOBALES DE VALIDACIÓN
+// ===========================
+.input-error {
+  border-color: $error-color !important;
+  box-shadow: 0 0 0 2px rgba($error-color, 0.2) !important;
+}
+
+.error-message {
+  color: $error-color;
+  font-size: $font-size-xs;
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-sm;
+  display: block;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ===========================
+// ESTILOS PARA SUBIDA DE CONTENIDO
+// ===========================
+
+// Contenedor principal para subida de contenido
+// Header del contenido
+.content-header {
+  margin-bottom: $spacing-xl;
+
+  .page-title {
+    font-size: $font-size-3xl;
+    font-weight: 700;
+    color: $gestor-primary-color;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  .page-subtitle {
+    font-size: $font-size-lg;
+    color: $gray-600;
+    margin: 0;
+  }
+}
+
+// Contenedor del formulario de subida
+.upload-container {
+  background: $white;
+  border-radius: $border-radius * 2;
+  padding: $spacing-2xl;
+  box-shadow: $default-shadow;
+  border: 1px solid $gray-200;
+}
+
+// Formulario de subida
+.upload-form {
+  .form-section {
+    margin-bottom: $spacing-2xl;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: $font-size-xl;
+      font-weight: 600;
+      color: $gestor-primary-color;
+      margin: 0 0 $spacing-lg 0;
+      padding-bottom: $spacing-sm;
+      border-bottom: 2px solid $gray-200;
+    }
+  }
+
+  // Layout de filas para campos
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-lg;
+
+    @include responsive(md) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Grupos de campos
+  .form-group {
+    @extend .form-field;
+
+    // Etiquetas
+    .form-label {
+      @extend .field-label;
+    }
+
+    // Inputs y selects usando estilos base
+    .form-input,
+    .form-select {
+      @extend .form-input;
+      @extend .form-select;
+    }
+
+    // Textarea
+    .form-textarea {
+      @extend .form-textarea;
+    }
+
+    // Mensajes de error
+    .error-message {
+      color: $error-color;
+      font-size: $font-size-sm;
+      margin-top: $spacing-xs;
+      font-weight: 500;
+    }
+
+    // Texto de ayuda
+    .form-hint {
+      color: $gray-600;
+      font-size: $font-size-sm;
+      margin-top: $spacing-xs;
+    }
+
+    // Grupo especial para checkboxes
+    &.checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-top: $spacing-md;
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        cursor: pointer;
+        font-weight: 500;
+        color: $gray-700;
+
+        .form-checkbox {
+          width: 18px;
+          height: 18px;
+          accent-color: $gestor-primary-color;
+          border-radius: 3px;
+        }
+
+        .checkmark {
+          width: 18px;
+          height: 18px;
+          border: 2px solid $gray-300;
+          border-radius: 3px;
+          position: relative;
+          margin-right: $spacing-sm;
+          transition: all $transition-fast;
+
+          &::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 6px;
+            height: 10px;
+            border: solid $white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            opacity: 0;
+            transition: opacity $transition-fast;
+          }
+        }
+
+        input:checked ~ .checkmark {
+          background-color: $gestor-primary-color;
+          border-color: $gestor-primary-color;
+
+          &::after {
+            opacity: 1;
+          }
+        }
+      }
+    }
+  }
+
+  // Área de subida de archivos
+  .file-upload-area {
+    border: 2px dashed $gray-300;
+    border-radius: $border-radius;
+    padding: $spacing-2xl;
+    text-align: center;
+    transition: all $transition-normal;
+    background-color: $gray-100;
+    position: relative;
+
+    &:hover {
+      border-color: $gestor-primary-color;
+      background-color: rgba($gestor-primary-color, 0.02);
+    }
+
+    &.drag-over {
+      border-color: $gestor-primary-color;
+      background-color: rgba($gestor-primary-color, 0.05);
+      transform: scale(1.02);
+    }
+
+    .file-upload-button {
+      cursor: pointer;
+      display: inline-block;
+      padding: $spacing-lg $spacing-xl;
+      border: 2px solid $gray-300;
+      border-radius: $border-radius;
+      background-color: $white;
+      transition: all $transition-normal;
+      text-decoration: none;
+      color: inherit;
+
+      &:hover {
+        border-color: $gestor-primary-color;
+        background-color: rgba($gestor-primary-color, 0.05);
+        transform: translateY(-2px);
+        box-shadow: $light-shadow;
+      }
+
+      .upload-icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: $spacing-sm;
+        color: $gray-600;
+      }
+
+      .upload-text {
+        color: $gray-700;
+        font-weight: 500;
+        font-size: $font-size-base;
+      }
+    }
+  }
+
+  // Variante especial para miniaturas
+  .thumbnail-button {
+    padding: $spacing-md $spacing-lg;
+    background-color: $gray-100;
+    border-color: $gray-300;
+
+    &:hover {
+      border-color: $gestor-primary-color;
+      background-color: rgba($gestor-primary-color, 0.05);
+    }
+
+    .upload-icon {
+      font-size: 24px;
+      margin-bottom: $spacing-xs;
+    }
+
+    .upload-text {
+      font-size: $font-size-sm;
+    }
+  }
+
+  // Previews de archivos
+  .file-preview,
+  .thumbnail-preview {
+    margin-top: $spacing-lg;
+    padding: $spacing-lg;
+    background-color: $gray-100;
+    border-radius: $border-radius;
+    border: 1px solid $gray-200;
+
+    h3 {
+      margin: 0 0 $spacing-md 0;
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $gestor-primary-color;
+    }
+
+    .preview-media {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: $border-radius;
+      box-shadow: $light-shadow;
+    }
+
+    .preview-thumbnail {
+      max-width: 200px;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: $border-radius;
+      border: 2px solid $gray-200;
+      box-shadow: $light-shadow;
+    }
+  }
+
+  // Acciones del formulario
+  .form-actions {
+    display: flex;
+    gap: $spacing-md;
+    justify-content: flex-end;
+    margin-top: $spacing-2xl;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $gray-200;
+
+    @include responsive(md) {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+
+    // Botones usando estilos del sistema
+    .btn-primary,
+    .btn-secondary {
+      @extend .gestor-btn;
+    }
+
+    .btn-primary {
+      @include button-primary($gestor-primary-color, $gestor-secondary-color);
+    }
+
+    .btn-secondary {
+      @include button-gestor-secondary;
+    }
+  }
+}
+
+// Responsive design para subida de contenido
+@include responsive(lg) {
+  .upload-container {
+    padding: $spacing-xl;
+  }
+}
+
+@include responsive(md) {
+  .content-header {
+    text-align: center;
+
+    .page-title {
+      font-size: $font-size-2xl;
+    }
+  }
+
+  .upload-container {
+    padding: $spacing-lg;
+  }
+
+  .upload-form {
+    .form-section {
+      margin-bottom: $spacing-xl;
+    }
+  }
+}
+
+@include responsive(sm) {
+  .upload-container {
+    padding: $spacing-md;
+    margin: 0 $spacing-sm;
+  }
+
+  .content-header {
+    margin-bottom: $spacing-lg;
+
+    .page-title {
+      font-size: $font-size-xl;
+    }
+
+    .page-subtitle {
+      font-size: $font-size-base;
+    }
+  }
+}
+
+// Quitar flechitas de inputs number
+.no-spinners {
+  appearance: textfield;
+  -moz-appearance: textfield;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+// Dropdown personalizado para tags
+.custom-dropdown {
+  position: relative;
+
+  .dropdown-toggle {
+    width: 100%;
+    padding: $spacing-md $spacing-lg;
+    border: 1px solid $gray-300;
+    border-radius: $border-radius;
+    background-color: $white;
+    cursor: pointer;
+    font-size: $font-size-base;
+    color: $gray-700;
+    transition: all $transition-fast;
+    text-align: left;
+
+    &:hover {
+      border-color: $gestor-primary-color;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $gestor-primary-color;
+      box-shadow: 0 0 0 2px rgba($gestor-primary-color, 0.2);
+    }
+
+    &.input-error {
+      border-color: $error-color;
+    }
+  }
+
+  &.dropdown-open {
+    .dropdown-toggle {
+      border-color: $gestor-primary-color;
+      box-shadow: 0 0 0 2px rgba($gestor-primary-color, 0.2);
+    }
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: $white;
+    border: 1px solid $gray-300;
+    border-radius: $border-radius;
+    box-shadow: $default-shadow;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 2px;
+
+    .dropdown-item {
+      padding: $spacing-sm $spacing-md;
+
+      &:hover {
+        background-color: $gray-100;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        cursor: pointer;
+        font-weight: 500;
+        color: $gray-700;
+        margin: 0;
+
+        input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
+          accent-color: $gestor-primary-color;
+          border-radius: 3px;
+        }
+      }
+    }
+  }
+}

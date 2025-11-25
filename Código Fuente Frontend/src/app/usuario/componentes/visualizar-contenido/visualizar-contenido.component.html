@@ -1,0 +1,162 @@
+<div class="dashboard-container usuario-variant">
+  <!-- Menu Lateral Izquierdo -->
+  <aside class="sidebar-menu">
+    <button type="button" class="user-profile" [routerLink]="USUARIO_ROUTES.perfil">
+      <div class="avatar-container">
+        <img src="{{ userProfile.fotoPerfil || 'assets/porDefecto.jpg' }}" alt="Avatar del usuario" class="user-avatar">
+      </div>
+      <div class="user-info">
+        <h3 class="user-name">{{ userProfile.nombre }} {{ userProfile.primerApellido }}</h3>
+        <p class="profile-hint">👤 Ver perfil</p>
+      </div>
+    </button>
+    
+    <nav class="menu-navigation">
+      <ul class="menu-list">
+        <li class="menu-item" [class.active]="isMenuSectionActive('inicio')">
+          <button type="button" class="menu-button" (click)="setActiveMenuSection('inicio')">
+            <div class="menu-text">
+              <span class="menu-icon">🏠</span>
+              <span>Inicio</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item" [class.active]="isMenuSectionActive('listas-publicas')">
+          <button type="button" class="menu-button" (click)="setActiveMenuSection('listas-publicas')">
+            <div class="menu-text">
+              <span class="menu-icon">🌐</span>
+              <span>Listas Públicas</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="USUARIO_ROUTES.listas" [queryParams]="{ tipo: 'privadas' }">
+            <div class="menu-text">
+              <span class="menu-icon">📋</span>
+              <span>Mis Listas</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="USUARIO_ROUTES.crearListaPrivada">
+            <div class="menu-text">
+              <span class="menu-icon">➕</span>
+              <span>Crear Lista Privada</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item" [class.active]="isMenuSectionActive('favoritos')">
+          <button type="button" class="menu-button" (click)="loadFavorites()">
+            <div class="menu-text">
+              <span class="menu-icon">⭐</span>
+              <span>Favoritos</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+      
+      <div class="menu-divider"></div>
+      
+      <ul class="menu-list">
+        <li class="menu-item logout">
+          <button (click)="logout()" class="logout-button">
+            <div class="menu-text">
+              <span class="menu-icon">🚪</span>
+              <span>Cerrar Sesión</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content" *ngIf="contenido">
+    <header class="app-header">
+      <h2>{{ contenido.titulo || 'Visualizador de contenido' }} {{ contenido.tipo === 'AUDIO' ? '🎧' : '🎥' }}</h2>
+    </header>
+
+    <section class="viewer-section">
+      <div class="media-wrapper">
+        <!-- Video player -->
+        <iframe #mediaPlayer *ngIf="contenido?.tipo === 'VIDEO'" [src]="getEmbedUrl()" [title]="contenido.titulo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+        <!-- Audio player con miniatura de fondo -->
+        <div class="audio-player" *ngIf="contenido?.tipo === 'AUDIO'">
+          <div class="audio-background" [style.background-image]="thumbnailStyle">
+            <div class="audio-overlay">
+              <audio #mediaPlayer [src]="mediaSrc" controls controlsList="nodownload"></audio>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="metadata">
+        <div class="metadata-left">
+          <!-- Rating Section -->
+          <div class="rating-section">
+            <div class="rating-row">
+              <div class="rating-display">
+                <span class="section-title">Valoración media:</span>
+                <div class="section-content stars-display">
+                  <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                    {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                  </span>
+                  <span class="rating-value">({{ (contenido.valoracionMedia || 0).toFixed(1) }})</span>
+                </div>
+              </div>
+              <div class="rating-vote">
+                <span class="section-title">Tu valoración:</span>
+                <div class="section-content stars-interactive">
+                  <button
+                    *ngFor="let star of [1,2,3,4,5]"
+                    type="button"
+                    class="star interactive"
+                    [class.selected]="star <= contenido.valoracionUsuario"
+                    [disabled]="contenido.valoracionUsuario > 0"
+                    (click)="contenido.valoracionUsuario > 0 ? null : rateContent(star)"
+                    (mouseenter)="contenido.valoracionUsuario > 0 ? null : hoverRating = star"
+                    (mouseleave)="contenido.valoracionUsuario > 0 ? null : hoverRating = 0"
+                    [attr.aria-label]="'Valorar con ' + star + ' estrella' + (star > 1 ? 's' : '')">
+                    {{ contenido.valoracionUsuario > 0 ? (contenido.valoracionUsuario >= star ? '★' : '☆') : (hoverRating >= star || (!hoverRating && contenido.valoracionUsuario >= star)) ? '★' : '☆'}}
+                  </button>
+                </div>
+              </div>
+              <div class="favorite-toggle">
+                <button 
+                  type="button"
+                  class="favorite-button" 
+                  [class.is-favorite]="isFavorite"
+                  (click)="toggleFavorite()"
+                  [attr.aria-label]="isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'">
+                  <span class="heart-icon">{{ isFavorite ? '❤️' : '🤍' }}</span>
+                  <span class="favorite-text">{{ isFavorite ? 'En favoritos' : 'Añadir a favoritos' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="meta-description">
+            <span class="section-title">Descripción:</span>
+            <p class="section-content">{{ contenido.descripcion }}</p>
+          </div>
+        </div>
+        <div class="metadata-right">
+          <div class="meta-item">
+            <span class="section-title">Tags:</span>
+            <span class="section-content">{{ contenido.tags.join(', ') }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="section-title">Especialidad:</span>
+            <span class="section-content">{{ contenido.especialidad }}</span>
+            <span class="section-title">VIP:</span>
+            <span class="section-content">{{ contenido.esVIP ? 'Si' : 'No' }}</span>
+            <span class="section-title">Restricción de Edad:</span>
+            <span class="section-content">{{ contenido.restriccionEdad }}</span>
+            <span class="section-title">Fecha de Expiración:</span>
+            <span class="section-content">{{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

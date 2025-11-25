@@ -1,0 +1,71 @@
+// ===========================
+// COMPONENTES DE SEPARADORES
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ===========================
+// SEPARADOR BASE
+// ===========================
+.separator {
+  display: flex;
+  align-items: center;
+  margin: $spacing-xl 0;
+  
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba($text-secondary, 0.3) 20%, 
+      rgba($text-secondary, 0.6) 50%, 
+      rgba($text-secondary, 0.3) 80%, 
+      transparent 100%);
+  }
+  
+  @include responsive(sm) {
+    margin: $spacing-lg 0;
+  }
+}
+
+.separator-text {
+  padding: 0 $spacing-lg;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  text-align: center;
+  background: transparent;
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+  
+  @include responsive(sm) {
+    padding: 0 $spacing-md;
+    font-size: $font-size-xs;
+  }
+}
+
+// ===========================
+// VARIANTES DE SEPARADOR
+// ===========================
+
+// Separador con tema
+.separator.themed {
+  &::before,
+  &::after {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(var(--primary-color), 0.3) 20%, 
+      rgba(var(--primary-color), 0.6) 50%, 
+      rgba(var(--primary-color), 0.3) 80%, 
+      transparent 100%);
+  }
+  
+  .separator-text {
+    color: var(--primary-color);
+  }
+}
+

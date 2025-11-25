@@ -1,0 +1,335 @@
+// ===========================
+// LAYOUT PRINCIPAL
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.registro-container {
+  @include container-base;
+  @include flex-center;
+  @include gradient-background($user-primary-color, $user-secondary-color);
+  
+  // Override para perfil de usuario - usar más ancho
+  &.usuario-variant {
+    padding: $spacing-lg $spacing-sm;
+    max-width: 100vw;
+    
+    @include responsive(lg) {
+      padding: $spacing-lg $spacing-md;
+    }
+  }
+}
+
+.back-to-home {
+  position: absolute;
+  top: $spacing-xl;
+  left: $spacing-xl;
+  @include flex-center;
+  gap: $spacing-sm;
+  @include glassmorphism(0.9);
+  border: none;
+  padding: 0.75rem $spacing-md;
+  border-radius: 12px;
+  color: $gray-700;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-normal;
+  font-family: inherit;
+  font-size: $font-size-sm;
+  z-index: $z-fixed;
+  box-shadow: $default-shadow;
+
+  &:hover {
+    background: $white;
+    color: $gray-800;
+    transform: translateX(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .back-icon {
+    font-size: 1.2rem;
+  }
+}
+
+.registro-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  width: 100%;
+  @include card-base;
+  min-height: 550px;
+  border: 2px solid var(--primary-color);
+  margin-top: $spacing-lg;
+
+  @include responsive(lg) {
+    max-width: 600px;
+    margin-top: $spacing-xxl;
+  }
+}
+
+// ===========================
+// PERFIL DE USUARIO
+// ===========================
+
+// Card específica para perfil de usuario
+.perfil-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  width: 90%;
+  @include card-base;
+  min-height: 450px;
+  border: 2px solid var(--primary-color);
+  margin-top: $spacing-lg;
+  margin-left: auto;
+  margin-right: auto;
+
+  // Asegurar el orden correcto de las secciones
+  .profile-header {
+    order: 1;
+  }
+
+  .profile-info-section {
+    order: 2;
+  }
+
+  .profile-actions-section {
+    order: 3;
+  }
+
+  @include responsive(lg) {
+    max-width: 900px;
+    width: 95%;
+    margin-top: $spacing-xl;
+  }
+
+  @include responsive(md) {
+    max-width: 95vw;
+    width: 95%;
+    margin: $spacing-md auto;
+  }
+}
+
+// Layout del perfil
+.profile-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: $spacing-lg;
+  align-items: start;
+  width: 100%;
+
+  @include responsive(lg) {
+    grid-template-columns: 220px 1fr;
+    gap: $spacing-md;
+  }
+
+  @include responsive(md) {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
+  }
+}
+
+// Los headers ahora utilizan la clase unificada .app-header
+
+// Sección de información del perfil
+.profile-info-section {
+  flex: 1;
+  padding: $spacing-lg;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  order: 2;
+  width: 100%;
+
+  @include responsive(md) {
+    padding: $spacing-md;
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-sm $spacing-md;
+  }
+}
+
+// Sección de acciones/botones
+.profile-actions-section {
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  order: 3;
+
+  .actions-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: $spacing-md;
+    width: 100%;
+    margin: 0;
+
+    &.edit-mode {
+      justify-content: center;
+      
+      .action-btn {
+        flex: 1;
+        max-width: 200px;
+        min-width: 180px;
+      }
+    }
+
+    // Botones con tamaño uniforme
+    .usuario-btn,
+    .login-link {
+      flex: 1;
+      max-width: 200px;
+      min-width: 180px;
+      height: 50px;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    @include responsive(md) {
+      flex-direction: column;
+      gap: $spacing-sm;
+      
+      .action-btn,
+      .usuario-btn,
+      .login-link {
+        width: 100%;
+        max-width: none;
+        min-width: auto;
+        flex: none;
+      }
+    }
+  }
+
+  @include responsive(md) {
+    padding: $spacing-lg $spacing-md;
+  }
+}
+
+.form-section {
+  padding: $spacing-lg;
+  @include flex-column;
+  justify-content: flex-start;
+  width: 100%;
+  z-index: 1;
+  position: relative;
+
+  @include responsive(md) {
+    padding: $spacing-md;
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-sm;
+  }
+}
+
+.tips-section {
+  @include gradient-background($light-gray, $gray-100);
+  padding: $spacing-lg;
+  border-left: 5px solid var(--primary-color);
+  @include flex-column;
+  border-radius: 12px;
+  height: 96%;
+  min-height: 550px;
+  justify-content: space-between;
+
+  @include responsive(md) {
+    padding: $spacing-lg;
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-md;
+  }
+}
+
+// Responsivo para layout de registro
+@include responsive(md) {
+  .registro-card {
+    grid-template-columns: 1fr !important;
+    gap: $spacing-lg !important;
+  }
+
+  .tips-section {
+    min-height: auto !important;
+    order: 2 !important; // Consejos al final en móvil
+  }
+
+  .form-section {
+    order: 1 !important; // Formulario primero en móvil
+  }
+}
+
+// ===========================
+// LAYOUT DASHBOARD USUARIO
+// ===========================
+
+// Sidebar Menu
+.sidebar-menu {
+  background: $white;
+  border-right: 1px solid $gray-200;
+  padding: $spacing-lg;
+  overflow-y: auto;
+  position: fixed;
+  height: 100vh;
+  width: 280px;
+  z-index: 100;
+}
+
+// Main Content Area
+.main-content {
+  margin-left: 280px;
+  min-height: 100vh;
+  background: $light-gray;
+}
+
+// Search Header
+.search-header {
+  background: $white;
+  border-bottom: 1px solid $gray-200;
+  padding: $spacing-md $spacing-lg;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// Responsivo
+@include responsive(lg) {
+  .sidebar-menu {
+    width: 240px;
+  }
+  
+  .main-content {
+    margin-left: 240px;
+  }
+}
+
+@include responsive(md) {
+  .sidebar-menu {
+    position: fixed;
+    left: -280px;
+    transition: left 0.3s ease;
+    
+    &.mobile-open {
+      left: 0;
+    }
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+}
+
+
+
+
+

@@ -1,0 +1,637 @@
+// ===========================
+// COMPONENTES DE TARJETAS
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+@use 'sass:color';
+
+// ===========================
+// TARJETAS BASE
+// ===========================
+
+// Tarjeta de registro base
+.registro-card {
+  background: rgba($white, 0.98);
+  border-radius: 24px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 
+              0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  backdrop-filter: blur(20px);
+  padding: $spacing-xxl;
+  width: 100%;
+  position: relative;
+  
+  // Layout de dos columnas para formulario y consejos
+  display: grid;
+  grid-template-columns: 2fr 1fr; // Formulario más ancho que consejos
+  gap: $spacing-xl;
+  align-items: start;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.01) 0%, rgba(0, 0, 0, 0.02) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  @include responsive(lg) {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    gap: $spacing-lg;
+  }
+
+  @include responsive(md) {
+    padding: $spacing-xl;
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-lg;
+  }
+}
+
+// Tarjetas de inicio y login 
+.inicio-card,
+.login-card:not(.login-section .login-card) {
+  background: rgba($white, 0.98);
+  border-radius: 24px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 
+              0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  backdrop-filter: blur(20px);
+  padding: $spacing-2xl $spacing-xxl;
+  max-width: 900px;
+  width: 100%;
+  position: relative;
+  animation: slideInUp 0.8s ease-out;
+
+  @include responsive(lg) {
+    max-width: 700px;
+    padding: $spacing-xl $spacing-xxl;
+  }
+
+  @include responsive(md) {
+    max-width: 500px;
+    padding: $spacing-xl $spacing-lg;
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-lg;
+  }
+}
+
+
+
+// ===========================
+// CONTENEDORES TEMÁTICOS
+// ===========================
+.registro-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+
+  // Tamaños específicos por tipo de registro
+  &.usuario-container .registro-card,
+  &.gestor-container .registro-card {
+    max-width: 1100px;
+  }
+
+  @include responsive(md) {
+    padding: $spacing-md;
+  }
+}
+
+.inicio-container,
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+
+  @include responsive(md) {
+    padding: $spacing-md;
+  }
+}
+
+// ===========================
+// TARJETAS DE PERFIL
+// ===========================
+// PERFIL DE USUARIO - COMPONENTES DE CARDS
+// ===========================
+
+// Sidebar del perfil con avatar y datos básicos
+.profile-sidebar {
+  @include flex-column;
+  align-items: center;
+  text-align: center;
+  gap: $spacing-sm;
+  padding: $spacing-md 0;
+  
+  .user-identity {
+    @include flex-column;
+    gap: $spacing-xs;
+    
+    .user-name {
+      font-size: $font-size-lg;
+      font-weight: 700;
+      margin: 0;
+      color: $text-primary;
+      line-height: 1.2;
+    }
+    
+    .user-email {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin: 0;
+      opacity: 0.8;
+    }
+    
+    .user-status {
+      margin-top: $spacing-xs;
+      
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: 15px;
+        font-size: $font-size-xs;
+        font-weight: 600;
+        
+        &.vip {
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          color: $white;
+        }
+        
+        &.regular {
+          background: $gray-100;
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+}
+
+// Contenido principal del perfil con información detallada
+.profile-content {
+  padding-left: $spacing-md;
+  flex: 1;
+  width: 100%;
+  
+  .info-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg $spacing-xl;
+    width: 100%;
+
+    @include responsive(md) {
+      grid-template-columns: 1fr;
+      gap: $spacing-md;
+    }
+    
+    .info-item {
+      padding: $spacing-sm 0;
+      border-bottom: 1px solid rgba($gray-200, 0.5);
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .field-label {
+        display: block;
+        font-weight: 600;
+        color: $text-primary;
+        margin-bottom: $spacing-xs;
+        font-size: $font-size-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+      }
+      
+      .info-value {
+        display: block;
+        font-size: $font-size-base;
+        color: $text-secondary;
+        font-weight: 500;
+        line-height: 1.4;
+        
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: $spacing-xs;
+          padding: $spacing-xs $spacing-sm;
+          border-radius: 15px;
+          font-size: $font-size-xs;
+          font-weight: 600;
+          
+          &.vip {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: $white;
+          }
+          
+          &.regular {
+            background: $gray-100;
+            color: $text-secondary;
+          }
+        }
+      }
+    }
+  }
+  
+  // Estilos específicos para el modo edición que mantienen la misma apariencia
+  .info-display.edit-mode {
+    .info-item {
+      .info-input {
+        background: transparent;
+        border: none;
+        margin: 0;
+        padding: 0;
+        font-size: $font-size-base;
+        color: $text-secondary;
+        font-weight: 500;
+        line-height: 1.4;
+        font-family: inherit;
+        width: 100%;
+        outline: none;
+        
+        &:focus {
+          box-shadow: 0 1px 0 0 rgba($text-primary, 0.3);
+        }
+      }
+    }
+  }
+}
+
+// Modal cards
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba($gray-800, 0.8);
+  @include flex-center;
+  z-index: $z-modal-backdrop;
+  backdrop-filter: blur(5px);
+}
+
+.modal-card {
+  background: $white;
+  border-radius: 20px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+  
+  .modal-header {
+    padding: $spacing-xxl $spacing-xxl $spacing-lg;
+    border-bottom: 1px solid $gray-200;
+    
+    .modal-title {
+      margin: 0;
+      font-size: $font-size-xl;
+      color: $text-primary;
+      text-align: center;
+    }
+  }
+  
+  .modal-body {
+    padding: $spacing-xl $spacing-xxl;
+    
+    .modal-text {
+      font-size: $font-size-base;
+      color: $text-primary;
+      margin-bottom: $spacing-md;
+      text-align: center;
+    }
+    
+    .modal-warning {
+      font-size: $font-size-sm;
+      color: $error-color;
+      background: rgba($error-color, 0.1);
+      padding: $spacing-md;
+      border-radius: $border-radius;
+      border-left: 4px solid $error-color;
+      margin: 0;
+      text-align: left;
+    }
+  }
+  
+  .modal-actions {
+    padding: $spacing-lg $spacing-xxl $spacing-xxl;
+    @include flex-center;
+    gap: $spacing-lg;
+    
+    @include responsive(md) {
+      @include flex-column;
+      gap: $spacing-md;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// Modal VIP específico
+.modal-card .vip-benefits {
+  margin: $spacing-lg 0;
+  
+  h4 {
+    font-size: $font-size-base;
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+    font-weight: 600;
+  }
+  
+  .benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      padding: $spacing-xs 0;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+    }
+  }
+}
+
+.modal-warning.vip-price {
+  background: linear-gradient(135deg, rgba(#FFD700, 0.1) 0%, rgba(#FFA500, 0.05) 100%);
+  border-left-color: #FFD700;
+  color: color.adjust(#FFD700, $lightness: -20%);
+  font-weight: 600;
+  text-align: center;
+}
+
+// Modal de cancelación VIP
+.modal-card .vip-loss-info {
+  margin: $spacing-lg 0;
+  
+  h4 {
+    font-size: $font-size-base;
+    color: $error-color;
+    margin-bottom: $spacing-md;
+    font-weight: 600;
+  }
+  
+  .benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      padding: $spacing-xs 0;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      opacity: 0.7;
+      text-decoration: line-through;
+    }
+  }
+}
+
+// ===========================
+// TARJETAS DE ESTADÍSTICAS
+// ===========================
+
+.statistics-card {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+
+  .card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stats-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin-top: $spacing-lg;
+    overflow-y: auto;
+    max-height: 400px;
+    padding-right: $spacing-xs;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $gray-100;
+      border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $gray-300;
+      border-radius: 10px;
+
+      &:hover {
+        background: $gray-600;
+      }
+    }
+  }
+
+  .stats-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: rgba($gray-100, 0.5);
+    border-radius: $border-radius;
+    border: 1px solid rgba($gray-200, 0.5);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba($gray-100, 0.7);
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .rank-number {
+      font-size: $font-size-xl;
+      font-weight: 700;
+      color: $gestor_primary-color;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    .list-thumbnail-mini {
+      width: 60px;
+      height: 45px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .list-info-compact {
+      flex: 1;
+      min-width: 0;
+
+      .list-title-mini {
+        font-size: $font-size-sm;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0 0 $spacing-xs 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .list-meta-mini {
+        display: flex;
+        gap: $spacing-sm;
+        font-size: $font-size-xs;
+        color: $text-secondary;
+        flex-wrap: wrap;
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: $spacing-xs;
+
+          .meta-icon {
+            font-size: 12px;
+          }
+        }
+
+        .stars-mini {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+
+          .star {
+            color: #FFD700;
+            font-size: 12px;
+          }
+
+          .rating-number {
+            margin-left: $spacing-xs;
+            font-size: $font-size-xs;
+            color: $text-secondary;
+          }
+        }
+      }
+    }
+  }
+
+  .empty-stats {
+    @include flex-column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-2xl;
+    color: $text-secondary;
+    text-align: center;
+
+    .empty-icon {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: $spacing-md;
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-sm;
+      opacity: 0.7;
+    }
+  }
+}
+
+// Estilos específicos para la tarjeta de categorías
+.categories-card {
+  .categories-list {
+    gap: $spacing-lg;
+  }
+
+  .category-item {
+    padding: $spacing-md;
+    background: rgba($gray-100, 0.5);
+    border-radius: $border-radius;
+    border: 1px solid rgba($gray-200, 0.5);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba($gray-100, 0.7);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      margin-bottom: $spacing-sm;
+
+      .category-rank {
+        font-size: $font-size-xl;
+        font-weight: 700;
+        color: $gestor_primary-color;
+        min-width: 32px;
+        text-align: center;
+      }
+
+      .category-name {
+        font-size: $font-size-base;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0;
+      }
+    }
+
+    .category-stats {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-xs;
+
+      .stat-bar {
+        width: 100%;
+        height: 8px;
+        background: $gray-200;
+        border-radius: 10px;
+        overflow: hidden;
+
+        .stat-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, $gestor_primary-color, $gestor_secondary-color);
+          border-radius: 10px;
+          transition: width 0.6s ease;
+        }
+      }
+
+      .category-views {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        font-size: $font-size-xs;
+        color: $text-secondary;
+
+        .meta-icon {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+

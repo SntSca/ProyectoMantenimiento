@@ -1,0 +1,84 @@
+// ===========================
+// VARIABLES SCSS
+// ===========================
+
+// Colores del Usuario 
+$user-primary-color: #E91E63;
+$user-primary: #E91E63; // Alias corto
+$user-secondary-color: #1A1A1A;
+$user-accent-color: #C2185B;
+
+// Colores del Gestor 
+$gestor-primary-color: #00ACC1;
+$gestor-primary: #00ACC1; // Alias corto
+$gestor-secondary-color: #1A1A1A;
+$gestor-accent-color: #0097A7;
+
+// Colores Neutros
+$white: #FFFFFF;
+$light-gray: #F8FFFE;
+$gray-100: #F1F5F4;
+$gray-200: #E5EFED;
+$gray-300: #D1E7E4;
+$gray-600: #4A6B67;
+$gray-700: #334A47;
+$gray-800: #1E2D2B;
+
+// Colores del Sistema
+$error-color: #EF476F;
+$success-color: #06D6A0;
+
+// Colores de texto
+$text-color: $gray-800;
+$text-primary: $gray-800;
+$text-secondary: $gray-600;
+
+
+// Gradientes
+$user-gradient: linear-gradient(135deg, $user-primary, $user-accent-color);
+$gestor-gradient: linear-gradient(135deg, $gestor-primary, $gestor-accent-color);
+
+// Variables de Layout
+$border-radius: 8px;
+
+// Sombras
+$user-shadow: 0 4px 16px rgba(233, 30, 99, 0.15);
+$gestor-shadow: 0 4px 16px rgba(0, 172, 193, 0.15);
+$default-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+$light-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+// Breakpoints
+$breakpoint-sm: 480px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+// Espaciado
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-xxl: 2.5rem;
+$spacing-2xl: 3rem;
+
+// Tipografía
+$font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 1.875rem;
+
+// Transiciones
+$transition-fast: 0.2s ease;
+$transition-normal: 0.3s ease;
+$transition-slow: 0.5s ease;
+
+// Z-index
+$z-fixed: 1020;
+$z-modal-backdrop: 1030;
+$z-modal: 1040;
+$z-popover: 1050;

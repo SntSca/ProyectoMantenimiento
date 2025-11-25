@@ -1,0 +1,1080 @@
+<div class="dashboard-container gestor-variant">
+  <!-- Menu Lateral Izquierdo -->
+    <aside class="sidebar-menu">
+      <button type="button" class="user-profile" [routerLink]="ADMINISTRADOR_ROUTES.perfil">
+        <div class="avatar-container">
+          <img src="{{ actualAdministrator.fotoPerfil || 'assets/porDefecto.jpg' }}" alt="Avatar del usuario" class="user-avatar">
+        </div>
+        <div class="user-info">
+          <h3 class="user-name">{{ actualAdministrator.alias }} </h3>
+          <p class="profile-hint">👤 Ver perfil</p>
+        </div>
+      </button>
+      
+      <nav class="menu-navigation">
+        <ul class="menu-list">
+          <li class="menu-item" [class.active]="seccionActual === 'inicio'" (click)="cambiarSeccion('inicio')" (keydown.enter)="cambiarSeccion('inicio')" (keydown.space)="cambiarSeccion('inicio')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">🏠</span>
+                <span>Panel de Administración</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item" [class.active]="seccionActual === 'usuarios'" (click)="cambiarSeccion('usuarios')" (keydown.enter)="cambiarSeccion('usuarios')" (keydown.space)="cambiarSeccion('usuarios')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">👤</span>
+                <span>Usuarios</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item" [class.active]="seccionActual === 'gestores'" (click)="cambiarSeccion('gestores')" (keydown.enter)="cambiarSeccion('gestores')" (keydown.space)="cambiarSeccion('gestores')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">📝</span>
+                <span>Gestores <br>de Contenido</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item" [class.active]="seccionActual === 'administradores'" (click)="cambiarSeccion('administradores')" (keydown.enter)="cambiarSeccion('administradores')" (keydown.space)="cambiarSeccion('administradores')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">⚙️</span>
+                <span>Administradores</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item" [class.active]="seccionActual === 'contenidos'" (click)="cambiarSeccion('contenidos')" (keydown.enter)="cambiarSeccion('contenidos')" (keydown.space)="cambiarSeccion('contenidos')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">🎬</span>
+                <span>Contenidos</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ADMINISTRADOR_ROUTES.listas">
+              <div class="menu-text">
+                <span class="menu-icon">📋</span>
+                <span>Listas de <br>Reproducción</span>
+              </div>
+            </button>
+          </li>
+
+          <li class="menu-item" [class.active]="seccionActual === 'estadisticas'" (click)="cambiarSeccion('estadisticas')" (keydown.enter)="cambiarSeccion('estadisticas')" (keydown.space)="cambiarSeccion('estadisticas')">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">📊</span>
+                <span>Estadísticas</span>
+              </div>
+            </button>
+          </li>
+        </ul>
+        
+        <div class="menu-divider"></div>
+        
+        <ul class="menu-list">
+          <li class="menu-item logout">
+            <button (click)="logout()" class="logout-button">
+              <div class="menu-text">
+                <span class="menu-icon">🚪</span>
+                <span>Cerrar Sesión</span>
+              </div>
+            </button>
+          </li>
+        </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Barra de Búsqueda y Filtros -->
+    <header class="search-header" *ngIf="seccionActual === 'usuarios' || seccionActual === 'gestores' || seccionActual === 'administradores' || seccionActual === 'contenidos'">
+      <div class="search-container">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            [placeholder]="seccionActual === 'usuarios' ? 'Buscar usuarios, nombres, emails, alias...' : seccionActual === 'gestores' ? 'Buscar creadores, nombres, categorías...' : seccionActual === 'administradores' ? 'Buscar administradores, nombres, emails...' : 'Buscar videos, títulos, creadores...'" 
+            [(ngModel)]="searchTermValue"
+            (keyup.enter)="buscar()"
+            class="search-input"
+            [disabled]="isEditingMode">
+          <button class="search-button" (click)="buscar()" [disabled]="isEditingMode">
+            <span class="search-icon">🔍</span>
+          </button>
+        </div>
+      </div>
+
+      <button  
+        type="button" 
+        class="view-toggle-btn create-btn"
+        *ngIf="seccionActual === 'administradores'"
+        [disabled]="isEditingMode"
+        (click)="iniciarCreacionAdministrador()"
+        [attr.aria-label]="'Crear nuevo administrador'">
+        <span class="view-icon">➕</span>
+        <span class="view-text">Nuevo Admin</span>
+      </button>     
+
+      <!-- Botones de filtro -->
+      <div class="view-toggle">
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          *ngIf="seccionActual === 'gestores'"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorTipoContenido(isTipoContenido === null ? 'AUDIO' : isTipoContenido === true ? 'VIDEO' : null); isTipoContenido = isTipoContenido === null ? true : isTipoContenido === true ? false : null"
+          [attr.aria-label]="isTipoContenido === null ? 'Filtrar por audio' : isTipoContenido === true ? 'Filtrar por video' : 'Mostrar todos'">
+          <span class="view-icon">{{ isTipoContenido === null ? '🎬' : isTipoContenido === true ? '🎧' : '🎥' }}</span>
+          <span class="view-text">{{ isTipoContenido === null ? 'Contenido' : isTipoContenido === true ? 'Audio' : 'Video' }}</span>
+        </button>
+
+        <button  
+          type="button" 
+          class="view-toggle-btn"
+          *ngIf="seccionActual === 'usuarios' || seccionActual === 'gestores'"
+          [disabled]="isEditingMode"
+          (click)="toggleEstado()"
+          [attr.aria-label]="filtroEstado === null ? 'Mostrar todos' : filtroEstado === true ? 'Filtrar por bloqueados' : 'Filtrar por activos'">
+          <span class="view-icon">{{ filtroEstado === null ? '🚫' : filtroEstado === true ? '🔒' : '🟢' }}</span>
+          <span class="view-text">{{ filtroEstado === null ? 'Bloqueo' : filtroEstado === true ? 'Bloqueados' : 'Activos' }}</span>
+        </button>
+
+        <button  
+          type="button" 
+          class="view-toggle-btn"
+          *ngIf="seccionActual === 'usuarios'" 
+          [disabled]="isEditingMode"
+          (click)="toggleVip()"
+          [attr.aria-label]="filtroVip === null ? 'Mostrar todos' : filtroVip === true ? 'Filtrar por VIP' : 'Filtrar por no VIP'">
+          <span class="view-icon">{{ filtroVip === null ? '👥' : filtroVip === true ? '⭐' : '⚪' }}</span>
+          <span class="view-text">{{ filtroVip === null ? 'Todos' : filtroVip === true ? 'VIP' : 'Estandar' }}</span>
+        </button>
+
+        <button  
+          type="button" 
+          class="view-toggle-btn"
+          *ngIf="seccionActual === 'gestores'" 
+          [disabled]="isEditingMode"
+          (click)="toggleValidacion()"
+          [attr.aria-label]="filtroValidacion === null ? 'Mostrar todos' : filtroValidacion === true ? 'Filtrar por no validados' : 'Filtrar por validados'">
+          <span class="view-icon">{{ filtroValidacion === null ? '❓' : filtroValidacion === true ? '✅' : '❌' }}</span>
+          <span class="view-text">{{ filtroValidacion === null ? 'Validacion' : filtroValidacion === true ? 'Validados' : ' No validados' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          *ngIf="seccionActual === 'contenidos'"
+          (click)="filtrarPorTipoContenidoContenidos(isTipoContenidoContenidos === null ? 'AUDIO' : isTipoContenidoContenidos === true ? 'VIDEO' : null); isTipoContenidoContenidos = isTipoContenidoContenidos === null ? true : isTipoContenidoContenidos === true ? false : null"
+          [attr.aria-label]="isTipoContenidoContenidos === null ? 'Filtrar por audio' : isTipoContenidoContenidos === true ? 'Filtrar por video' : 'Mostrar todos'">
+          <span class="view-icon">{{ isTipoContenidoContenidos === null ? '🎬' : isTipoContenidoContenidos === true ? '🎧' : '🎥' }}</span>
+          <span class="view-text">{{ isTipoContenidoContenidos === null ? 'Contenido' : isTipoContenidoContenidos === true ? 'Audio' : 'Video' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          *ngIf="seccionActual === 'contenidos'"
+          (click)="toggleVisibilidadContenidos()"
+          [attr.aria-label]="filtroVisibilidadContenidos === null ? 'Mostrar todos' : filtroVisibilidadContenidos === true ? 'Filtrar por visibles' : 'Filtrar por no visibles'">
+          <span class="view-icon">{{ filtroVisibilidadContenidos === null ? '👁️' : filtroVisibilidadContenidos === true ? '✅' : '🚫' }}</span>
+          <span class="view-text">{{ filtroVisibilidadContenidos === null ? 'Visibilidad' : filtroVisibilidadContenidos === true ? 'Visibles' : 'Ocultos' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          *ngIf="seccionActual === 'contenidos'"
+          (click)="toggleRestriccionEdad()"
+          [attr.aria-label]="filtroRestriccionEdad === null ? 'Sin filtro de edad' : 'Máximo +' + filtroRestriccionEdad">
+          <span class="view-icon">🎯</span>
+          <span class="view-text">{{ filtroRestriccionEdad === null ? 'Edad' : '+' + filtroRestriccionEdad }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          *ngIf="seccionActual === 'contenidos'"
+          (click)="toggleView()"
+          [attr.aria-label]="isListView ? 'Cambiar a vista de cuadrícula' : 'Cambiar a vista de lista'">
+          <span class="view-icon">{{ isListView ? '⊞' : '☰' }}</span>
+          <span class="view-text">{{ isListView ? 'Cuadrícula' : 'Lista' }}</span>
+        </button>
+
+        <button  
+          type="button" 
+          class="view-toggle-btn reset-btn"
+          [disabled]="isEditingMode"
+          (click)="restablecerFiltros()"
+          [attr.aria-label]="'Restablecer todos los filtros'">
+          <span class="view-icon">🔄</span>
+          <span class="view-text">Restablecer</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Panel de Inicio - Funciones del Administrador -->
+    <section class="admin-panel" *ngIf="seccionActual === 'inicio'">
+      <div class="app-header">
+        <h2 class="header-title">Centro de Control Administrativo</h2>
+        <p class="header-subtitle">Gestiona todos los aspectos de la plataforma desde un solo lugar</p>
+      </div>
+
+      <div class="panel-grid">
+        <!-- Tarjeta 1: Gestión de Usuarios -->
+        <div class="panel-card" (click)="cambiarSeccion('usuarios')" (keydown.enter)="cambiarSeccion('usuarios')">
+          <div class="card-icon">
+            <span class="icon-emoji">👥</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Gestión de Usuarios</h3>
+            <p class="card-description">
+              Administra la base de usuarios, controla accesos VIP, bloquea cuentas problemáticas y supervisa la actividad general.
+            </p>
+            <div class="card-stats">
+              <span class="stat-item">
+                <span class="stat-number">{{ userProfile.length }}</span>
+                <span class="stat-label">Usuarios</span>
+              </span>
+              <span class="stat-item">
+                <span class="stat-number">{{ vipUserCount }}</span>
+                <span class="stat-label">VIP</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-action">
+            <span class="action-text">Administrar</span>
+            <span class="action-icon">→</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2: Gestión de Gestores -->
+        <div class="panel-card" (click)="cambiarSeccion('gestores')" (keydown.enter)="cambiarSeccion('gestores')">
+          <div class="card-icon">
+            <span class="icon-emoji">🎬</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Gestores de Contenido</h3>
+            <p class="card-description">
+              Supervisa y valida a los creadores de contenido, gestiona especialidades, controla validaciones y administra permisos.
+            </p>
+            <div class="card-stats">
+              <span class="stat-item">
+                <span class="stat-number">{{ gestorProfile.length }}</span>
+                <span class="stat-label">Gestores</span>
+              </span>
+              <span class="stat-item">
+                <span class="stat-number">{{ validatedGestorCount }}</span>
+                <span class="stat-label">Validados</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-action">
+            <span class="action-text">Supervisar</span>
+            <span class="action-icon">→</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 3: Gestión de Administradores -->
+        <div class="panel-card" (click)="cambiarSeccion('administradores')" (keydown.enter)="cambiarSeccion('administradores')" (keydown.space)="cambiarSeccion('administradores')">
+          <div class="card-icon">
+            <span class="icon-emoji">⚙️</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Equipo Administrativo</h3>
+            <p class="card-description">
+              Gestiona el equipo de administradores, asigna departamentos, controla accesos y mantiene la seguridad del sistema.
+            </p>
+            <div class="card-stats">
+              <span class="stat-item">
+                <span class="stat-number">{{ administratorProfile.length }}</span>
+                <span class="stat-label">Admins</span>
+              </span>
+              <span class="stat-item">
+                <span class="stat-number">{{ activeAdministradorCount }}</span>
+                <span class="stat-label">Activos</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-action">
+            <span class="action-text">Controlar</span>
+            <span class="action-icon">→</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 4: Contenidos y Estadísticas -->
+        <div class="panel-card" (click)="cambiarSeccion('contenidos')" (keydown.enter)="cambiarSeccion('contenidos')">
+          <div class="card-icon">
+            <span class="icon-emoji">📊</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Contenidos y Analytics</h3>
+            <p class="card-description">
+              Revisa estadísticas generales, monitorea el rendimiento de la plataforma y gestiona contenidos destacados.
+            </p>
+            <div class="card-stats">
+              <span class="stat-item">
+                <span class="stat-number">{{ contenidosVideos }}</span>
+                <span class="stat-label">Videos</span>
+              </span>
+              <span class="stat-item">
+                <span class="stat-number">{{ contenidosAudios }}</span>
+                <span class="stat-label">Audios</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-action">
+            <span class="action-text">Analizar</span>
+            <span class="action-icon">→</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel de Estadísticas -->
+    <section class="admin-panel" *ngIf="seccionActual === 'estadisticas'">
+      <div class="app-header">
+        <h2 class="header-title">Estadísticas de la Plataforma</h2>
+        <p class="header-subtitle">Análisis detallado del rendimiento y popularidad de contenidos</p>
+      </div>
+
+      <div class="panel-grid">
+        <!-- Tarjeta 1: Top 5 Videos Más Visualizados -->
+        <div class="panel-card statistics-card">
+          <div class="card-icon">
+            <span class="icon-emoji">👁️</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Top 5 Más Visualizados</h3>
+            <p class="card-description">
+              Los contenidos más populares de la plataforma por número de visualizaciones
+            </p>
+            <div class="stats-list">
+              <div *ngFor="let contenido of top5VideosVisualizados; let i = index" class="list-item stats-item">
+                <span class="rank-number">{{ i + 1 }}</span>
+                <div class="list-thumbnail-mini">
+                  <img [src]="contenido.miniatura" [alt]="contenido.titulo">
+                </div>
+                <div class="list-info-compact">
+                  <h4 class="list-title-mini">{{ contenido.titulo }}</h4>
+                  <div class="list-meta-mini">
+                    <span class="meta-item">
+                      <span class="meta-icon">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+                      {{ contenido.tipo }}
+                    </span>
+                    <span class="meta-item">
+                      <span class="meta-icon">👁️</span>
+                      {{ contenido.visualizaciones }} visitas
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="top5VideosVisualizados.length === 0" class="empty-stats">
+                <span class="empty-icon">📊</span>
+                <p>No hay datos disponibles</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2: Top 5 Mejor Valorados -->
+        <div class="panel-card statistics-card">
+          <div class="card-icon">
+            <span class="icon-emoji">⭐</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Top 5 Mejor Valorados</h3>
+            <p class="card-description">
+              Los contenidos con las mejores valoraciones promedio de los usuarios
+            </p>
+            <div class="stats-list">
+              <div *ngFor="let contenido of top5MejorValorados; let i = index" class="list-item stats-item">
+                <span class="rank-number">{{ i + 1 }}</span>
+                <div class="list-thumbnail-mini">
+                  <img [src]="contenido.miniatura" [alt]="contenido.titulo">
+                </div>
+                <div class="list-info-compact">
+                  <h4 class="list-title-mini">{{ contenido.titulo }}</h4>
+                  <div class="list-meta-mini">
+                    <span class="meta-item">
+                      <span class="meta-icon">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+                      {{ contenido.tipo }}
+                    </span>
+                    <span class="meta-item">
+                      <div class="stars-mini">
+                        <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                          {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                        </span>
+                        <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+                      </div>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="top5MejorValorados.length === 0" class="empty-stats">
+                <span class="empty-icon">⭐</span>
+                <p>No hay datos disponibles</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta 3: Top 5 Categorías Más Vistas -->
+        <div class="panel-card statistics-card categories-card">
+          <div class="card-icon">
+            <span class="icon-emoji">🏷️</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">Top 5 Categorías Más Vistas</h3>
+            <p class="card-description">
+              Las categorías más populares basadas en visualizaciones totales
+            </p>
+            <div class="stats-list categories-list">
+              <div *ngFor="let categoria of top5CategoriasVistas; let i = index" class="category-item">
+                <div class="category-header">
+                  <span class="rank-number category-rank">{{ i + 1 }}</span>
+                  <h4 class="category-name">{{ categoria.nombre }}</h4>
+                </div>
+                <div class="category-stats">
+                  <div class="stat-bar">
+                    <div 
+                      class="stat-bar-fill" 
+                      [style.width.%]="(categoria.visualizaciones / top5CategoriasVistas[0].visualizaciones) * 100">
+                    </div>
+                  </div>
+                  <span class="category-views">
+                    <span class="meta-icon">👁️</span>
+                    {{ categoria.visualizaciones }} visualizaciones totales
+                  </span>
+                </div>
+              </div>
+              <div *ngIf="top5CategoriasVistas.length === 0" class="empty-stats">
+                <span class="empty-icon">🏷️</span>
+                <p>No hay datos disponibles</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtros de Categoría para Gestores -->
+    <section class="filters-section" *ngIf="(seccionActual === 'gestores')">
+      <button 
+        type="button"
+        class="filters-toggle-btn"
+        [disabled]="isEditingMode"
+        (click)="toggleEspecialidadFilters()">
+        <span class="toggle-icon">{{ showEspecialidadFilters ? '▼' : '▶' }}</span>
+        <span class="toggle-text">Filtros por Especialidad</span>
+        <span class="filter-count" *ngIf="filtroEspecialidadGestores.length > 0">({{ filtroEspecialidadGestores.length }})</span>
+      </button>
+      
+      <div class="filters-container" [class.expanded]="showEspecialidadFilters">
+        <button
+          class="filters-btn clear-btn"
+          *ngIf="filtroEspecialidadGestores.length > 0"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorEspecialidad(null)">
+          ✕ Limpiar filtros
+        </button>
+        <button 
+          *ngFor="let especialidad of especialidades; let i = index"
+          class="filters-btn"
+          [class.active]="isEspecialidadActive(especialidad.nombre)"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorEspecialidad(especialidad.nombre)">
+          {{ especialidad.nombre }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Filtros de Categoría para Administradores -->
+    <section class="filters-section" *ngIf="(seccionActual === 'administradores')">
+      <button 
+        type="button"
+        class="filters-toggle-btn"
+        [disabled]="isEditingMode"
+        (click)="toggleDepartamentoFilters()">
+        <span class="toggle-icon">{{ showDepartamentoFilters ? '▼' : '▶' }}</span>
+        <span class="toggle-text">Filtros por Departamento</span>
+        <span class="filter-count" *ngIf="filtroDepartamento.length > 0">({{ filtroDepartamento.length }})</span>
+      </button>
+      
+      <div class="filters-container" [class.expanded]="showDepartamentoFilters">
+        <button
+          class="filters-btn clear-btn"
+          *ngIf="filtroDepartamento.length > 0"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorDepartamento(null)">
+          ✕ Limpiar filtros
+        </button>
+        <button 
+          *ngFor="let dep of DEPARTAMENTOS" 
+          class="filters-btn" 
+          [class.active]="isDepartamentoActive(dep)"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorDepartamento(dep)">
+          {{ dep }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Filtros de Categoría para Gestores -->
+    <section class="filters-section" *ngIf="(seccionActual === 'contenidos')">
+      <button 
+        type="button"
+        class="filters-toggle-btn"
+        [disabled]="isEditingMode"
+        (click)="toggleTagFilters()">
+        <span class="toggle-icon">{{ showTagFilters ? '▼' : '▶' }}</span>
+        <span class="toggle-text">Filtros por Tags</span>
+        <span class="filter-count" *ngIf="filtroTagsContenidos.length > 0">({{ filtroTagsContenidos.length }})</span>
+      </button>
+      
+      <div class="filters-container" [class.expanded]="showTagFilters">
+        <button
+          class="filters-btn clear-btn"
+          *ngIf="filtroTagsContenidos.length > 0"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorTagsContenidos(null)">
+          ✕ Limpiar filtros
+        </button>
+        <button 
+          *ngFor="let tag of tags; let i = index"
+          class="filters-btn"
+          [class.active]="isTagActive(tag.nombre)"
+          [disabled]="isEditingMode"
+          (click)="filtrarPorTagsContenidos(tag.nombre)">
+          {{ tag.nombre }}
+        </button>
+      </div>
+    </section>
+
+    
+    <!-- Contenido - Vista Lista -->
+    <div class="list-view" *ngIf="seccionActual === 'usuarios' || seccionActual === 'gestores' || seccionActual === 'administradores'">
+      <ul class="content-list">
+        <ng-container *ngIf="seccionActual === 'usuarios'">
+          <li *ngFor="let elemento of elementosFiltrados" class="list-item" [class.editing]="estaEditandoTarjeta(elemento)" (click)="iniciarEdicionTarjeta(elemento)" (keydown.enter)="iniciarEdicionTarjeta(elemento)" (keydown.space)="iniciarEdicionTarjeta(elemento)">
+            <div class="list-thumbnail" *ngIf="!estaEditandoTarjeta(elemento)">
+              <img [src]="elemento.fotoPerfil" [alt]="elemento.nombre">
+            </div>
+            <div class="list-content">
+              <!-- Modo visualización -->
+              <div *ngIf="!estaEditandoTarjeta(elemento)">
+                <h3 class="list-title">{{ elemento.nombre }} {{ elemento.primerApellido }} {{ elemento.segundoApellido }}</h3>
+                <p class="list-subtitle">{{ elemento.email }}</p>
+                <div class="list-meta">
+                  <span class="meta-item">
+                    <span class="meta-icon">👤</span>
+                    {{ elemento.alias }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="meta-icon">📅</span>
+                    {{ elemento.fechaNacimiento | date: 'dd/MM/yyyy' }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="meta-icon">{{ elemento.usuarioVip ? '⭐' : '⚪' }}</span>
+                    {{ elemento.usuarioVip ? 'VIP' : 'Estándar' }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Modo edición -->
+              <div *ngIf="estaEditandoTarjeta(elemento)" class="edit-mode">
+                <form *ngIf="editForm" [formGroup]="editForm">
+                  <div class="photo-upload">
+                      <div class="avatar-container">
+                        <img [src]="elemento.fotoPerfil" [alt]="'Avatar de ' + elemento.nombre" class="avatar">
+                      </div>
+                      <div class="upload-actions">
+                        <label for="foto-perfil-gestor" class="upload-btn">
+                          📷 Cambiar Foto
+                          <input type="file" id="foto-perfil-gestor" [accept]="acceptExtensionsImagen" (change)="onFileSelected($event)" hidden>
+                        </label>
+                      </div>
+                  </div>
+                  <small class="form-hint">
+                    Formatos soportados: {{ formatosImagen.extensiones.join(', ') }}
+                  </small>
+                  <div class="edit-fields">
+                    <div class="field-group">
+                      <label for="nombre">Nombre:</label>
+                      <input id="nombre" type="text" formControlName="nombre" class="edit-input" [class.input-error]="isFieldInvalid('nombre')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                        {{ getFieldError('nombre') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="primerApellido">Primer Apellido:</label>
+                      <input id="primerApellido" type="text" formControlName="primerApellido" class="edit-input" [class.input-error]="isFieldInvalid('primerApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                        {{ getFieldError('primerApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="segundoApellido">Segundo Apellido:</label>
+                      <input id="segundoApellido" type="text" formControlName="segundoApellido" class="edit-input" [class.input-error]="isFieldInvalid('segundoApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                        {{ getFieldError('segundoApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="alias">Alias:</label>
+                      <input id="alias" type="text" formControlName="alias" class="edit-input" [class.input-error]="isFieldInvalid('alias')" maxlength="12" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                        {{ getFieldError('alias') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+                      <input id="fechaNacimiento" type="date" formControlName="fechaNacimiento" class="edit-input" [class.input-error]="isFieldInvalid('fechaNacimiento')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('fechaNacimiento')">
+                        {{ getFieldError('fechaNacimiento') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="email">Email:</label>
+                      <input id="email" type="email" class="edit-input" [value]="elemento.email" readonly (click)="$event.stopPropagation()">
+                    </div>
+                    <div class="field-group">
+                      <label for="usuarioVip">Usuario VIP:</label>
+                      <input id="usuarioVip" type="text" class="edit-input" [value]="elemento.usuarioVip ? '⭐ VIP' : '⚪ Estándar'" readonly (click)="$event.stopPropagation()">
+                    </div>
+                  </div>
+                  <div class="edit-actions">
+                    <button class="save-button" (click)="guardarEdicionTarjeta(); $event.stopPropagation()">Guardar</button>
+                    <button class="cancel-button" (click)="cancelarEdicionTarjeta(); $event.stopPropagation()">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="list-actions" *ngIf="!estaEditandoTarjeta(elemento)">
+              <button 
+                class="action-button status-button" 
+                *ngIf="seccionActual === 'usuarios' || seccionActual === 'gestores'"
+                [class.blocked]="elemento.bloqueado"
+                [class.active]="!elemento.bloqueado"
+                [disabled]="isEditingMode"
+                (click)="toggleBloqueo(elemento); $event.stopPropagation()">
+                {{ elemento.bloqueado ? 'Bloqueado' : 'Activo' }}
+              </button>
+            </div>
+          </li>
+        </ng-container>
+        <ng-container *ngIf="seccionActual === 'gestores'">
+          <li *ngFor="let elemento of elementosFiltrados" class="list-item" [class.editing]="estaEditandoTarjeta(elemento)" (click)="iniciarEdicionTarjeta(elemento)" (keydown.enter)="iniciarEdicionTarjeta(elemento)" (keydown.space)="iniciarEdicionTarjeta(elemento)">
+            <div class="list-thumbnail" *ngIf="!estaEditandoTarjeta(elemento)">
+              <img [src]="elemento.fotoPerfil" [alt]="elemento.nombre">
+            </div>
+            <div class="list-content">
+              <!-- Modo visualización -->
+              <div *ngIf="!estaEditandoTarjeta(elemento)">
+                <h3 class="list-title">{{ elemento.nombre }} {{ elemento.primerApellido }} {{ elemento.segundoApellido }}</h3>
+                <p class="list-subtitle">{{ elemento.email }}</p>
+                <div class="list-meta">
+                  <span class="meta-item">
+                    <span class="meta-icon">👤</span>
+                    {{ elemento.alias }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="meta-icon">{{ elemento.tipoContenido === 'VIDEO' ? '🎥' : elemento.tipoContenido === 'AUDIO' ? '🎧' : '🎬' }}</span>
+                    {{ elemento.tipoContenido }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="meta-icon">🎯</span>
+                    {{ elemento.especialidad }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Modo edición -->
+              <div *ngIf="estaEditandoTarjeta(elemento)" class="edit-mode">
+                <form *ngIf="editForm" [formGroup]="editForm">
+                <div class="photo-upload">
+                      <div class="avatar-container">
+                        <img [src]="elemento.fotoPerfil" [alt]="'Avatar de ' + elemento.nombre" class="avatar">
+                      </div>
+                      <div class="upload-actions">
+                        <label for="foto-perfil-gestor" class="upload-btn">
+                          📷 Cambiar Foto
+                          <input type="file" id="foto-perfil-gestor" [accept]="acceptExtensionsImagen" (change)="onFileSelected($event)" hidden>
+                        </label>
+                      </div>
+                  </div>
+                  <small class="form-hint">
+                    Formatos soportados: {{ formatosImagen.extensiones.join(', ') }}
+                  </small>  
+                  <div class="edit-fields">
+                    <div class="field-group">
+                      <label for="nombre">Nombre:</label>
+                      <input id="nombre" type="text" formControlName="nombre" class="edit-input" [class.input-error]="isFieldInvalid('nombre')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                        {{ getFieldError('nombre') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="primerApellido">Primer Apellido:</label>
+                      <input id="primerApellido" type="text" formControlName="primerApellido" class="edit-input" [class.input-error]="isFieldInvalid('primerApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                        {{ getFieldError('primerApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="segundoApellido">Segundo Apellido:</label>
+                      <input id="segundoApellido" type="text" formControlName="segundoApellido" class="edit-input" [class.input-error]="isFieldInvalid('segundoApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                        {{ getFieldError('segundoApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="alias">Alias:</label>
+                      <input id="alias" type="text" formControlName="alias" class="edit-input" [class.input-error]="isFieldInvalid('alias')" maxlength="12" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                        {{ getFieldError('alias') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="especialidad">Especialidad:</label>
+                      <select id="especialidad" formControlName="especialidad" class="edit-input" [class.input-error]="isFieldInvalid('especialidad')" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+                        <option value="" disabled>Selecciona una especialidad</option>
+                        <option *ngFor="let especialidad of especialidades" [value]="especialidad.nombre">{{ especialidad.nombre }}</option>
+                      </select>
+                      <div class="error-message" *ngIf="isFieldInvalid('especialidad')">
+                        {{ getFieldError('especialidad') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="descripcion">Descripción:</label>
+                      <textarea id="descripcion" formControlName="descripcion" class="edit-input" rows="3" [class.input-error]="isFieldInvalid('descripcion')" (click)="$event.stopPropagation()"></textarea>
+                      <div class="error-message" *ngIf="isFieldInvalid('descripcion')">
+                        {{ getFieldError('descripcion') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="email">Email:</label>
+                      <input id="email" type="email" class="edit-input" [value]="elemento.email" readonly (click)="$event.stopPropagation()">
+                    </div>
+                    <div class="field-group">
+                      <label for="tipoContenido">TipoContenido:</label>
+                      <input id="tipoContenido" type="text" class="edit-input" [value]="elemento.tipoContenido === 'AUDIO' ? '🎧 Audio' : '🎥 Video'" readonly (click)="$event.stopPropagation()">
+                    </div>
+                  </div>
+                  <div class="edit-actions">
+                    <button class="save-button" (click)="guardarEdicionTarjeta(); $event.stopPropagation()">Guardar</button>
+                    <button class="cancel-button" (click)="cancelarEdicionTarjeta(); $event.stopPropagation()">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="list-actions" *ngIf="!estaEditandoTarjeta(elemento)">
+              <button 
+                class="action-button status-button" 
+                [class.blocked]="elemento.bloqueado"
+                [class.active]="!elemento.bloqueado"
+                [disabled]="isEditingMode"
+                (click)="toggleBloqueo(elemento); $event.stopPropagation()">
+                {{ elemento.bloqueado ? 'Bloqueado' : 'Activo' }}
+              </button>
+              <button 
+                class="action-button status-button" 
+                [class.blocked]="!elemento.validado"
+                [class.active]="elemento.validado"
+                [disabled]="isEditingMode"
+                (click)="toggleValidacionGestor(elemento); $event.stopPropagation()">
+                {{ elemento.validado ? 'Validado' : 'No Validado' }}
+              </button>
+              <button 
+                class="action-button"
+                [disabled]="isEditingMode"
+                (click)="eliminarElemento(elemento); $event.stopPropagation()">
+                Eliminar
+              </button>
+            </div>
+          </li>
+        </ng-container>
+        <ng-container *ngIf="seccionActual === 'administradores'">
+          <li *ngIf="!datosOriginales && tarjetaEditando" class="list-item editing">
+            
+            <div class="list-content">
+              <!-- Modo edición para nuevo admin -->
+              <div class="edit-mode">
+                <form *ngIf="editForm" [formGroup]="editForm">
+                <div class="photo-upload">
+                      <div class="avatar-container">
+                        <img [src]="previewImage || 'assets/porDefecto.jpg'" alt="Avatar de nuevo administrador" class="avatar">
+                      </div>
+                      <div class="upload-actions">
+                        <label for="foto-perfil-admin" class="upload-btn">
+                          📷 Subir Foto
+                          <input type="file" id="foto-perfil-admin" [accept]="acceptExtensionsImagen" (change)="onFileSelected($event)" hidden>
+                        </label>
+                      </div>
+                  </div>
+                  <small class="form-hint">
+                    Formatos soportados: {{ formatosImagen.extensiones.join(', ') }}
+                  </small>
+                  <div class="edit-fields">
+                    <div class="field-group">
+                      <label for="nombre">Nombre:</label>
+                      <input id="nombre" type="text" formControlName="nombre" class="edit-input" [class.input-error]="isFieldInvalid('nombre')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                        {{ getFieldError('nombre') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="primerApellido">Primer Apellido:</label>
+                      <input id="primerApellido" type="text" formControlName="primerApellido" class="edit-input" [class.input-error]="isFieldInvalid('primerApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                        {{ getFieldError('primerApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="segundoApellido">Segundo Apellido:</label>
+                      <input id="segundoApellido" type="text" formControlName="segundoApellido" class="edit-input" [class.input-error]="isFieldInvalid('segundoApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                        {{ getFieldError('segundoApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="alias">Alias:</label>
+                      <input id="alias" type="text" formControlName="alias" class="edit-input" [class.input-error]="isFieldInvalid('alias')" maxlength="12" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                        {{ getFieldError('alias') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="departamento">Departamento:</label>
+                      <select id="departamento" formControlName="departamento" class="edit-input" [class.input-error]="isFieldInvalid('departamento')" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+                        <option value="" disabled>Selecciona departamento</option>
+                        <option *ngFor="let dep of DEPARTAMENTOS" [value]="dep">{{ dep }}</option>
+                      </select>
+                      <div class="error-message" *ngIf="isFieldInvalid('departamento')">
+                        {{ getFieldError('departamento') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="email">Email:</label>
+                      <input id="email" type="email" formControlName="email" class="edit-input" [class.input-error]="isFieldInvalid('email')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('email')">
+                        {{ getFieldError('email') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="password">Contraseña:</label>
+                      <div class="input-wrapper">
+                        <input id="password" type="{{ showPassword ? 'text' : 'password' }}" formControlName="password" class="edit-input" [class.input-error]="isFieldInvalid('password')" (click)="$event.stopPropagation()">
+                        <button type="button" class="toggle-password" (click)="togglePassword('password'); $event.stopPropagation()">
+                          <span class="eye-icon">{{ showPassword ? '🙈' : '👁️' }}</span>
+                        </button>
+                      </div>
+                      <div class="error-message" *ngIf="isFieldInvalid('password')">
+                        {{ getFieldError('password') }}
+                      </div>
+                      <div class="password-requirements-inline">
+                        <div class="requirement" *ngFor="let requirement of getPasswordRequirements()">
+                          - {{ requirement }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="confirmarPassword">Confirmar Contraseña:</label>
+                      <div class="input-wrapper">
+                        <input id="confirmarPassword" type="{{ showConfirmPassword ? 'text' : 'password' }}" formControlName="confirmarPassword" class="edit-input" [class.input-error]="isFieldInvalid('confirmarPassword')" (click)="$event.stopPropagation()">
+                        <button type="button" class="toggle-password" (click)="togglePassword('confirmPassword'); $event.stopPropagation()">
+                          <span class="eye-icon">{{ showConfirmPassword ? '🙈' : '👁️' }}</span>
+                        </button>
+                      </div>
+                      <div class="error-message" *ngIf="isFieldInvalid('confirmarPassword')">
+                        {{ getFieldError('confirmarPassword') }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="edit-actions">
+                    <button class="save-button" [disabled]="editForm.invalid" (click)="guardarEdicionTarjeta(); $event.stopPropagation()">Crear</button>
+                    <button class="cancel-button" (click)="cancelarEdicionTarjeta(); $event.stopPropagation()">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </li>
+          <li *ngFor="let elemento of elementosFiltrados" class="list-item" [class.editing]="estaEditandoTarjeta(elemento)">
+            <div class="list-thumbnail" *ngIf="!estaEditandoTarjeta(elemento)">
+              <img [src]="elemento.fotoPerfil" [alt]="elemento.nombre">
+            </div>
+            <div class="list-content" (click)="iniciarEdicionTarjeta(elemento)" (keydown.enter)="iniciarEdicionTarjeta(elemento)" (keydown.space)="iniciarEdicionTarjeta(elemento)">
+              <!-- Modo visualización -->
+              <div *ngIf="!estaEditandoTarjeta(elemento)">
+                <h3 class="list-title">{{ elemento.nombre }} {{ elemento.primerApellido }} {{ elemento.segundoApellido }}</h3>
+                <p class="list-subtitle">{{ elemento.email }}</p>
+                <div class="list-meta">
+                  <span class="meta-item">
+                    <span class="meta-icon">👤</span>
+                    {{ elemento.alias }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="meta-icon">🏢</span>
+                    {{ elemento.departamento }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Modo edición -->
+              <div *ngIf="estaEditandoTarjeta(elemento)" class="edit-mode">
+                <form *ngIf="editForm" [formGroup]="editForm">
+                  <div class="photo-upload">
+                      <div class="avatar-container">
+                        <img [src]="elemento.fotoPerfil" [alt]="'Avatar de ' + elemento.nombre" class="avatar">
+                      </div>
+                      <div class="upload-actions">
+                        <label for="foto-perfil-admin" class="upload-btn">
+                          📷 Cambiar Foto
+                          <input type="file" id="foto-perfil-admin" [accept]="acceptExtensionsImagen" (change)="onFileSelected($event)" hidden>
+                        </label>
+                      </div>
+                  </div>
+                  <small class="form-hint">
+                    Formatos soportados: {{ formatosImagen.extensiones.join(', ') }}
+                  </small>
+                  <div class="edit-fields">
+                    <div class="field-group">
+                      <label for="nombre">Nombre:</label>
+                      <input id="nombre" type="text" formControlName="nombre" class="edit-input" [class.input-error]="isFieldInvalid('nombre')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+                        {{ getFieldError('nombre') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="primerApellido">Primer Apellido:</label>
+                      <input id="primerApellido" type="text" formControlName="primerApellido" class="edit-input" [class.input-error]="isFieldInvalid('primerApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+                        {{ getFieldError('primerApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="segundoApellido">Segundo Apellido:</label>
+                      <input id="segundoApellido" type="text" formControlName="segundoApellido" class="edit-input" [class.input-error]="isFieldInvalid('segundoApellido')" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+                        {{ getFieldError('segundoApellido') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="alias">Alias:</label>
+                      <input id="alias" type="text" formControlName="alias" class="edit-input" [class.input-error]="isFieldInvalid('alias')" maxlength="12" (click)="$event.stopPropagation()">
+                      <div class="error-message" *ngIf="isFieldInvalid('alias')">
+                        {{ getFieldError('alias') }}
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label for="email">Email:</label>
+                      <input id="email" type="email" class="edit-input" [value]="elemento.email" readonly (click)="$event.stopPropagation()">
+                    </div>
+                    <div class="field-group">
+                      <label for="departamento">Departamento:</label>
+                      <input id="departamento" type="text" class="edit-input" [value]="elemento.departamento" readonly (click)="$event.stopPropagation()">
+                    </div>
+                  </div>
+                  <div class="edit-actions">
+                    <button class="save-button" [disabled]="editForm.invalid" (click)="guardarEdicionTarjeta(); $event.stopPropagation()">Guardar</button>
+                    <button class="cancel-button" (click)="cancelarEdicionTarjeta(); $event.stopPropagation()">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="list-actions" *ngIf="!estaEditandoTarjeta(elemento)">
+              <button 
+                type="button"
+                class="action-button"
+                [disabled]="isEditingMode"
+                (click)="eliminarElemento(elemento); $event.stopPropagation()">
+                Eliminar
+              </button>
+            </div>
+          </li>
+        </ng-container>
+      </ul>
+    </div>
+
+    <!-- Contenido - Vista Grid y Lista para Contenidos -->
+    <div *ngIf="seccionActual === 'contenidos'">
+      <!-- Contenido - Vista Grid -->
+      <div *ngIf="!isListView" class="content-grid">
+        <div *ngFor="let contenido of contenidosFiltrados" class="content-card" [class.content-hidden]="!contenido.visibilidad">
+          <div class="card-thumbnail">
+            <img [src]="contenido.miniatura" [alt]="contenido.titulo" class="thumbnail-image">
+            <span class="video-duration">{{ contenido.duracionFormateada }}</span>
+            <div class="content-badges">
+              <span class="badge vip" *ngIf="contenido.esVIP">👑 VIP</span>
+              <span class="badge type">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+              <span class="badge age age-{{ contenido.restriccionEdad }}">+{{ contenido.restriccionEdad }}</span>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="title-row">
+              <h3 class="card-title">{{ contenido.titulo }}</h3>
+            </div>
+            <div class="card-category-rating">
+              <div class="card-category">{{ contenido.especialidad }}</div>
+              <div class="stars">
+                <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                  {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                </span>
+                <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+              </div>
+            </div>
+            <div class="card-tags">{{ contenido.tags.join(', ') }}</div>
+            <div class="card-stats">
+              <span>👁️ {{ contenido.visualizaciones || 0 }} visitas</span>
+              <span *ngIf="contenido.tipo === 'VIDEO'">📺 {{ getResolucion(contenido) }}</span>
+              <span>📅 {{ contenido.fechaSubida | date:'dd/MM/yyyy' }}</span>
+              <span>⏰ {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido - Vista Lista -->
+      <div *ngIf="isListView" class="list-view">
+        <ul class="content-list">
+          <li *ngFor="let contenido of contenidosFiltrados" class="list-item" [class.content-hidden]="!contenido.visibilidad">
+            <div class="list-thumbnail">
+              <img [src]="contenido.miniatura" [alt]="contenido.titulo">
+            </div>
+            <div class="list-content">
+              <div class="list-title-container">
+                <h3 class="list-title">{{ contenido.titulo }}</h3>
+                <div class="stars">
+                  <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                    {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                  </span>
+                  <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+                </div>
+              </div>
+              <div class="list-specialty-tags">
+                🏷️ {{ contenido.especialidad }} - 📝 {{ contenido.tags.join(', ') }}
+              </div>
+              <div class="list-details">
+                {{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }} {{ contenido.tipo }} - ⏱️ {{ contenido.duracionFormateada }} - 👁️ {{ contenido.visualizaciones || 0 }} visitas{{ contenido.tipo === 'VIDEO' ? ' - 📺 ' + getResolucion(contenido) : '' }} - 📅 Subido: {{ contenido.fechaSubida | date:'dd/MM/yyyy' }} - ⏰ Expira: {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }} - 🎯 +{{ contenido.restriccionEdad }} - {{ contenido.esVIP ? '👑 VIP' : 'Estándar' }}
+              </div>
+            </div>
+          </li>
+        </ul>
+        
+        <!-- Estado vacío para lista -->
+        <div *ngIf="contenidosFiltrados.length === 0" class="list-empty-state">
+          <div class="empty-icon">📹</div>
+          <h3 class="empty-title">No se encontraron contenidos</h3>
+          <p class="empty-message">Intenta cambiar los filtros de búsqueda o verifica tu conexión.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

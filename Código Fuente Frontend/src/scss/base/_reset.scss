@@ -1,0 +1,53 @@
+// ===========================
+// RESET Y CONFIGURACIÓN BASE
+// ===========================
+
+@use '../abstracts/variables' as *;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: $font-family-primary;
+  line-height: 1.5;
+  color: $gray-800;
+  background-color: $light-gray;
+}
+
+// Mantener compatibilidad con CSS custom properties para JavaScript
+:root {
+  /* Colores del Usuario */
+  --user-primary-color: #{$user-primary-color};
+  --user-secondary-color: #{$user-secondary-color};
+  --user-accent-color: #{$user-accent-color};
+  
+  /* Colores del Gestor */
+  --gestor-primary-color: #{$gestor-primary-color};
+  --gestor-secondary-color: #{$gestor-secondary-color};
+  --gestor-accent-color: #{$gestor-accent-color};
+  
+  /* Colores Neutros */
+  --white: #{$white};
+  --light-gray: #{$light-gray};
+  --gray-100: #{$gray-100};
+  --gray-200: #{$gray-200};
+  --gray-300: #{$gray-300};
+  --gray-600: #{$gray-600};
+  --gray-700: #{$gray-700};
+  --gray-800: #{$gray-800};
+  
+  /* Colores del Sistema */
+  --error-color: #{$error-color};
+  --success-color: #{$success-color};
+  
+  /* Variables de Layout */
+  --border-radius: #{$border-radius};
+  
+  /* Sombras */
+  --user-shadow: #{$user-shadow};
+  --gestor-shadow: #{$gestor-shadow};
+  --default-shadow: #{$default-shadow};
+}

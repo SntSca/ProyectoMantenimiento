@@ -1,0 +1,275 @@
+// ===========================
+// COMPONENTES DE HEADER Y LOGO
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ===========================
+// HEADER BASE UNIFICADO
+// ===========================
+.app-header {
+  padding: $spacing-xl $spacing-lg;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: $border-radius $border-radius 0 0;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: $spacing-lg;
+  
+  // Efecto decorativo superior - Variaciones por tema usando nuevos mixins
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+      var(--primary-color) 0%, 
+      var(--accent-color) 50%, 
+      var(--primary-color) 100%);
+    opacity: 0.8;
+  }
+
+  // Variante Usuario (primario - secundario - primario)
+  &.usuario-variant {
+    @include theme-header($user-primary-color, $user-primary-color, $user-secondary-color);
+    
+    &::before {
+      background: linear-gradient(90deg, 
+        #{$user-primary-color} 0%, 
+        #{$user-secondary-color} 50%,
+        #{$user-primary-color} 100%);
+    }
+  }
+
+  // Variante Gestor (primario - secundario - primario)
+  &.gestor-variant {
+    @include theme-header($gestor-primary-color, $gestor-primary-color, $gestor-secondary-color);
+    
+    &::before {
+      background: linear-gradient(90deg, 
+        #{$gestor-primary-color} 0%, 
+        #{$gestor-secondary-color} 50%,
+        #{$gestor-primary-color} 100%);
+    }
+  }
+
+  // Variante Común (primario - negro - secundario)
+  &.comun-variant {
+    @include theme-header-comun($user-primary-color, $gestor-primary-color);
+    
+    &::before {
+      background: linear-gradient(90deg, 
+        #{$user-primary-color} 0%, 
+        #{$gray-800} 50%,
+        #{$gestor-primary-color} 100%);
+    }
+  }
+  
+  .header-content {
+    position: relative;
+    z-index: 2;
+    
+    // Título principal
+    h1, h2, h3, .header-title {
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      color: var(--text-color);
+      margin: 0 0 $spacing-md 0;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, var(--text-color) 0%, rgba(var(--text-color-rgb), 0.8) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    // Subtítulo/descripción
+    p, .header-subtitle {
+      font-size: $font-size-base;
+      color: rgba(var(--text-color-rgb), 0.75);
+      margin: 0 auto;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.4;
+      max-width: 500px;
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+  }
+
+  // Iconos en headers (para tarjetas de opciones)
+  .opcion-icon {
+    font-size: 2.5rem;
+    margin-bottom: $spacing-sm;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    display: block;
+    
+    @include responsive(md) {
+      font-size: 2rem;
+    }
+  }
+
+  // Variantes de tamaño
+  &.compact {
+    padding: $spacing-lg $spacing-md;
+    margin-bottom: $spacing-md;
+    
+    .header-content {
+      h1, h2, h3, .header-title {
+        font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+        margin-bottom: $spacing-sm;
+      }
+      
+      p, .header-subtitle {
+        font-size: $font-size-sm;
+      }
+    }
+  }
+
+  // Variante sin bordes decorativos
+  &.minimal {
+    background: none;
+    border-bottom: 1px solid rgba(var(--border-color-rgb), 0.2);
+    backdrop-filter: none;
+    
+    &::before {
+      display: none;
+    }
+  }
+
+  // Responsive
+  @include responsive(md) {
+    padding: $spacing-lg $spacing-md;
+    margin-bottom: $spacing-md;
+    
+    .header-content {
+      h1, h2, h3, .header-title {
+        font-size: clamp(1.3rem, 4vw, 1.6rem);
+      }
+      
+      p, .header-subtitle {
+        font-size: $font-size-sm;
+      }
+    }
+  }
+
+  @include responsive(sm) {
+    padding: $spacing-md;
+    
+    .header-content {
+      h1, h2, h3, .header-title {
+        font-size: clamp(1.1rem, 5vw, 1.4rem);
+      }
+    }
+  }
+}
+
+// Animación para el header unificado
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ===========================
+// LOGO Y BRANDING (EXCLUSIÓN DE HEADERS UNIFICADOS)
+// ===========================
+.logo-section {
+  margin-bottom: $spacing-md;
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    
+    .logo-icon {
+      font-size: 2.5rem;
+      margin-right: $spacing-xs;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+      transition: filter $transition-normal;
+
+      &:hover {
+        filter: drop-shadow(0 4px 12px rgba(var(--primary-color), 0.4));
+      }
+    }
+  }
+}
+
+// El brandname mantiene su estilo único y no se unifica
+.brand-name {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+  background: linear-gradient(135deg, var(--primary-color, $user-primary) 0%, var(--secondary-color, $gestor-primary) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  // Sobrescribe estilos de header unificado
+  text-shadow: none !important;
+  letter-spacing: normal !important;
+  line-height: 1 !important;
+
+  @include responsive(md) {
+    font-size: 1.75rem !important;
+  }
+
+  @include responsive(sm) {
+    font-size: 1.5rem !important;
+  }
+}
+
+// Subtítulo del logo también mantiene su estilo específico
+.logo-subtitle {
+  color: $text-secondary !important;
+  font-size: $font-size-sm !important;
+  margin: 0 !important;
+  // Sobrescribe estilos de header unificado
+  font-weight: normal !important;
+  letter-spacing: normal !important;
+  animation: none !important;
+  max-width: none !important;
+}
+
+// Headers específicos de componentes mantienen funcionalidad específica
+// Todo lo demás usa la clase unificada .app-header
+
+// ===========================
+// LOGO ESPECÍFICO PARA HEADERS
+// ===========================
+.login-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  
+  .logo-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    transition: filter $transition-normal;
+
+    &:hover {
+      filter: drop-shadow(0 4px 12px rgba(var(--primary-color), 0.4));
+    }
+    
+    @include responsive(md) {
+      font-size: 2.5rem;
+    }
+  }
+  
+  @include responsive(md) {
+    margin-bottom: $spacing-md;
+  }
+}

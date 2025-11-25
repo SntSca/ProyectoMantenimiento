@@ -1,0 +1,164 @@
+<div class="inicio-container comun-variant">
+  <main class="inicio-card">
+    <!-- Header con logo y bienvenida -->
+    <header class="app-header comun-variant">
+      <div class="logo-section">
+        <div class="logo">
+          <div class="logo-icon">
+            🎬
+          </div>
+          <h1 class="brand-name">esiMedia</h1>
+        </div>
+        <div class="logo-subtitle">Tu plataforma de contenido digital</div>
+      </div>
+      
+      <div class="header-content">
+        <h2 class="header-title">¡Bienvenido a esiMedia!</h2>
+        <p class="header-subtitle">
+          Conectamos creadores de contenido con sus audiencias.<br>
+          Únete a nuestra comunidad y comienza tu viaje digital.
+        </p>
+      </div>
+    </header>
+
+    <!-- Sección de Login -->
+    <section class="login-section">
+      <div class="separator themed">
+        <span class="separator-text">¿Ya tienes cuenta?</span>
+      </div>
+      
+      <div class="login-buttons">
+        <button type="button" class="usuario-btn" [routerLink]="USUARIO_ROUTES.login">
+          <div class="login-content">
+            
+            <div class="login-text">
+              <h4 class="login-title">👤 Iniciar Sesión - Usuario</h4>
+              <p class="login-subtitle">Accede como usuario para explorar contenido</p>
+            </div>
+            <div class="login-arrow">→</div>
+          </div>
+        </button>
+
+        <button type="button" class="gestor-btn" [routerLink]="PERSONAL_ROUTES.login">
+          <div class="login-content">
+            <div class="login-text">
+              <h4 class="login-title"> 🎬Iniciar Sesión - Creador</h4>
+              <p class="login-subtitle">Accede como creador para gestionar tu contenido</p>
+            </div>
+            <div class="login-arrow">→</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Opciones principales -->
+    <section class="opciones-section">
+      <div class="separator themed">
+        <span class="separator-text">¿Cómo quieres empezar?</span>
+      </div>
+      
+      <div class="opciones-grid">
+        <!-- Opción Usuario -->
+        <div class="opcion-card usuario-card">
+          <header class="app-header compact minimal usuario-variant">
+            <div class="opcion-icon">
+              👤
+            </div>
+            <div class="header-content">
+              <h4 class="header-title">Soy Usuario</h4>
+            </div>
+          </header>
+          
+          <div class="card-content">
+            <p class="card-description">
+              Descubre contenido increíble, sigue a tus creadores favoritos 
+              y forma parte de una comunidad vibrante.
+            </p>
+            
+            <div class="card-features">
+              <div class="feature-item">
+                <span class="feature-icon">✨</span>
+                <span>Contenido personalizado</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">❤️</span>
+                <span>Interactúa con creadores</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">🎯</span>
+                <span>Descubre nuevos talentos</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-actions">
+            <button type="button" class="usuario-btn" [routerLink]="USUARIO_ROUTES.registro">
+              <span class="btn-icon">🚀</span>
+              Registrarse como Usuario
+            </button>
+          </div>
+        </div>
+
+        <!-- Opción Gestor/Creador -->
+        <div class="opcion-card gestor-card">
+          <header class="app-header compact minimal gestor-variant">
+            <div class="opcion-icon">
+              🎬
+            </div>
+            <div class="header-content">
+              <h4 class="header-title">Soy Creador</h4>
+            </div>
+          </header>
+          
+          <div class="card-content">
+            <p class="card-description">
+              Comparte tu pasión, construye tu audiencia y monetiza 
+              tu contenido con herramientas profesionales.
+            </p>
+            
+            <div class="card-features">
+              <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <span>Análiticas detalladas</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">💰</span>
+                <span>Monetización flexible</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">🎨</span>
+                <span>Herramientas creativas</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-actions">
+            <button type="button" class="gestor-btn" [routerLink]="GESTOR_ROUTES.registro">
+              <span class="btn-icon">🎬</span>
+              Registrarse como Creador
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Footer informativo -->
+    <footer class="inicio-footer">
+      <div class="stats-container">
+        <div class="stat-item">
+          <div class="stat-number">10K+</div>
+          <div class="stat-label">Creadores</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">100K+</div>
+          <div class="stat-label">Usuarios</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">1M+</div>
+          <div class="stat-label">Contenidos</div>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>

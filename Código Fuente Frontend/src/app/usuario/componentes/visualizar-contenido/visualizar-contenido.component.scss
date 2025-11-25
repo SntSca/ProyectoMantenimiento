@@ -1,0 +1,291 @@
+@use '../../../../scss/abstracts/variables' as *;
+@use '../../../../scss/abstracts/mixins' as *;
+@use '../../../../scss/components/dashboard' as *;
+@use '../../../../scss/components/forms' as *;
+@use '../../../../scss/components/buttons' as *;
+@use '../../../../scss/themes/usuario' as *;
+
+// Aplicar tema del usuario al contenedor principal
+.usuario-dashboard {
+  @extend .dashboard-container;
+  @extend .usuario-variant;
+}
+
+// Header del contenido
+.content-header {
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    font-size: $font-size-3xl;
+    font-weight: 700;
+    color: $user-primary-color;
+    margin: 0 0 $spacing-sm 0;
+  }
+}
+
+// Sección del visualizador
+.viewer-section {
+  .media-wrapper {
+    background: $white;
+    border-radius: $border-radius * 2;
+    padding: $spacing-2xl;
+    box-shadow: $default-shadow;
+    border: 1px solid $gray-200;
+
+    video, audio, iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: $border-radius;
+    }
+
+    // Audio player con miniatura de fondo
+    .audio-player {
+      width: 100%;
+      border-radius: $border-radius;
+      overflow: hidden;
+
+      .audio-background {
+        width: 100%;
+        padding-bottom: 56.25%; // Ratio 16:9
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        position: relative;
+
+        .audio-overlay {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+          padding: $spacing-xl $spacing-xl 0 $spacing-xl;
+          color: $white;
+
+          audio {
+            position: absolute;
+            bottom: $spacing-md;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: $border-radius;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          }
+
+          &:hover audio {
+            opacity: 0.8;
+          }
+        }
+      }
+    }
+  }
+
+  .metadata {
+    margin-top: $spacing-xl;
+    display: flex;
+    gap: $spacing-xl;
+
+    .metadata-left {
+      flex: 2;
+
+      // Rating section
+      .rating-section {
+        margin-bottom: $spacing-lg;
+
+        .rating-row {
+          display: flex;
+          gap: $spacing-xl;
+          align-items: flex-start;
+
+          .rating-display,
+          .rating-vote,
+          .favorite-toggle {
+            background: $white;
+            padding: $spacing-lg;
+            border-radius: $border-radius;
+            box-shadow: $default-shadow;
+            border: 1px solid $gray-200;
+            flex: 1;
+          }
+        }
+
+        .rating-display,
+        .rating-vote,
+        .favorite-toggle {
+
+          .section-title {
+            color: $user-primary-color;
+            font-weight: 600;
+            display: block;
+            margin-bottom: $spacing-sm;
+          }
+
+          .section-content {
+            color: $text-color;
+            line-height: 1.6;
+            margin: 0;
+          }
+
+          .stars-display,
+          .stars-interactive {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            .star {
+              font-size: $font-size-xl;
+              color: #FFD700;
+              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+              background: none;
+              border: none;
+              padding: 0;
+              cursor: pointer;
+
+              &.interactive {
+                transition: transform 0.2s ease;
+
+                &:hover {
+                  transform: scale(1.2);
+                }
+
+                &:focus {
+                  outline: 2px solid $user-primary-color;
+                  outline-offset: 2px;
+                }
+
+                &.selected {
+                  color: #FFA500;
+                }
+              }
+            }
+
+            .rating-value {
+              margin-left: $spacing-sm;
+              font-size: $font-size-sm;
+              color: $text-secondary;
+              font-weight: 500;
+            }
+          }
+        }
+
+        // Favorite toggle
+        .favorite-toggle {
+          .favorite-button {
+            display: flex;
+            align-items: center;
+            gap: $spacing-sm;
+            background: none;
+            border: 2px solid $gray-300;
+            cursor: pointer;
+            padding: $spacing-sm $spacing-md;
+            border-radius: $border-radius;
+            transition: all 0.3s ease;
+            color: $text-secondary;
+            width: 100%;
+            justify-content: center;
+            font-weight: 600;
+
+            .heart-icon {
+              font-size: $font-size-2xl;
+              transition: transform 0.2s ease;
+              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+            }
+
+
+
+            &:hover {
+              background: rgba($user-primary-color, 0.05);
+              border-color: rgba($user-primary-color, 0.3);
+              
+              .heart-icon {
+                transform: scale(1.15);
+              }
+            }
+
+            &:focus {
+              outline: 2px solid $user-primary-color;
+              outline-offset: 2px;
+            }
+
+            &.is-favorite {
+              color: $user-primary-color;
+              border-color: $user-primary-color;
+              background: rgba($user-primary-color, 0.05);
+              
+
+              .heart-icon {
+                animation: heartBeat 0.3s ease;
+              }
+            }
+          }
+        }
+      }
+
+      .meta-description {
+        background: $white;
+        padding: $spacing-lg;
+        border-radius: $border-radius;
+        box-shadow: $default-shadow;
+        border: 1px solid $gray-200;
+
+        .section-title {
+          color: $user-primary-color;
+          font-weight: 600;
+          display: block;
+          margin-bottom: $spacing-sm;
+        }
+
+        .section-content {
+          color: $text-color;
+          line-height: 1.6;
+          margin: 0;
+        }
+      }
+    }
+
+    .metadata-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-md;
+
+      .meta-item {
+        background: $light-gray;
+        padding: $spacing-md $spacing-lg;
+        border-radius: $border-radius;
+        box-shadow: $light-shadow;
+        border: 1px solid $gray-200;
+
+        .section-title {
+          color: $user-primary-color;
+          font-weight: 600;
+          display: block;
+          margin-bottom: $spacing-xs;
+        }
+
+        .section-content {
+          color: $text-color;
+          line-height: 1.6;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+// Animación para el corazón de favoritos
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.25);
+  }
+}

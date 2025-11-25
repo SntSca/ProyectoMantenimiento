@@ -1,0 +1,369 @@
+<div class="dashboard-container gestor-variant">
+  <!-- Menu Lateral Izquierdo -->
+  <aside class="sidebar-menu">
+    <button type="button" class="user-profile" [routerLink]="GESTOR_ROUTES.perfil">
+      <div class="avatar-container">
+        <img src="{{ actualGestor.fotoPerfil || 'assets/porDefecto.jpg' }}" alt="Avatar del usuario" class="user-avatar">
+      </div>
+      <div class="user-info">
+        <h3 class="user-name">{{ actualGestor.alias }}</h3>
+        <p class="profile-hint">👤 Ver perfil</p>
+      </div>
+    </button>
+    
+    <nav class="menu-navigation">
+      <ul class="menu-list">
+        <li class="menu-item active">
+          <div class="menu-text" (click)="isEditing ? cancelEdit() : null" (keydown.enter)="isEditing ? cancelEdit() : null">
+            <span class="menu-icon">🏠</span>
+            <span>Inicio</span>
+          </div>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="GESTOR_ROUTES.subirContenido">
+            <div class="menu-text">
+              <span class="menu-icon">📤</span>
+              <span>Subir Contenido</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="GESTOR_ROUTES.crearListaPublica">
+            <div class="menu-text">
+              <span class="menu-icon">➕</span>
+              <span>Crear Lista Pública</span>
+            </div>
+          </button>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-button" [routerLink]="GESTOR_ROUTES.listas">
+            <div class="menu-text">
+              <span class="menu-icon">📋</span>
+              <span>Listas de Reproducción</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+      
+      <div class="menu-divider"></div>
+
+      <ul class="menu-list">
+        <li class="menu-item logout">
+          <button (click)="logout()" class="logout-button">
+            <div class="menu-text">
+              <span class="menu-icon">🚪</span>
+              <span>Cerrar Sesión</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Formulario de Edición -->
+    <div *ngIf="isEditing && editingContent" class="upload-container">
+      <h2 class="section-title">Editar Contenido</h2>
+      <form [formGroup]="updateContenidoForm" (ngSubmit)="saveEdit()" class="upload-form">
+
+        <!-- Información Básica -->
+        <section class="form-section">
+          <h2 class="section-title">Información del Contenido</h2>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="titulo" class="form-label">Título *</label>
+              <input
+                id="titulo"
+                type="text"
+                formControlName="titulo"
+                class="form-input"
+                [class.input-error]="isFieldInvalid('titulo')"
+                placeholder="Ingresa el título de tu contenido">
+              <div class="error-message" *ngIf="isFieldInvalid('titulo')">
+                {{ getFieldError('titulo') }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="tags" class="form-label">Tags *</label>
+              <div class="custom-dropdown" [class.dropdown-open]="isTagsDropdownOpen">
+                <button type="button" class="dropdown-toggle form-select" [class.input-error]="isFieldInvalid('tags')" (click)="toggleTagsDropdown()">
+                  {{ getSelectedTagsText() }}
+                </button>
+                <div class="dropdown-menu" *ngIf="isTagsDropdownOpen" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+                  <div class="dropdown-item" *ngFor="let tag of tags; let i = index">
+                    <label class="checkbox-label" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+                      <input
+                        type="checkbox"
+                        [checked]="isTagSelected(tag)"
+                        (change)="onTagChange(tag, $any($event.target).checked)">
+                      {{ tag.nombre }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="error-message" *ngIf="isFieldInvalid('tags')">
+                {{ getFieldError('tags') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="descripcion" class="form-label">Descripción *</label>
+            <textarea
+              id="descripcion"
+              formControlName="descripcion"
+              class="form-textarea"
+              [class.input-error]="isFieldInvalid('descripcion')"
+              placeholder="Describe tu contenido..."
+              rows="4"></textarea>
+            <div class="error-message" *ngIf="isFieldInvalid('descripcion')">
+              {{ getFieldError('descripcion') }}
+            </div>
+          </div>
+        </section>
+
+        <!-- Configuración Avanzada -->
+        <section class="form-section">
+          <h2 class="section-title">Configuración Avanzada</h2>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pegi" class="form-label">Clasificación PEGI *</label>
+              <select
+                id="pegi"
+                formControlName="pegi"
+                class="form-select"
+                [class.input-error]="isFieldInvalid('pegi')">
+                <option *ngFor="let pegi of [3,7,12,16,18]" [value]="pegi">
+                  PEGI {{ pegi }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="fechaExpiracion" class="form-label">Fecha de Expiración (opcional)</label>
+              <input
+                id="fechaExpiracion"
+                type="date"
+                formControlName="fechaExpiracion"
+                class="form-input"
+                [class.input-error]="isFieldInvalid('fechaExpiracion')">
+              <div class="error-message" *ngIf="isFieldInvalid('fechaExpiracion')">
+                {{ getFieldError('fechaExpiracion') }}
+              </div>
+              <small class="form-hint">Deja vacío si el contenido no expira</small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  formControlName="vip"
+                  class="form-checkbox">
+                Contenido VIP (solo para usuarios premium)
+              </label>
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  formControlName="visibilidad"
+                  class="form-checkbox">
+                Visibilidad del contenido ¿Es visible?
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Botones de Acción -->
+        <div class="form-actions">
+          <button type="button" (click)="cancelEdit()" class="btn-secondary">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="!updateContenidoForm.valid" class="btn-primary">
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Barra de Búsqueda y Filtros -->
+    <header *ngIf="!isEditing" class="search-header">
+      <div class="search-container">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            placeholder="Buscar videos, creadores, categorías..." 
+            [(ngModel)]="searchTermValue"
+            (keyup.enter)="buscar()"
+            class="search-input">
+          <button class="search-button" (click)="buscar()">
+            <span class="search-icon">🔍</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Botón para cambiar vista -->
+      <div class="view-toggle">
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="filtrarPorTipoContenidoContenidos(isTipoContenidoContenidos === null ? 'AUDIO' : isTipoContenidoContenidos === true ? 'VIDEO' : null); isTipoContenidoContenidos = isTipoContenidoContenidos === null ? true : isTipoContenidoContenidos === true ? false : null"
+          [attr.aria-label]="isTipoContenidoContenidos === null ? 'Filtrar por audio' : isTipoContenidoContenidos === true ? 'Filtrar por video' : 'Mostrar todos'">
+          <span class="view-icon">{{ isTipoContenidoContenidos === null ? '🎬' : isTipoContenidoContenidos === true ? '🎧' : '🎥' }}</span>
+          <span class="view-text">{{ isTipoContenidoContenidos === null ? 'Contenido' : isTipoContenidoContenidos === true ? 'Audio' : 'Video' }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="toggleVisibilidadContenidos()"
+          [attr.aria-label]="filtroVisibilidadContenidos === null ? 'Mostrar todos' : filtroVisibilidadContenidos === true ? 'Filtrar por visibles' : 'Filtrar por no visibles'">
+          <span class="view-icon">{{ filtroVisibilidadContenidos === null ? '👁️' : filtroVisibilidadContenidos === true ? '✅' : '🚫' }}</span>
+          <span class="view-text">{{ filtroVisibilidadContenidos === null ? 'Visibilidad' : filtroVisibilidadContenidos === true ? 'Visibles' : 'Ocultos' }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="toggleRestriccionEdad()"
+          [attr.aria-label]="filtroRestriccionEdad === null ? 'Sin filtro de edad' : 'Máximo +' + filtroRestriccionEdad">
+          <span class="view-icon">🎯</span>
+          <span class="view-text">{{ filtroRestriccionEdad === null ? 'Edad' : '+' + filtroRestriccionEdad }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn reset-btn" 
+          (click)="restablecerFiltros()"
+          [attr.aria-label]="'Restablecer todos los filtros'">
+          <span class="view-icon">🔄</span>
+          <span class="view-text">Restablecer</span>
+        </button>
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          (click)="toggleView()"
+          [attr.aria-label]="isListView ? 'Cambiar a vista de cuadrícula' : 'Cambiar a vista de lista'">
+          <span class="view-icon">{{ isListView ? '⊞' : '☰' }}</span>
+          <span class="view-text">{{ isListView ? 'Cuadrícula' : 'Lista' }}</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Filtros de Categorías -->
+    <section *ngIf="!isEditing" class="filters-section">
+      <button 
+        type="button"
+        class="filters-toggle-btn"
+        (click)="toggleTagFilters()">
+        <span class="toggle-icon">{{ showTagFilters ? '▼' : '▶' }}</span>
+        <span class="toggle-text">Filtros por Tags</span>
+        <span class="filter-count" *ngIf="filtroTagsContenidos.length > 0">({{ filtroTagsContenidos.length }})</span>
+      </button>
+      
+      <div class="filters-container" [class.expanded]="showTagFilters">
+        <button 
+          class="filters-btn clear-btn"
+          *ngIf="filtroTagsContenidos.length > 0"
+          (click)="limpiarFiltrosTags()">
+          ✕ Limpiar filtros
+        </button>
+        <button 
+          *ngFor="let tag of tags" 
+          class="filters-btn" 
+          [class.active]="isTagActive(tag.nombre)"
+          (click)="filtrarPorTags(tag.nombre)">
+          {{ tag.nombre }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Contenido - Vista Grid -->
+    <div *ngIf="!isListView && !isEditing" class="content-grid">
+      <div *ngFor="let contenido of contenidosFiltrados" class="content-card" [class.content-hidden]="!contenido.visibilidad" (click)="editContent(contenido)" (keydown.enter)="editContent(contenido)">
+        <div class="card-thumbnail">
+          <img [src]="contenido.miniatura" [alt]="contenido.titulo" class="thumbnail-image">
+          <span class="video-duration">{{ contenido.duracionFormateada }}</span>
+          <div class="content-badges">
+            <span class="badge vip" *ngIf="contenido.esVIP">👑 VIP</span>
+            <span class="badge type">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+            <span class="badge age age-{{ contenido.restriccionEdad }}">+{{ contenido.restriccionEdad }}</span>
+          </div>
+          <!-- Botón de eliminar contenido -->
+          <button 
+            class="remove-favorite-btn" 
+            (click)="deleteContent($event, contenido)"
+            [attr.aria-label]="'Eliminar ' + contenido.titulo">
+            ✕
+          </button>
+        </div>
+        <div class="card-info">
+            <div class="title-row">
+            <h3 class="card-title">{{ contenido.titulo }}</h3>
+          </div>
+          <div class="card-category-rating">
+            <div class="card-category">{{ contenido.especialidad }}</div>
+            <div class="stars">
+              <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+              </span>
+              <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+            </div>
+          </div>
+          <div class="card-tags">{{ contenido.tags.join(', ') }}</div>
+          <div class="card-stats">
+            <span>👁️ {{ contenido.visualizaciones || 0 }} visitas</span>
+            <span *ngIf="contenido.tipo === 'VIDEO'">📺 {{ getResolucion(contenido) }}</span>
+            <span>📅 {{ contenido.fechaSubida | date:'dd/MM/yyyy' }}</span>
+            <span>⏰ {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido - Vista Lista -->
+    <div *ngIf="isListView && !isEditing" class="list-view">
+      <ul class="content-list">
+        <li *ngFor="let contenido of contenidosFiltrados" class="list-item" [class.content-hidden]="!contenido.visibilidad" (click)="editContent(contenido)" (keydown.enter)="editContent(contenido)">
+          <div class="list-thumbnail">
+            <img [src]="contenido.miniatura" [alt]="contenido.titulo">
+            <!-- Botón de eliminar contenido -->
+            <button 
+              class="remove-favorite-btn" 
+              (click)="deleteContent($event, contenido)"
+              [attr.aria-label]="'Eliminar ' + contenido.titulo">
+              ✕
+            </button>
+          </div>
+          <div class="list-content">
+            <div class="list-title-container">
+              <h3 class="list-title">{{ contenido.titulo }}</h3>
+              <div class="stars">
+                <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                  {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                </span>
+                <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+              </div>
+            </div>
+            <div class="list-specialty-tags">
+              🏷️ {{ contenido.especialidad }} - 📝 {{ contenido.tags.join(', ') }}
+            </div>
+            <div class="list-details">
+              {{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }} {{ contenido.tipo }} - ⏱️ {{ contenido.duracionFormateada }} - 👁️ {{ contenido.visualizaciones || 0 }} visitas{{ contenido.tipo === 'VIDEO' ? ' - 📺 ' + getResolucion(contenido) : '' }} - 📅 Subido: {{ contenido.fechaSubida | date:'dd/MM/yyyy' }} - ⏰ Expira: {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }} - 🎯 +{{ contenido.restriccionEdad }} - {{ contenido.esVIP ? '👑 VIP' : 'Estándar' }}
+            </div>
+          </div>
+        </li>
+      </ul>
+      
+      <!-- Estado vacío para lista -->
+      <div *ngIf="contenidosFiltrados.length === 0" class="list-empty-state">
+        <div class="empty-icon">📹</div>
+        <h3 class="empty-title">No se encontraron contenidos</h3>
+        <p class="empty-message">Intenta cambiar los filtros de búsqueda o verifica tu conexión.</p>
+      </div>
+    </div>
+  </main>
+</div>

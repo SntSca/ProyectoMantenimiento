@@ -1,0 +1,84 @@
+// ===========================
+// TEMA GESTOR
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.gestor-variant {
+  // Variables CSS personalizadas para el tema
+  --primary-color: #{$gestor-primary-color};
+  --secondary-color: #{$gestor-secondary-color};
+  --accent-color: #{$gestor-accent-color};
+  --theme-shadow: #{$gestor-shadow};
+
+  // Contenedores
+  &.registro-container,
+  &.login-container,
+  &.inicio-container {
+    @include theme-container($gestor-primary-color, $gestor-secondary-color);
+  }
+
+  // Dashboard de gestor
+  &.dashboard-container {
+    @include theme-dashboard($gestor-primary-color, $gestor-accent-color, $gestor-shadow);
+  }
+
+  // Tarjetas
+  .registro-card {
+    @include theme-card($gestor-secondary-color, $gestor-shadow, $gestor-primary-color);
+  }
+
+  // Headers
+  .form-header {
+    @include theme-header($gestor-primary-color);
+  }
+
+  // Brand
+  .brand-name {
+    @include gradient-text($gestor-secondary-color, $gestor-primary-color);
+  }
+
+  // Títulos
+  .form-title h2 {
+    color: $gestor-primary-color !important;
+  }
+
+  // Campos de formulario
+  @include theme-form-fields($gestor-primary-color, $gestor-secondary-color);
+
+  // Botones
+  @include theme-buttons($gestor-primary-color, $gestor-secondary-color, $gestor-shadow);
+
+  // Links
+  @include theme-links($gestor-primary-color, $gestor-secondary-color, $gestor-shadow);
+
+  // Subida de fotos
+  @include theme-photo-upload($gestor-primary-color, $gestor-secondary-color);
+
+  // Panel de tips
+  @include theme-tips($gestor-primary-color, $gestor-accent-color, $gestor-secondary-color);
+
+  // Checkboxes temáticos
+  input[type="checkbox"] {
+    accent-color: $gestor-primary-color;
+  }
+
+  .checkbox-field-centered {
+    background: rgba($gestor-primary-color, 0.05);
+    border-color: rgba($gestor-primary-color, 0.2);
+  }
+
+  // Requisitos de contraseña
+  .password-requirements-inline {
+    background: rgba($gestor-primary-color, 0.03);
+    border-left-color: rgba($gestor-primary-color, 0.3);
+  }
+
+
+
+  // Iconos personalizados de select para tema gestor
+  .form-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2320B2AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+}

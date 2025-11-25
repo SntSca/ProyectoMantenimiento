@@ -1,0 +1,68 @@
+<!-- Modal de confirmación de suscripción VIP -->
+<div class="modal-overlay" *ngIf="showVipConfirmation" (click)="cancelVipUpgrade.emit()" (keydown)="cancelVipUpgrade.emit()">
+  <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="cancelVipCancel.emit()">
+    <header class="app-header compact minimal usuario-variant">
+      <div class="header-content">
+        <h3 class="header-title">👑 Suscripción Premium VIP</h3>
+      </div>
+    </header>
+    <div class="modal-body">
+      <p class="modal-text">¿Quieres convertirte en Usuario VIP?</p>
+      <div class="vip-benefits">
+        <h4>Beneficios VIP:</h4>
+        <ul class="benefits-list">
+          <li>✨ Acceso prioritario a contenido exclusivo</li>
+          <li>🚀 Funciones avanzadas de búsqueda</li>
+          <li>📱 Soporte técnico premium</li>
+          <li>🎯 Recomendaciones personalizadas</li>
+          <li>⭐ Sin anuncios publicitarios</li>
+        </ul>
+      </div>
+      <p class="modal-warning vip-price">Precio: €9.99/mes - Cancela cuando quieras</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="usuario-btn vip-golden" (click)="confirmVipUpgrade.emit()">
+        <span class="btn-icon">👑</span>
+        <span class="btn-text">Quiero ser VIP</span>
+      </button>
+      <button type="button" class="usuario-btn secondary" (click)="cancelVipUpgrade.emit()">
+        <span class="btn-icon">❌</span>
+        <span class="btn-text">Cancelar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para cancelar VIP -->
+<div class="modal-overlay" *ngIf="showCancelVipConfirmation" (click)="cancelVipCancel.emit()" (keydown)="cancelVipCancel.emit()">
+  <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="cancelVipCancel.emit()">
+    <header class="app-header compact minimal usuario-variant">
+      <div class="header-content">
+        <h3 class="header-title">👑 Cancelar Suscripción VIP</h3>
+      </div>
+    </header>
+    <div class="modal-body">
+      <p class="modal-text">¿Estás seguro de que no quieres ser usuario VIP?</p>
+      <div class="vip-loss-info">
+        <h4>No dispondras de los siguientes beneficios:</h4>
+        <ul class="benefits-list">
+          <li>✨ Acceso prioritario a contenido exclusivo</li>
+          <li>🚀 Funciones avanzadas de búsqueda</li>
+          <li>📱 Soporte técnico premium</li>
+          <li>🎯 Recomendaciones personalizadas</li>
+          <li>⭐ Sin anuncios publicitarios</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="usuario-btn vip-cancel" (click)="confirmVipCancel.emit()">
+        <span class="btn-icon">❌</span>
+        <span class="btn-text">Cancelar VIP</span>
+      </button>
+      <button type="button" class="usuario-btn vip-golden" (click)="cancelVipCancel.emit()">
+        <span class="btn-icon">👑</span>
+        <span class="btn-text">Mantener VIP</span>
+      </button>
+    </div>
+  </div>
+</div>

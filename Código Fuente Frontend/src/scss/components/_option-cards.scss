@@ -1,0 +1,133 @@
+// ===========================
+// TARJETAS DE OPCIONES (PANTALLA INICIO)
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ===========================
+// GRID DE OPCIONES
+// ===========================
+.opciones-section {
+  .opciones-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+    
+    @include responsive(md) {
+      grid-template-columns: 1fr;
+      gap: $spacing-md;
+    }
+  }
+}
+
+// ===========================
+// TARJETAS DE OPCIÓN
+// ===========================
+.opcion-card {
+  border-radius: 16px;
+  padding: $spacing-md $spacing-lg;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  
+  @include responsive(md) {
+    min-height: auto;
+    padding: $spacing-lg;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  // Header de la tarjeta
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+
+    .opcion-icon {
+      font-size: 1.5rem;
+    }
+
+    .card-title {
+      color: $white;
+      font-size: $font-size-lg;
+      font-weight: 600;
+      margin: 0;
+
+      @include responsive(sm) {
+        font-size: $font-size-base;
+      }
+    }
+  }
+
+  // Contenido de la tarjeta
+  .card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: $spacing-md;
+
+    .card-description {
+      color: rgba($white, 0.9);
+      line-height: 1.3;
+      margin-bottom: $spacing-sm;
+      font-size: $font-size-sm;
+      
+      @include responsive(sm) {
+        font-size: $font-size-xs;
+      }
+    }
+
+    .card-features {
+      margin-top: auto;
+      
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        color: rgba($white, 0.8);
+        font-size: $font-size-xs;
+        margin-bottom: 0.25rem;
+
+        .feature-icon {
+          font-size: $font-size-xs;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  // Footer con botón
+  .card-footer {
+    margin-top: auto;
+  }
+
+  // Efectos de gradiente por tema
+  &.usuario-card {
+    background: linear-gradient(135deg, $user-primary-color 0%, $user-secondary-color 100%);
+    border: 2px solid rgba($user-secondary-color, 0.3);
+
+    &:hover {
+      border-color: $user-secondary-color;
+      box-shadow: 0 12px 32px rgba($user-primary-color, 0.25);
+    }
+  }
+
+  &.gestor-card {
+    background: linear-gradient(135deg, $gestor-primary-color 0%, $gestor-secondary-color 100%);
+    border: 2px solid rgba($gestor-secondary-color, 0.3);
+
+    &:hover {
+      border-color: $gestor-secondary-color;
+      box-shadow: 0 12px 32px rgba($gestor-primary-color, 0.25);
+    }
+  }
+}

@@ -1,0 +1,100 @@
+// ===========================
+// COMPONENTE DE FOTO Y AVATAR
+// ===========================
+
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.photo-upload {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  background: $light-gray;
+  border: 2px dashed $gray-300;
+  border-radius: $border-radius;
+  transition: all $transition-normal;
+
+  &:hover {
+    border-color: $gray-600;
+    background: $gray-100;
+  }
+}
+
+.photo-preview {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  @include flex-center;
+}
+
+.avatar {
+  @include avatar-base(80px);
+  border: 3px solid $gray-300;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.photo-actions {
+  @include flex-column;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+// ===========================
+// AVATAR Y UPLOAD DEL PERFIL
+// ===========================
+
+.profile-sidebar .photo-upload {
+  @include flex-column;
+  align-items: center;
+  gap: $spacing-sm;
+  background: transparent;
+  border: none;
+  padding: 0;
+  
+  &:hover {
+    background: transparent;
+  }
+  
+  .avatar-container {
+    position: relative;
+    margin-bottom: $spacing-sm;
+    
+    .avatar {
+      @include avatar-base(140px);
+      border: 5px solid transparent;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      border-radius: 50% !important;
+      
+      @include responsive(md) {
+        @include avatar-base(120px);
+        border-width: 4px;
+      }
+    }
+  }
+  
+  .upload-actions {
+    .upload-btn {
+      @include button-base;
+      background: rgba($gray-100, 0.9);
+      color: $text-secondary;
+      border: 2px solid $gray-200;
+      padding: $spacing-xs $spacing-sm;
+      font-size: $font-size-xs;
+      cursor: pointer;
+      border-radius: 20px;
+      
+      &:hover {
+        background: $gray-100;
+        border-color: $gray-300;
+        transform: translateY(-1px);
+      }
+      
+      input[type="file"] {
+        display: none;
+      }
+    }
+  }
+}
