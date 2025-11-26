@@ -44,7 +44,9 @@ public class EmailService {
             content = content.replace(USERNAME_PLACEHOLDER, usuario.getAlias());
             content = content.replace("{{confirmationLink}}", confirmationUrl + "/" + token);
             content = content.replace("{{expirationTime}}", expirationTime);
-
+            System.out.println("Confirmation URL: " + confirmationUrl + "/" + token);
+            System.out.println("Email Content: " + USERNAME_PLACEHOLDER + ", " + confirmationUrl + "/" + token + ", " + expirationTime);
+            System.out.println("User Email: " + sendGridApiKey);
             sendEmailViaSendGrid(usuario.getEmail(), "Confirma tu cuenta en nuestra plataforma", content);
             logger.info("[EMAIL] Correo de confirmación enviado a: {}", usuario.getEmail());
         } 

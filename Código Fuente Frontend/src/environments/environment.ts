@@ -3,7 +3,7 @@ export const environment = {
   production: false,
   
   //Cambiar apiBaseURL a true para deploy, a false para desarrollo local
-  apiBaseUrl: true ? 'https://g07-esimedia-pi-backend.onrender.com' : 'http://localhost:9090',
+  apiBaseUrl: false ? 'https://g07-esimedia-pi-backend.onrender.com' : 'http://localhost:9090',
   
   // Endpoints de usuarios
     endpoints: {
@@ -13,7 +13,7 @@ export const environment = {
         login: '/users/auth/login', 
         logout: '/users/auth/logout', 
         privilegedLogin: '/users/auth/privileged-login', //SI
-
+ 
         auth2fa:{
           sendEmail:'/auth/2fa/email/send', //SI
           verifyEmail:'/auth/2fa/email/verify', //SI
