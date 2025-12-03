@@ -74,7 +74,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         // URL del frontend desplegado en Firebase
         config.setAllowedOrigins(List.of("https://esimedia-frontend-2fbb6.web.app" ,
-                                        "http://localhost:4200",
+                                        "http://localhost:4200",,
                                         "capacitor://localhost"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));

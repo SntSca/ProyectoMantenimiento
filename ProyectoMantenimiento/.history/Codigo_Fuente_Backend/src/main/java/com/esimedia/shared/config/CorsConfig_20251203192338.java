@@ -21,7 +21,8 @@ public class CorsConfig {
                         // Permite localhost para desarrollo y Firebase para producción
                         .allowedOrigins("http://localhost:4200", 
                                         "https://esimedia-frontend-2fbb6.web.app",
-                                        "capacitor://localhost")
+                                        "capacitor://localhost"
+                                    )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true)
@@ -35,8 +36,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:4200",
-                "https://esimedia-frontend-2fbb6.web.app",
-                "capacitor://localhost"
+                "https://esimedia-frontend-2fbb6.web.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

@@ -36,7 +36,7 @@ public class CorsConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:4200",
                 "https://esimedia-frontend-2fbb6.web.app",
-                "capacitor://localhost"
+                                        "capacitor://localhost"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
