@@ -21,7 +21,7 @@ public class CorsConfig {
                         // Permite localhost para desarrollo y Firebase para producción
                         .allowedOrigins("http://localhost:4200", 
                                         "https://esimedia-frontend-2fbb6.web.app",
-                                        "https://localhost")
+                                        "capacitor://localhost")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true)
