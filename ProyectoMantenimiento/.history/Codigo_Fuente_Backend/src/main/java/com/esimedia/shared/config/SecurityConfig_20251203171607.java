@@ -47,7 +47,7 @@ public class SecurityConfig {
                     "/users/confirm/**",
                     "/users/privileged-login",
                     "/users/login",
-                    "/users/auth/login",
+                    "/users/auth/login"
                     "/users/logout",
                     "/users/forgot-password-privileged",
                     "/content/**",
