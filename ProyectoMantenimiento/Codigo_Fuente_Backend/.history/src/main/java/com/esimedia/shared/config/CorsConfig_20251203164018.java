@@ -9,6 +9,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+
 @Configuration
 public class CorsConfig {
 
@@ -18,24 +19,26 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        // Permite localhost para desarrollo y Firebase para producción
-                        .allowedOrigins("http://localhost:4200", 
-                                        "https://esimedia-frontend-2fbb6.web.app")
+                        // 👉 Permite tu frontend
+                        .allowedOrigins("http://localhost:4200")
+                        // 👉 Métodos permitidos
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        // 👉 Cabeceras permitidas
                         .allowedHeaders("*")
+                        // 👉 Permite cookies o tokens (si usas Authorization)
                         .allowCredentials(true)
+                        // 👉 Cabeceras expuestas al frontend
                         .exposedHeaders("Authorization");
             }
         };
     }
 
+    // Bean para que Spring Security pueda usar la misma configuración CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",
-                "https://esimedia-frontend-2fbb6.web.app"
-        ));
+        configuration.setAllowedOrigins(Arrays.asList("https://esimedia-frontend-2fbb6.web.app" ,
+                                                      "http://localhost:4200"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
