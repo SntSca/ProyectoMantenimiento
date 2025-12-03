@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">ValidationService.java</span></div><h1>ValidationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.apache.tika.Tika;
+
+import com.esimedia.features.content.enums.ArchivosAudioSoportados;
+import com.esimedia.features.content.enums.DominiosVideoPermitidos;
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.features.content.dto.ContentAudioUploadDTO;
+import com.esimedia.features.content.dto.ContentUpdateDTO;
+import com.esimedia.features.content.dto.ContentUploadDTO;
+import com.esimedia.features.content.dto.ContentVideoUploadDTO;
+import com.esimedia.shared.util.ContentUtil;
+
+
+@Service
+public class ValidationService {
+
+<span class="fc" id="L35">    private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);</span>
+    private static final long MAX_AUDIO_SIZE = 1024L * 1024;
+
+    // Solo patrones para validaciones de negocio específicas (básicas van en DTOs)
+
+    // Constantes de longitud máxima
+    public static final int MAX_NOMBRE_LENGTH = 50;
+    public static final int MAX_APELLIDOS_LENGTH = 100;
+    public static final int MAX_EMAIL_LENGTH = 254;
+    public static final int MAX_ALIAS_LENGTH = 12;
+    public static final int MAX_PASSWORD_LENGTH = 128;
+    public static final int MIN_EDAD_ANIOS = 4;
+
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final AdminRepository adminRepository;
+    private final PasswordDictionaryService passwordDictionaryService;
+
+    public ValidationService(CreadorContenidoRepository creadorContenidoRepository, 
+                           UsuarioNormalRepository usuarioNormalRepository,
+                           AdminRepository adminRepository,
+<span class="fc" id="L56">                           PasswordDictionaryService passwordDictionaryService) {</span>
+<span class="fc" id="L57">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L58">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L59">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L60">        this.passwordDictionaryService = passwordDictionaryService;</span>
+<span class="fc" id="L61">    }</span>
+    
+    
+    // -------------------- VALIDACIONES DE USUARIOS --------------------
+
+
+    /**
+     * Valida que un contenido solo pueda asociarse a un creador del mismo tipo
+     * @param contenido El contenido a validar
+     * @param creadorId ID del creador al que se quiere asociar
+     * @throws ResponseStatusException si los tipos no son compatibles
+     */
+
+    /**
+     * Valida que un contenido de video solo pueda asociarse a un creador de video
+     * @param tipoContenido Tipo del contenido
+     * @param tipoCreador Tipo del creador
+     * @throws ResponseStatusException si los tipos no son compatibles
+     */
+    
+    
+
+
+    // -------------------- VALIDACIONES DE NEGOCIO (básicas eliminadas - ahora van en DTOs) --------------------
+
+    public void validatePasswordStrength(String password, String alias, String email) throws ResponseStatusException {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (password.toLowerCase().contains(alias.toLowerCase())) {</span>
+<span class="fc" id="L88">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+                &quot;La contraseña no debe contener el alias de usuario&quot;);
+        }
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">        if (email != null &amp;&amp; password.toLowerCase().contains(email.split(&quot;@&quot;)[0].toLowerCase())) {</span>
+<span class="fc" id="L92">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+                &quot;La contraseña no debe contener el nombre del correo electrónico&quot;);
+        }
+        
+        // Verificar si la contraseña está en el diccionario de contraseñas típicas
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (passwordDictionaryService.isPasswordInDictionary(password)) {</span>
+<span class="fc" id="L98">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+                &quot;La contraseña seleccionada es muy común. Por favor, elige una contraseña más fuerte y única&quot;);
+        }
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Valida la fecha de nacimiento
+     */
+    public void validateFechaNacimiento(Date fechaNacimiento) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (fechaNacimiento == null) {</span>
+<span class="fc" id="L108">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;La fecha de nacimiento es obligatoria&quot;);</span>
+        }
+        
+<span class="fc" id="L111">        LocalDate fechaNac = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();</span>
+<span class="fc" id="L112">        LocalDate hoy = LocalDate.now();</span>
+        
+        // No puede ser futura
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (fechaNac.isAfter(hoy)) {</span>
+<span class="fc" id="L116">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;La fecha de nacimiento no puede ser futura&quot;);</span>
+        }
+        
+        // Debe tener al menos 4 años
+<span class="fc" id="L120">        LocalDate fechaMinima = hoy.minusYears(MIN_EDAD_ANIOS);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (fechaNac.isAfter(fechaMinima)) {</span>
+<span class="fc" id="L122">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+                &quot;El usuario debe tener al menos &quot; + MIN_EDAD_ANIOS + &quot; años&quot;);
+        }
+<span class="fc" id="L125">    }</span>
+
+    /**
+     * Calcula la edad actual de un usuario basado en su fecha de nacimiento
+     * @param fechaNacimiento Fecha de nacimiento del usuario
+     * @return Edad en años
+     */
+    public int calculateAge(Date fechaNacimiento) {
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (fechaNacimiento == null) {</span>
+<span class="fc" id="L134">            return 0;</span>
+        }
+<span class="fc" id="L136">        LocalDate fechaNac = fechaNacimiento.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();</span>
+<span class="fc" id="L137">        LocalDate hoy = LocalDate.now();</span>
+<span class="fc" id="L138">        return Period.between(fechaNac, hoy).getYears();</span>
+    }
+
+    /**
+     * Valida reglas de negocio específicas para usuarios (validaciones básicas van en DTOs)
+     */
+    public void validateBusinessRulesForUser(String email, String alias, String password) throws ResponseStatusException {
+<span class="fc" id="L145">        logger.info(&quot;[VALIDATION] Validando reglas de negocio para: {}&quot;, email);</span>
+        
+        // validateEmailDomain(email); // Eliminado - ahora se hace automáticamente en el DTO con @ValidEmailDomain
+<span class="fc" id="L148">        validatePasswordStrength(password, alias, email);</span>
+        
+<span class="fc" id="L150">        logger.info(&quot;[VALIDATION] Reglas de negocio validadas&quot;);</span>
+<span class="fc" id="L151">    }</span>
+
+    /**
+     * Valida la longitud máxima de un campo de texto
+     */
+    public void validateFieldLength(String value, String fieldName, int maxLength) {
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (value.length() &gt; maxLength) {</span>
+<span class="fc" id="L158">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+<span class="fc" id="L159">                String.format(&quot;El campo %s no puede tener más de %d caracteres&quot;, fieldName, maxLength));</span>
+        }
+<span class="fc" id="L161">    }</span>
+
+    /**
+     * Valida datos específicos para un usuario normal
+     */
+    public void validateNormalUserSpecific(String email) throws ResponseStatusException {
+<span class="fc" id="L167">        logger.info(&quot;[VALIDATION] Verificando unicidad global del email para usuario normal: {}&quot;, email);</span>
+
+        // Validar unicidad global del email en todas las tablas de usuarios
+<span class="fc" id="L170">        validateGlobalEmailUniqueness(email);</span>
+
+<span class="fc" id="L172">        logger.info(&quot;[VALIDATION] Email disponible globalmente: {}&quot;, email);</span>
+<span class="fc" id="L173">    }</span>
+
+    /**
+     * Valida datos específicos para un usuario normal incluyendo fecha de nacimiento
+     */
+    public void validateUsuarioNormalData(String email, String alias, String password, Date fechaNacimiento) {
+<span class="fc" id="L179">        logger.info(&quot;[VALIDATION] Iniciando validaciones específicas para UsuarioNormal&quot;);</span>
+<span class="fc" id="L180">        validateBusinessRulesForUser(email, alias, password);</span>
+<span class="fc" id="L181">        validateFechaNacimiento(fechaNacimiento);</span>
+<span class="fc" id="L182">        validateNormalUserSpecific(email);</span>
+<span class="fc" id="L183">        logger.info(&quot;[VALIDATION] Validaciones específicas completadas para UsuarioNormal&quot;);</span>
+<span class="fc" id="L184">    }</span>
+
+    /**
+     * Valida datos específicos para un creador de contenido
+     */
+    public void validateCreatorSpecific(String email, String aliasCreador) throws ResponseStatusException {
+<span class="fc" id="L190">        logger.info(&quot;[VALIDATION] Validando unicidad de creador - email: {}, alias: {}&quot;, email, aliasCreador);</span>
+
+        // Validar unicidad global del email
+<span class="fc" id="L193">        validateGlobalEmailUniqueness(email);</span>
+
+        // Validar unicidad del alias del creador
+<span class="fc bfc" id="L196" title="All 4 branches covered.">        if (aliasCreador == null || aliasCreador.trim().isEmpty()) {</span>
+<span class="fc" id="L197">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El alias del creador es obligatorio&quot;);</span>
+        }
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (creadorContenidoRepository.existsByAliasCreador(aliasCreador)) {</span>
+<span class="fc" id="L200">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Ya existe un creador con ese alias&quot;);</span>
+        }
+
+<span class="fc" id="L203">        logger.info(&quot;[VALIDATION] Validaciones de creador completadas - email: {}, alias: {}&quot;, email, aliasCreador);</span>
+<span class="fc" id="L204">    }</span>
+
+    /**
+     * Valida la unicidad global del email en todas las tablas de usuarios
+     */
+    public void validateGlobalEmailUniqueness(String email) throws ResponseStatusException {
+<span class="fc" id="L210">        logger.info(&quot;[VALIDATION] Validando unicidad global del email: {}&quot;, email);</span>
+
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (usuarioNormalRepository.existsByemail(email)) {</span>
+<span class="fc" id="L213">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un usuario registrado con este email&quot;);
+        }
+
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        if (creadorContenidoRepository.existsByEmail(email)) {</span>
+<span class="fc" id="L218">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un creador registrado con este email&quot;);
+        }
+
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (adminRepository.existsByEmail(email)) {</span>
+<span class="fc" id="L223">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un administrador registrado con este email&quot;);
+        }
+
+<span class="fc" id="L227">        logger.info(&quot;[VALIDATION] Email disponible globalmente: {}&quot;, email);</span>
+<span class="fc" id="L228">    }</span>
+
+
+    /**
+     * Valida tipo de creador, lanzando excepción si no es válido
+     */
+    public void validarTipoCreador(String tipoContenido) throws ResponseStatusException {
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        if (tipoContenido == null) {</span>
+<span class="fc" id="L236">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                &quot;Debe especificar tipoContenido&quot;);
+        }
+        
+        try {
+<span class="fc" id="L241">            TipoContenido.valueOf(tipoContenido.toUpperCase());</span>
+        } 
+<span class="fc" id="L243">        catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L244">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                &quot;Tipo de contenido inválido. Debe ser VIDEO o AUDIO&quot;);
+        }
+<span class="fc" id="L247">        catch (Exception e) {</span>
+<span class="fc" id="L248">            logger.error(&quot;Unexpected validation error&quot;, e);</span>
+<span class="fc" id="L249">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+                &quot;Error inesperado en validación de tipo&quot;);
+<span class="fc" id="L251">        }</span>
+<span class="fc" id="L252">    }</span>
+    
+    /**
+     * Valida que un creador puede subir contenido del tipo especificado
+     * @param creador El creador de contenido
+     * @param tipoContenido El tipo de contenido a subir
+     * @throws ResponseStatusException si no hay compatibilidad
+     */
+    public void validateCreatorContentTypeCompatibility(CreadorContenido creador, TipoContenido tipoContenido) 
+            throws ResponseStatusException {
+<span class="pc bpc" id="L262" title="1 of 4 branches missed.">        if (creador == null || tipoContenido == null) {</span>
+<span class="fc" id="L263">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+                &quot;Creador y tipo de contenido son requeridos&quot;);
+        }
+        
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        if (creador.getTipoContenido() != tipoContenido) {</span>
+<span class="fc" id="L268">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, </span>
+<span class="fc" id="L269">                String.format(&quot;El creador de tipo %s no puede subir contenido de tipo %s&quot;, </span>
+<span class="fc" id="L270">                    creador.getTipoContenido().getValor(), tipoContenido.getValor()));</span>
+        }
+<span class="fc" id="L272">    }</span>
+    
+    // -------------------- VALIDACIONES DE CONTENIDO --------------------
+    public String validateContentUpload(ContentUploadDTO contentDTO) throws IllegalArgumentException {
+<span class="fc" id="L276">        String[] errores = new String[] {</span>
+<span class="fc" id="L277">            validateBasicFields(contentDTO),</span>
+<span class="fc" id="L278">            validateExpirationDate(contentDTO.getFechaExpiracion()),</span>
+<span class="fc" id="L279">            validateImageFormat(contentDTO.getMiniatura())</span>
+        };
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            if (error != null) {</span>
+<span class="fc" id="L283">                return error;</span>
+            }
+        }
+<span class="fc" id="L286">        return null;</span>
+    }
+    
+    private String validateBasicFields(ContentUploadDTO contentDTO) throws IllegalArgumentException {
+<span class="fc" id="L290">        String[] errores = new String[] {</span>
+<span class="pc bpc" id="L291" title="2 of 6 branches missed.">            (contentDTO.getTags() == null || contentDTO.getTags().isEmpty() || contentDTO.getTags().size() &gt; 25) ? &quot;Debe incluir entre 1 y 25 tags&quot; : null,</span>
+        };
+<span class="fc" id="L293">        String result = null;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            if (error != null) {</span>
+<span class="fc" id="L296">                result = error;</span>
+<span class="fc" id="L297">                break;</span>
+            }
+        }
+<span class="fc" id="L300">        return result;</span>
+    }
+    
+    private String validateExpirationDate(String fechaExpiracion) throws IllegalArgumentException {
+<span class="fc" id="L304">        String result = null;</span>
+<span class="pc bpc" id="L305" title="3 of 4 branches missed.">        if (fechaExpiracion != null &amp;&amp; !fechaExpiracion.trim().isEmpty()) {</span>
+            try {
+<span class="nc" id="L307">                SimpleDateFormat formatter = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="nc" id="L308">                formatter.parse(fechaExpiracion);</span>
+            } 
+<span class="nc" id="L310">            catch (ParseException e) {</span>
+<span class="nc" id="L311">                result = &quot;Formato de fecha inválido. Use yyyy-MM-dd&quot;;</span>
+<span class="nc" id="L312">            }</span>
+        }
+<span class="fc" id="L314">        return result;</span>
+    }
+    
+    private String validateImageFormat(String imagen) throws IllegalArgumentException {
+        // Si la imagen es null o vacía, permitir (es opcional)
+<span class="pc bpc" id="L319" title="2 of 4 branches missed.">        if (imagen == null || imagen.trim().isEmpty()) {</span>
+<span class="nc" id="L320">            return null;</span>
+        }
+
+<span class="fc" id="L323">        String[] errores = new String[] {</span>
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">            (imagen.startsWith(&quot;http://&quot;) || imagen.startsWith(&quot;https://&quot;)) ? &quot;La imagen debe ser enviada en formato base64 o data URI, no como URL&quot; : null,</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">            (imagen.length() &gt; 1024 * 1024 * 2) ? &quot;La imagen es demasiado grande (máximo 2MB)&quot; : null</span>
+        };
+<span class="fc" id="L327">        String result = null;</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            if (error != null) {</span>
+<span class="fc" id="L330">                result = error;</span>
+<span class="fc" id="L331">                break;</span>
+            }
+        }
+<span class="fc" id="L334">        return result;</span>
+    }
+
+
+    public String validateAudioContent(ContentAudioUploadDTO audioDTO) throws IllegalArgumentException {
+<span class="fc" id="L339">        String contenido = audioDTO.getFichero();</span>
+
+<span class="fc" id="L341">        String[] errores = new String[] {</span>
+<span class="fc" id="L342">            validateContentUpload(audioDTO),</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">            (!ContentUtil.isValidBase64(contenido)) ? &quot;El archivo de audio debe estar en formato base64 válido&quot; : null,</span>
+<span class="fc" id="L344">            getAudioProcessingError(contenido)</span>
+        };
+<span class="fc" id="L346">        String result = null;</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">            if (error != null) {</span>
+<span class="nc" id="L349">                result = error;</span>
+<span class="nc" id="L350">                break;</span>
+            }
+        }
+<span class="fc" id="L353">        return result;</span>
+    }
+
+    private String getAudioProcessingError(String contenido) throws IllegalArgumentException {
+<span class="fc" id="L357">        String result = null;</span>
+
+<span class="fc" id="L359">        byte[] audioBytes = ContentUtil.decodeBase64(contenido);</span>
+<span class="fc" id="L360">        String[] errores = new String[] {</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            (audioBytes == null) ? &quot;Error al procesar el archivo de audio&quot; : null,</span>
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">            (audioBytes != null &amp;&amp; !esAudioSoportado(audioBytes)) ? &quot;Formato de audio no soportado&quot; : null,</span>
+<span class="pc bpc" id="L363" title="2 of 4 branches missed.">            (audioBytes != null &amp;&amp; audioBytes.length &gt; MAX_AUDIO_SIZE) ? &quot;El archivo de audio debe ser menor a 1MB&quot; : null</span>
+        };
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">            if (error != null) {</span>
+<span class="nc" id="L367">                return error;</span>
+            }
+        } 
+        
+<span class="fc" id="L371">        return result;</span>
+    }
+
+    public String validateVideoContent(ContentVideoUploadDTO videoDTO) throws IllegalArgumentException {
+<span class="fc" id="L375">        String[] errores = new String[] {</span>
+<span class="fc" id="L376">            validateContentUpload(videoDTO),</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">            (!isValidResolution(videoDTO.getResolucion())) ? &quot;Resolución inválida. Use: 720, 1080 o 4k&quot; : null,</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">            (!isValidVideoUrl(videoDTO.getUrlArchivo())) ? &quot;La URL del video debe ser de un dominio soportado (YouTube, Vimeo, Twitch, etc.)&quot; : null</span>
+        };
+<span class="fc" id="L380">        String result = null;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        for (String error : errores) {</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">            if (error != null) {</span>
+<span class="fc" id="L383">                result = error;</span>
+<span class="fc" id="L384">                break;</span>
+            }
+        }
+<span class="fc" id="L387">        return result;</span>
+    }
+
+    // Método auxiliar para validar resolución
+    private boolean isValidResolution(String resolucion) {
+<span class="fc" id="L392">        boolean result = false;</span>
+<span class="pc bpc" id="L393" title="2 of 6 branches missed.">        result = resolucion.equals(&quot;720&quot;) || resolucion.equals(&quot;1080&quot;) || resolucion.equals(&quot;4K&quot;);</span>
+<span class="fc" id="L394">        return result;</span>
+    }
+
+    // Método auxiliar para validar URL de video
+    private boolean isValidVideoUrl(String url) {
+<span class="fc" id="L399">        boolean result = false;</span>
+<span class="fc" id="L400">        result = DominiosVideoPermitidos.isUrlVideoValida(url);</span>
+<span class="fc" id="L401">        return result;</span>
+    }
+
+    public boolean esAudioSoportado(byte[] audioBytes) {
+<span class="fc" id="L405">        Tika tika = new Tika();</span>
+<span class="fc" id="L406">        String mimeType = tika.detect(audioBytes);</span>
+<span class="fc" id="L407">        return ArchivosAudioSoportados.contains(mimeType);</span>
+    }
+
+    /**
+     * Valida la unicidad del email y alias para administradores
+     */
+    public void validateAdminUniqueness(String email, String alias) throws ResponseStatusException {
+<span class="fc" id="L414">        logger.info(&quot;[VALIDATION] Validando unicidad de administrador - email: {}, alias: {}&quot;, email, alias);</span>
+
+        // Verificar unicidad del email contra usuarios normales y creadores (no contra administradores)
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        if (usuarioNormalRepository.existsByemail(email)) {</span>
+<span class="fc" id="L418">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un usuario registrado con este email&quot;);
+        }
+
+<span class="pc bpc" id="L422" title="1 of 2 branches missed.">        if (creadorContenidoRepository.existsByEmail(email)) {</span>
+<span class="nc" id="L423">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un creador registrado con este email&quot;);
+        }
+
+        // Verificar unicidad del alias contra usuarios normales y creadores
+<span class="fc bfc" id="L428" title="All 2 branches covered.">        if (usuarioNormalRepository.existsByalias(alias)) {</span>
+<span class="fc" id="L429">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un usuario registrado con este alias&quot;);
+        }
+
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">        if (creadorContenidoRepository.existsByAlias(alias)) {</span>
+<span class="nc" id="L434">            throw new ResponseStatusException(HttpStatus.CONFLICT,</span>
+                &quot;Ya existe un creador registrado con este alias&quot;);
+        }
+
+<span class="fc" id="L438">        logger.info(&quot;[VALIDATION] Unicidad de administrador validada - email: {}, alias: {}&quot;, email, alias);</span>
+<span class="fc" id="L439">    }</span>
+
+    /**
+     * Valida datos para actualizar contenido.
+     * Campos opcionales, pero si se proporcionan, deben ser válidos.
+     * @param updateDTO DTO con datos de actualización
+     * @return null si válido, mensaje de error si no
+     */
+    public String validateContentUpdate(ContentUpdateDTO updateDTO) throws IllegalArgumentException {
+
+        // Validar fecha de expiración si se proporciona
+<span class="pc bpc" id="L450" title="1 of 4 branches missed.">        if (updateDTO.getFechaExpiracion() != null &amp;&amp; !updateDTO.getFechaExpiracion().trim().isEmpty()) {</span>
+            try {
+<span class="fc" id="L452">                SimpleDateFormat formatter = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="fc" id="L453">                formatter.parse(updateDTO.getFechaExpiracion());</span>
+            }
+<span class="nc" id="L455">            catch (ParseException e) {</span>
+<span class="nc" id="L456">                    return &quot;Formato de fecha inválido. Use yyyy-MM-dd&quot;;</span>
+<span class="fc" id="L457">                }</span>
+        }
+
+        // Validar restricción de edad si se proporciona
+<span class="pc bpc" id="L461" title="1 of 4 branches missed.">        if (updateDTO.getRestriccionEdad() != null &amp;&amp; !RestriccionEdad.isValidValue(updateDTO.getRestriccionEdad())) {</span>
+<span class="fc" id="L462">            return &quot;El valor de restricción de edad no es válido. Valores permitidos: 3, 7, 12, 16, 18&quot;;</span>
+        }
+
+<span class="fc" id="L465">        return null;</span>
+    }
+
+    /**
+     * Valida que un gestor de contenido pueda editar o eliminar contenido específico.
+     * Los gestores solo pueden editar/eliminar contenido de su mismo tipo.
+     * @param creador El creador que intenta editar/eliminar
+     * @param tipoContenido El tipo de contenido que se quiere editar/eliminar
+     * @throws ResponseStatusException si no está autorizado
+     */
+    public void validateContentEditPermission(CreadorContenido creador, TipoContenido tipoContenido) throws ResponseStatusException {
+<span class="pc bpc" id="L476" title="2 of 4 branches missed.">        if (creador == null || tipoContenido == null) {</span>
+<span class="nc" id="L477">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Creador y tipo de contenido son requeridos&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        if (creador.getTipoContenido() != tipoContenido) {</span>
+<span class="fc" id="L481">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, </span>
+<span class="fc" id="L482">                String.format(&quot;El gestor de tipo %s no puede editar/eliminar contenido de tipo %s&quot;, </span>
+<span class="fc" id="L483">                    creador.getTipoContenido().getValor(), tipoContenido.getValor()));</span>
+        }
+        
+<span class="fc" id="L486">        logger.info(&quot;[VALIDATION] Edición/eliminación permitida para creador {} en contenido de tipo {}&quot;, creador.getAliasCreador(), tipoContenido);</span>
+<span class="fc" id="L487">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginAttemptService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">LoginAttemptService.java</span></div><h1>LoginAttemptService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+@Service
+public class LoginAttemptService {
+
+    private static final int MAX_ATTEMPTS = 5;
+    private static final int IP_USER_THRESHOLD = 20;
+    private static final long IP_ADAPTIVE_DELAY_MS = 2000L;
+    private static final long WINDOW_DURATION_MS = 5 * 60 * 1000L;
+    private static final int ADAPTIVE_MAX_ATTEMPTS = 2;
+    
+    private final EmailService emailService;
+    private final UsuarioNormalRepository userNormalRepository;
+<span class="fc" id="L28">    private final Logger logger = LoggerFactory.getLogger(LoginAttemptService.class);</span>
+
+    @Autowired
+<span class="fc" id="L31">    public LoginAttemptService(EmailService emailService, UsuarioNormalRepository userNormalRepository) {</span>
+<span class="fc" id="L32">        this.emailService = emailService;</span>
+<span class="fc" id="L33">        this.userNormalRepository = userNormalRepository;</span>
+<span class="fc" id="L34">    }</span>
+
+<span class="fc" id="L36">    private static final long[] BLOCK_TIMES_MS = {</span>
+        // 30 segundos
+        30 * 1000L,
+        // 2 minutos
+        2 * 60 * 1000L,
+        // 4 minutos
+        4 * 60 * 1000L,
+        // 5 minutos
+        5 * 60 * 1000L
+    };
+
+
+    // Key: username|ip
+<span class="fc" id="L49">    private final Cache&lt;String, AttemptInfo&gt; attempts = Caffeine.newBuilder()</span>
+<span class="fc" id="L50">        .expireAfterAccess(1, TimeUnit.HOURS)</span>
+<span class="fc" id="L51">        .build();</span>
+
+    // Para rate limiting adaptativo por IP
+<span class="fc" id="L54">    private final ConcurrentHashMap&lt;String, Set&lt;String&gt;&gt; ipToUsers = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L55">    private final ConcurrentHashMap&lt;String, Long&gt; ipAdaptiveUntil = new ConcurrentHashMap&lt;&gt;();</span>
+    
+
+    // Comprueba si usuario+ip está bloqueado
+    public boolean isBlocked(String username, String ip) {
+<span class="fc" id="L60">        String key = username + &quot;|&quot; + ip;</span>
+<span class="fc" id="L61">        AttemptInfo info = attempts.getIfPresent(key);</span>
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        if (info == null || info.blockStartTime == 0)  {</span>
+<span class="fc" id="L63">            return false;</span>
+        }
+<span class="fc" id="L65">        long duration = BLOCK_TIMES_MS[Math.min(info.blockLevel, BLOCK_TIMES_MS.length - 1)];</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (System.currentTimeMillis() - info.blockStartTime &lt; duration) {</span>
+<span class="fc" id="L67">            return true;</span>
+        }
+        // Desbloquear tras tiempo cumplido
+<span class="nc" id="L70">        info.blockStartTime = 0;</span>
+<span class="nc" id="L71">        info.blockLevel = 0;</span>
+<span class="nc" id="L72">        info.attemptTimestamps.clear();</span>
+<span class="nc" id="L73">        attempts.put(key, info);</span>
+<span class="nc" id="L74">        return false;</span>
+    }
+
+    // Comprueba si la IP está en modo adaptativo (umbral reducido)
+    public boolean isIpBlocked(String ip) {
+<span class="fc" id="L79">        Long until = ipAdaptiveUntil.get(ip);</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">        return until != null &amp;&amp; until &gt; System.currentTimeMillis();</span>
+    }
+
+    // Devuelve segundos restantes para modo adaptativo de IP
+    public long getIpRetryAfterSeconds(String ip) {
+<span class="fc" id="L85">        Long until = ipAdaptiveUntil.get(ip);</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (until == null) return 0;</span>
+<span class="fc" id="L87">        long diff = until - System.currentTimeMillis();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        return diff &gt; 0 ? (diff / 1000) : 0;</span>
+    }
+
+    // Devuelve segundos restantes para desbloqueo de usuario+ip
+    public long getUserRetryAfterSeconds(String username, String ip) {
+<span class="fc" id="L93">        String key = username + &quot;|&quot; + ip;</span>
+<span class="fc" id="L94">        AttemptInfo info = attempts.getIfPresent(key);</span>
+<span class="pc bpc" id="L95" title="3 of 4 branches missed.">        if (info == null || info.blockStartTime == 0) return 0;</span>
+<span class="nc" id="L96">        long duration = BLOCK_TIMES_MS[Math.min(info.blockLevel, BLOCK_TIMES_MS.length - 1)];</span>
+<span class="nc" id="L97">        long diff = duration - (System.currentTimeMillis() - info.blockStartTime);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        return diff &gt; 0 ? (diff / 1000) : 0;</span>
+    }
+
+    public void recordFailedAttempt(String username, String ip) {
+<span class="fc" id="L102">        String key = username + &quot;|&quot; + ip;</span>
+<span class="fc" id="L103">        AttemptInfo info = attempts.get(key, k -&gt; new AttemptInfo());</span>
+
+        // No contar si está bloqueado
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (isBlocked(username, ip)) return;</span>
+
+<span class="fc" id="L108">        boolean isAdaptive = isIpBlocked(ip);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        int maxAttempts = isAdaptive ? ADAPTIVE_MAX_ATTEMPTS : MAX_ATTEMPTS;</span>
+
+<span class="fc" id="L111">        long now = System.currentTimeMillis();</span>
+<span class="fc" id="L112">        pruneOldTimestamps(info, now);</span>
+
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">        if (isAdaptive &amp;&amp; !sleepSilently(IP_ADAPTIVE_DELAY_MS)) return;</span>
+
+<span class="fc" id="L116">        registerIpUser(ip, username);</span>
+
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (shouldActivateAdaptive(ip)) {</span>
+<span class="fc" id="L119">            activateAdaptiveMode(ip);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">            if (!sleepSilently(IP_ADAPTIVE_DELAY_MS)) return;</span>
+        }
+
+        // Registrar el intento fallido
+<span class="fc" id="L124">        info.attemptTimestamps.add(now);</span>
+
+<span class="fc" id="L126">        int currentAttempts = info.attemptTimestamps.size();</span>
+
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (currentAttempts &gt;= maxAttempts) {</span>
+<span class="fc" id="L129">            handleBlock(info, maxAttempts, username);</span>
+        }
+
+<span class="fc" id="L132">        attempts.put(key, info);</span>
+<span class="fc" id="L133">    }</span>
+
+    public void resetAttempts(String username, String ip) {
+<span class="fc" id="L136">        String key = username + &quot;|&quot; + ip;</span>
+<span class="fc" id="L137">        attempts.invalidate(key);</span>
+<span class="fc" id="L138">    }</span>
+
+<span class="fc" id="L140">    private static class AttemptInfo {</span>
+<span class="fc" id="L141">        java.util.List&lt;Long&gt; attemptTimestamps = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L142">        int blockLevel = 0;</span>
+<span class="fc" id="L143">        long blockStartTime = 0;</span>
+    }
+    private void pruneOldTimestamps(AttemptInfo info, long now) {
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        info.attemptTimestamps.removeIf(timestamp -&gt; (now - timestamp) &gt; WINDOW_DURATION_MS);</span>
+<span class="fc" id="L147">    }</span>
+
+    private boolean sleepSilently(long ms) {
+        try {
+<span class="fc" id="L151">            Thread.sleep(ms);</span>
+<span class="fc" id="L152">            return true;</span>
+        } 
+<span class="nc" id="L154">        catch (InterruptedException e) {</span>
+<span class="nc" id="L155">            Thread.currentThread().interrupt();</span>
+<span class="nc" id="L156">            return false;</span>
+        }
+    }
+
+    private void registerIpUser(String ip, String username) {
+<span class="fc" id="L161">        ipToUsers.computeIfAbsent(ip, k -&gt; new HashSet&lt;&gt;()).add(username);</span>
+<span class="fc" id="L162">    }</span>
+
+    private boolean shouldActivateAdaptive(String ip) {
+<span class="fc" id="L165">        Set&lt;String&gt; users = ipToUsers.get(ip);</span>
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">        return users != null &amp;&amp; users.size() &gt;= IP_USER_THRESHOLD;</span>
+    }
+
+    private void activateAdaptiveMode(String ip) {
+<span class="fc" id="L170">        ipAdaptiveUntil.put(ip, System.currentTimeMillis() + WINDOW_DURATION_MS);</span>
+<span class="fc" id="L171">        Set&lt;String&gt; users = ipToUsers.get(ip);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (users != null) {</span>
+<span class="fc" id="L173">            users.clear();</span>
+        }
+<span class="fc" id="L175">    }</span>
+
+    private void handleBlock(AttemptInfo info, int maxAttempts, String username) {
+<span class="fc" id="L178">        info.blockLevel++;</span>
+<span class="fc" id="L179">        info.blockStartTime = System.currentTimeMillis();</span>
+
+<span class="fc" id="L181">        int totalAttempts = maxAttempts * info.blockLevel;</span>
+
+<span class="fc" id="L183">        userNormalRepository.findByemail(username).ifPresent(user -&gt; {</span>
+            try {
+<span class="fc" id="L185">                emailService.sendSecurityAlertEmail(user, totalAttempts);</span>
+            } 
+<span class="fc" id="L187">            catch (Exception e) {</span>
+<span class="fc" id="L188">                logger.error(&quot;Error enviando correo de alerta: &quot;, e);</span>
+<span class="fc" id="L189">            }</span>
+<span class="fc" id="L190">        });</span>
+
+<span class="fc" id="L192">        info.attemptTimestamps.clear();</span>
+<span class="fc" id="L193">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

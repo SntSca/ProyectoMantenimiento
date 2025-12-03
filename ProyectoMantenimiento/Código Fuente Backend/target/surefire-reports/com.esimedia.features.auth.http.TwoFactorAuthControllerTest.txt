@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.esimedia.features.auth.http.TwoFactorAuthControllerTest
+-------------------------------------------------------------------------------
+Tests run: 33, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.496 s -- in com.esimedia.features.auth.http.TwoFactorAuthControllerTest

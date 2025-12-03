@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserListService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.services</a> &gt; <span class="el_source">UserListService.java</span></div><h1>UserListService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.services;
+
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import com.esimedia.features.auth.dto.UserResponseDTO;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+/**
+ * Servicio especializado para operaciones de listado masivo de usuarios.
+ * Se encarga de obtener listas completas de usuarios por tipo o todos juntos.
+ */
+@Service
+public class UserListService {
+
+    private static final String ERROR_OBTENER_USUARIOS_NORMALES = &quot;Error al obtener usuarios normales&quot;;
+    private static final String ERROR_OBTENER_ADMINISTRADORES = &quot;Error al obtener administradores&quot;;
+    private static final String ERROR_OBTENER_CREADORES_CONTENIDO = &quot;Error al obtener creadores de contenido&quot;;
+    private static final String ERROR_OBTENER_TODOS_USUARIOS = &quot;Error al obtener todos los usuarios&quot;;
+    
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final Logger logger;
+
+    public UserListService(UsuarioNormalRepository usuarioNormalRepository,
+                          CreadorContenidoRepository creadorContenidoRepository,
+<span class="fc" id="L40">                          AdminRepository adminRepository) {</span>
+<span class="fc" id="L41">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L42">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L43">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L44">        this.logger = LoggerFactory.getLogger(UserListService.class);</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Obtiene todos los usuarios normales de la base de datos
+     */
+    public List&lt;UsuarioNormal&gt; getAllUsuariosNormales() {
+<span class="fc" id="L51">        logger.info(&quot;[GET_ALL_NORMAL_USERS] Obteniendo todos los usuarios normales&quot;);</span>
+        try {
+<span class="fc" id="L53">            List&lt;UsuarioNormal&gt; usuarios = usuarioNormalRepository.findAll();</span>
+<span class="fc" id="L54">            logger.info(&quot;[GET_ALL_NORMAL_USERS] Se encontraron {} usuarios normales&quot;, usuarios.size());</span>
+<span class="fc" id="L55">            return usuarios;</span>
+        } 
+<span class="fc" id="L57">        catch (Exception e) {</span>
+<span class="fc" id="L58">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_OBTENER_USUARIOS_NORMALES, e);</span>
+        }
+    }
+
+    /**
+     * Obtiene todos los administradores de la base de datos
+     */
+    public List&lt;Administrador&gt; getAllAdministradores() {
+<span class="fc" id="L66">        logger.info(&quot;[GET_ALL_ADMINISTRATORS] Obteniendo todos los administradores&quot;);</span>
+        try {
+<span class="fc" id="L68">            List&lt;Administrador&gt; administradores = adminRepository.findAll();</span>
+<span class="fc" id="L69">            logger.info(&quot;[GET_ALL_ADMINISTRATORS] Se encontraron {} administradores&quot;, administradores.size());</span>
+<span class="fc" id="L70">            return administradores;</span>
+        } 
+<span class="fc" id="L72">		catch (Exception e) {</span>
+<span class="fc" id="L73">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_OBTENER_ADMINISTRADORES, e);</span>
+        }
+    }
+
+    /**
+     * Obtiene todos los creadores de contenido de la base de datos
+     */
+    public List&lt;CreadorContenido&gt; getAllCreadoresContenido() {
+<span class="fc" id="L81">        logger.info(&quot;[GET_ALL_CONTENT_CREATORS] Obteniendo todos los creadores de contenido&quot;);</span>
+        try {
+<span class="fc" id="L83">            List&lt;CreadorContenido&gt; creadores = creadorContenidoRepository.findAll();</span>
+<span class="fc" id="L84">            logger.info(&quot;[GET_ALL_CONTENT_CREATORS] Se encontraron {} creadores de contenido&quot;, creadores.size());</span>
+<span class="fc" id="L85">            return creadores;</span>
+        } 
+<span class="fc" id="L87">		catch (Exception e) {</span>
+<span class="fc" id="L88">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_OBTENER_CREADORES_CONTENIDO, e);</span>
+        }
+    }
+
+    /**
+     * Convierte un Usuario a UserResponseDTO con fotoPerfil como data URI
+     */
+    private UserResponseDTO convertToDTO(Usuario user) {
+<span class="fc" id="L96">        UserResponseDTO dto = new UserResponseDTO();</span>
+<span class="fc" id="L97">        dto.setIdUsuario(user.getIdUsuario());</span>
+<span class="fc" id="L98">        dto.setNombre(user.getNombre());</span>
+<span class="fc" id="L99">        dto.setApellidos(user.getApellidos());</span>
+<span class="fc" id="L100">        dto.setEmail(user.getEmail());</span>
+<span class="fc" id="L101">        dto.setAlias(user.getAlias());</span>
+<span class="fc" id="L102">        dto.setFotoPerfil(user.getFotoPerfil());</span>
+<span class="fc" id="L103">        dto.setFechaRegistro(user.getFechaRegistro());</span>
+<span class="fc" id="L104">        dto.setTwoFactorEnabled(user.isTwoFactorEnabled());</span>
+<span class="fc" id="L105">        dto.setThirdFactorEnabled(user.isThirdFactorEnabled());</span>
+<span class="fc" id="L106">        dto.setRol(user.getRol());</span>
+
+        // Campos específicos según el tipo
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (user instanceof UsuarioNormal normal) {</span>
+<span class="fc" id="L110">            dto.setFlagVIP(normal.isFlagVIP());</span>
+<span class="fc" id="L111">            dto.setFechaNacimiento(normal.getFechaNacimiento());</span>
+<span class="fc" id="L112">            dto.setBloqueadoUsuarioNormal(normal.isBloqueado());</span>
+<span class="fc" id="L113">            dto.setConfirmado(normal.isConfirmado());</span>
+        }
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        else if (user instanceof CreadorContenido creador) {</span>
+<span class="fc" id="L116">            dto.setAliasCreador(creador.getAliasCreador());</span>
+<span class="fc" id="L117">            dto.setDescripcion(creador.getDescripcion());</span>
+<span class="fc" id="L118">            dto.setBloqueadoCreador(creador.isBloqueado());</span>
+<span class="fc" id="L119">            dto.setEspecialidad(creador.getEspecialidad());</span>
+<span class="fc" id="L120">            dto.setTipoContenido(creador.getTipoContenido());</span>
+<span class="fc" id="L121">            dto.setValidado(creador.isValidado());</span>
+        }
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        else if (user instanceof Administrador admin) {</span>
+<span class="fc" id="L124">            dto.setDepartamento(admin.getDepartamento());</span>
+        }
+
+<span class="fc" id="L127">        return dto;</span>
+    }
+
+    /**
+     * Obtiene todos los usuarios (normales, administradores y creadores) en una sola lista
+     * @return Map con las listas de cada tipo de usuario, con fotos convertidas a data URIs
+     */
+    public Map&lt;String, Object&gt; getAllUsers() {
+<span class="fc" id="L135">        logger.info(&quot;[GET_ALL_USERS] Obteniendo todos los usuarios de todos los tipos&quot;);</span>
+        try {
+<span class="fc" id="L137">            List&lt;UsuarioNormal&gt; usuariosNormales = usuarioNormalRepository.findAll();</span>
+<span class="fc" id="L138">            List&lt;Administrador&gt; administradores = adminRepository.findAll();</span>
+<span class="fc" id="L139">            List&lt;CreadorContenido&gt; creadores = creadorContenidoRepository.findAll();</span>
+            
+            // Convertir a DTOs con fotos como data URIs
+<span class="fc" id="L142">            List&lt;UserResponseDTO&gt; normalesDTO = usuariosNormales.stream()</span>
+<span class="fc" id="L143">                .map(this::convertToDTO)</span>
+<span class="fc" id="L144">                .toList();</span>
+<span class="fc" id="L145">            List&lt;UserResponseDTO&gt; adminsDTO = administradores.stream()</span>
+<span class="fc" id="L146">                .map(this::convertToDTO)</span>
+<span class="fc" id="L147">                .toList();</span>
+<span class="fc" id="L148">            List&lt;UserResponseDTO&gt; creadoresDTO = creadores.stream()</span>
+<span class="fc" id="L149">                .map(this::convertToDTO)</span>
+<span class="fc" id="L150">                .toList();</span>
+            
+<span class="fc" id="L152">            logger.info(&quot;[GET_ALL_USERS] Se encontraron {} usuarios normales, {} administradores, {} creadores&quot;, </span>
+<span class="fc" id="L153">                usuariosNormales.size(), administradores.size(), creadores.size());</span>
+            
+<span class="fc" id="L155">            return Map.of(</span>
+                &quot;normalUsers&quot;, normalesDTO,
+                &quot;administrators&quot;, adminsDTO,
+                &quot;contentCreators&quot;, creadoresDTO
+            );
+        } 
+<span class="fc" id="L161">		catch (Exception e) {</span>
+<span class="fc" id="L162">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_OBTENER_TODOS_USUARIOS, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

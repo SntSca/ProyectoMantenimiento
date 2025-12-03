@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DominiosEmailPermitidos.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.enums</a> &gt; <span class="el_source">DominiosEmailPermitidos.java</span></div><h1>DominiosEmailPermitidos.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.enums;
+
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/**
+ * Utilidad para validación de dominios de email permitidos
+ * Contiene listas de dominios válidos y métodos para validar emails completos
+ */
+public class DominiosEmailPermitidos {
+
+    // Patrón regex para validar formato básico de email
+<span class="nc" id="L13">    private static final Pattern EMAIL_PATTERN = Pattern.compile(&quot;^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$&quot;);</span>
+
+    // Dominios populares de email
+    public static final String GMAIL = &quot;gmail.com&quot;;
+    public static final String OUTLOOK = &quot;outlook.com&quot;;
+    public static final String HOTMAIL = &quot;hotmail.com&quot;;
+    public static final String YAHOO = &quot;yahoo.com&quot;;
+    public static final String YAHOO_ES = &quot;yahoo.es&quot;;
+    public static final String ICLOUD = &quot;icloud.com&quot;;
+    public static final String PROTONMAIL = &quot;protonmail.com&quot;;
+    public static final String AOL = &quot;aol.com&quot;;
+    public static final String YANDEX = &quot;yandex.com&quot;;
+    public static final String MAIL_COM = &quot;mail.com&quot;;
+
+    // Dominios universitarios españoles comunes
+    public static final String UPM = &quot;alumnos.upm.es&quot;;
+    public static final String UCM = &quot;ucm.es&quot;;
+    public static final String UAM = &quot;uam.es&quot;;
+    public static final String UPC = &quot;upc.edu&quot;;
+    public static final String US = &quot;us.es&quot;;
+
+    // Dominios corporativos comunes
+    public static final String EMPRESA = &quot;empresa.com&quot;;
+    public static final String COMPANY = &quot;company.es&quot;;
+
+    // Dominios administrativos para administradores
+    public static final String ESIMEDIA_ADMIN = &quot;gmail.com&quot;;
+
+<span class="nc" id="L41">    private DominiosEmailPermitidos() {</span>
+<span class="nc" id="L42">        throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
+    }
+
+<span class="nc" id="L45">    private static final Set&lt;String&gt; DOMINIOS_GENERALES_PERMITIDOS = Set.of(</span>
+        GMAIL, OUTLOOK, HOTMAIL, YAHOO, YAHOO_ES, ICLOUD, PROTONMAIL,
+        AOL, YANDEX, MAIL_COM, UPM, UCM, UAM, UPC, US, EMPRESA, COMPANY
+    );
+
+<span class="nc" id="L50">    private static final Set&lt;String&gt; DOMINIOS_ADMINISTRATIVOS = Set.of(</span>
+        ESIMEDIA_ADMIN
+    );
+
+    /**
+     * Extrae el dominio de una dirección de email
+     * @param email La dirección de email
+     * @return El dominio en minúsculas, o null si el formato es inválido
+     */
+    public static String extractDomain(String email) {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (email == null) {</span>
+<span class="nc" id="L61">            return null;</span>
+        }
+
+<span class="nc" id="L64">        int atIndex = email.indexOf('@');</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">        if (atIndex == -1 || atIndex == email.length() - 1) {</span>
+<span class="nc" id="L66">            return null;</span>
+        }
+
+<span class="nc" id="L69">        return email.substring(atIndex + 1).toLowerCase();</span>
+    }
+
+    /**
+     * Valida que un email tenga un formato básico válido
+     * @param email El email a validar
+     * @return true si el formato es válido, false en caso contrario
+     */
+    public static boolean isValidEmailFormat(String email) {
+<span class="nc bnc" id="L78" title="All 4 branches missed.">        return email != null &amp;&amp; EMAIL_PATTERN.matcher(email).matches();</span>
+    }
+
+    /**
+     * Verifica si un dominio está permitido para usuarios generales (usuarios normales y creadores)
+     * @param domain El dominio del email a verificar
+     * @return true si el dominio está permitido, false en caso contrario
+     */
+    public static boolean isDominioGeneralPermitido(String domain) {
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        return domain != null &amp;&amp; DOMINIOS_GENERALES_PERMITIDOS.contains(domain.toLowerCase());</span>
+    }
+
+    /**
+     * Verifica si un dominio está permitido para administradores
+     * @param domain El dominio del email a verificar
+     * @return true si el dominio está permitido para administradores, false en caso contrario
+     */
+    public static boolean isDominioAdministrativoPermitido(String domain) {
+<span class="nc bnc" id="L96" title="All 4 branches missed.">        return domain != null &amp;&amp; DOMINIOS_ADMINISTRATIVOS.contains(domain.toLowerCase());</span>
+    }
+
+    /**
+     * Verifica si un dominio está permitido (tanto para usuarios generales como administradores)
+     * @param domain El dominio del email a verificar
+     * @return true si el dominio está permitido, false en caso contrario
+     */
+    public static boolean isDominioPermitido(String domain) {
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        return isDominioGeneralPermitido(domain) || isDominioAdministrativoPermitido(domain);</span>
+    }
+
+    /**
+     * Valida completamente un email para usuarios generales
+     * Verifica tanto el formato como que el dominio esté permitido
+     * @param email El email completo a validar
+     * @return true si el email es válido, false en caso contrario
+     */
+    public static boolean isEmailGeneralValido(String email) {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (!isValidEmailFormat(email)) {</span>
+<span class="nc" id="L116">            return false;</span>
+        }
+
+<span class="nc" id="L119">        String domain = extractDomain(email);</span>
+<span class="nc" id="L120">        return isDominioGeneralPermitido(domain);</span>
+    }
+
+    /**
+     * Valida completamente un email para administradores
+     * Verifica tanto el formato como que el dominio esté en la lista administrativa
+     * @param email El email completo a validar
+     * @return true si el email es válido para administradores, false en caso contrario
+     */
+    public static boolean isEmailAdministrativoValido(String email) {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (!isValidEmailFormat(email)) {</span>
+<span class="nc" id="L131">            return false;</span>
+        }
+
+<span class="nc" id="L134">        String domain = extractDomain(email);</span>
+<span class="nc" id="L135">        return isDominioAdministrativoPermitido(domain);</span>
+    }
+
+    /**
+     * Valida completamente un email (para cualquier tipo de usuario)
+     * Verifica tanto el formato como que el dominio esté permitido
+     * @param email El email completo a validar
+     * @return true si el email es válido, false en caso contrario
+     */
+    public static boolean isEmailValido(String email) {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (!isValidEmailFormat(email)) {</span>
+<span class="nc" id="L146">            return false;</span>
+        }
+
+<span class="nc" id="L149">        String domain = extractDomain(email);</span>
+<span class="nc" id="L150">        return isDominioPermitido(domain);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.esimedia.features.content.services.AudioContentManagementServiceTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.412 s -- in com.esimedia.features.content.services.AudioContentManagementServiceTest

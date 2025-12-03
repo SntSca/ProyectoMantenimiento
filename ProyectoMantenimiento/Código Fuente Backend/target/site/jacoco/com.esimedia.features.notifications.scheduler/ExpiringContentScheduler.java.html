@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpiringContentScheduler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.notifications.scheduler</a> &gt; <span class="el_source">ExpiringContentScheduler.java</span></div><h1>ExpiringContentScheduler.java</h1><pre class="source lang-java linenums">package com.esimedia.features.notifications.scheduler;
+
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.features.content.entity.ContenidosVideo;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.ContenidosVideoRepository;
+import com.esimedia.features.notifications.entity.Notification;
+import com.esimedia.features.notifications.enums.NotificationSubtype;
+import com.esimedia.features.notifications.enums.NotificationType;
+import com.esimedia.features.notifications.repository.NotificationRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Component
+public class ExpiringContentScheduler {
+
+    private final ContenidosAudioRepository audioRepository;
+    private final ContenidosVideoRepository videoRepository;
+    private final NotificationRepository notificationRepository;
+    private final UsuarioNormalRepository usuarioRepository;
+
+<span class="nc" id="L30">    private static final Logger logger = LoggerFactory.getLogger(ExpiringContentScheduler.class);</span>
+
+    public ExpiringContentScheduler(ContenidosAudioRepository audioRepository,
+                                    ContenidosVideoRepository videoRepository,
+                                    NotificationRepository notificationRepository,
+<span class="nc" id="L35">                                    UsuarioNormalRepository usuarioRepository) {</span>
+<span class="nc" id="L36">        this.audioRepository = audioRepository;</span>
+<span class="nc" id="L37">        this.videoRepository = videoRepository;</span>
+<span class="nc" id="L38">        this.notificationRepository = notificationRepository;</span>
+<span class="nc" id="L39">        this.usuarioRepository = usuarioRepository;</span>
+<span class="nc" id="L40">    }</span>
+
+    // Cron para las 2 y 5 de la mañana
+    @Scheduled(cron = &quot;0 0 2,5 * * *&quot;)
+    //@Scheduled(fixedRate = 10000) //10 segundos
+    public void processDailyExpiringContent() {
+<span class="nc" id="L46">        logger.info(&quot;🔔 Ejecutando proceso de alertas de contenido por caducar...&quot;);</span>
+<span class="nc" id="L47">        int totalGeneradas = 0;</span>
+<span class="nc" id="L48">        totalGeneradas += createAlertsForExpiringAudio();</span>
+<span class="nc" id="L49">        totalGeneradas += createAlertsForExpiringVideo();</span>
+<span class="nc" id="L50">        logger.info(&quot;🔔 Alertas de caducidad generadas en esta ejecución: {}&quot;, totalGeneradas);</span>
+<span class="nc" id="L51">    }</span>
+
+    private int createAlertsForExpiringAudio() {
+<span class="nc" id="L54">        List&lt;ContenidosAudio&gt; audios = audioRepository.findAll();</span>
+<span class="nc" id="L55">        int generadas = 0;</span>
+<span class="nc" id="L56">        List&lt;UsuarioNormal&gt; usuarios = usuarioRepository.findAll();</span>
+
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        for (ContenidosAudio contenido : audios) {</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (contenido.getFechaDisponibleHasta() == null) continue;</span>
+
+<span class="nc" id="L61">            LocalDateTime fechaDisponible = contenido.getFechaDisponibleHasta().toInstant()</span>
+<span class="nc" id="L62">                    .atZone(java.time.ZoneId.systemDefault())</span>
+<span class="nc" id="L63">                    .toLocalDateTime();</span>
+
+<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (isExpiringWithinAWeek(fechaDisponible)) {</span>
+<span class="nc" id="L66">                logger.info(&quot;⚠ Contenido de audio '{}' (ID: {}) expira el {}&quot;,</span>
+<span class="nc" id="L67">                        contenido.getTitulo(), contenido.getId(), fechaDisponible);</span>
+
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                for (UsuarioNormal usuario : usuarios) {</span>
+<span class="nc" id="L70">                    String userId = usuario.getIdUsuario();</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                    if (!notificationRepository.existsByUserIdAndTypeAndSubtypeAndPayloadContaining(</span>
+                            userId,
+                            NotificationType.ALERT,
+                            NotificationSubtype.EXPIRING_SOON,
+<span class="nc" id="L76">                            &quot;\&quot;contentId\&quot;:\&quot;&quot; + contenido.getId() + &quot;\&quot;&quot;)) {</span>
+
+<span class="nc" id="L78">                        Notification alert = new Notification();</span>
+<span class="nc" id="L79">                        alert.setUserId(userId); // asignamos al usuario real</span>
+<span class="nc" id="L80">                        alert.setType(NotificationType.ALERT);</span>
+<span class="nc" id="L81">                        alert.setSubtype(NotificationSubtype.EXPIRING_SOON);</span>
+<span class="nc" id="L82">                        alert.setTitle(&quot;⏳ Contenido de audio por expirar&quot;);</span>
+<span class="nc" id="L83">                        alert.setBody(&quot;El contenido \&quot;&quot; + contenido.getTitulo() +</span>
+                                &quot;\&quot; dejará de estar disponible el &quot; + fechaDisponible + &quot;.&quot;);
+<span class="nc" id="L85">                        alert.setCreatedAt(LocalDateTime.now());</span>
+
+<span class="nc" id="L87">                        notificationRepository.save(alert);</span>
+<span class="nc" id="L88">                        generadas++;</span>
+<span class="nc" id="L89">                        logger.info(&quot;✅ Alerta creada para el usuario {} y audio '{}'&quot;, userId, contenido.getTitulo());</span>
+                    }
+<span class="nc" id="L91">                }</span>
+            }
+<span class="nc" id="L93">        }</span>
+<span class="nc" id="L94">        return generadas;</span>
+    }
+
+    private int createAlertsForExpiringVideo() {
+<span class="nc" id="L98">        List&lt;ContenidosVideo&gt; videos = videoRepository.findAll();</span>
+<span class="nc" id="L99">        int generadas = 0;</span>
+<span class="nc" id="L100">        List&lt;UsuarioNormal&gt; usuarios = usuarioRepository.findAll();</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        for (ContenidosVideo contenido : videos) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (contenido.getFechaDisponibleHasta() == null) continue;</span>
+
+<span class="nc" id="L105">            LocalDateTime fechaDisponible = contenido.getFechaDisponibleHasta().toInstant()</span>
+<span class="nc" id="L106">                    .atZone(java.time.ZoneId.systemDefault())</span>
+<span class="nc" id="L107">                    .toLocalDateTime();</span>
+
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            if (isExpiringWithinAWeek(fechaDisponible)) {</span>
+<span class="nc" id="L110">                logger.info(&quot;⚠ Contenido de video '{}' (ID: {}) expira el {}&quot;,</span>
+<span class="nc" id="L111">                        contenido.getTitulo(), contenido.getId(), fechaDisponible);</span>
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                for (UsuarioNormal usuario : usuarios) {</span>
+<span class="nc" id="L114">                    String userId = usuario.getIdUsuario();</span>
+
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                    if (!notificationRepository.existsByUserIdAndTypeAndSubtypeAndPayloadContaining(</span>
+                            userId,
+                            NotificationType.ALERT,
+                            NotificationSubtype.EXPIRING_SOON,
+<span class="nc" id="L120">                            &quot;\&quot;contentId\&quot;:\&quot;&quot; + contenido.getId() + &quot;\&quot;&quot;)) {</span>
+
+<span class="nc" id="L122">                        Notification alert = new Notification();</span>
+<span class="nc" id="L123">                        alert.setUserId(userId);</span>
+<span class="nc" id="L124">                        alert.setType(NotificationType.ALERT);</span>
+<span class="nc" id="L125">                        alert.setSubtype(NotificationSubtype.EXPIRING_SOON);</span>
+<span class="nc" id="L126">                        alert.setTitle(&quot;⏳ Contenido de video por expirar&quot;);</span>
+<span class="nc" id="L127">                        alert.setBody(&quot;El contenido \&quot;&quot; + contenido.getTitulo() +</span>
+                                &quot;\&quot; dejará de estar disponible el &quot; + fechaDisponible + &quot;.&quot;);
+<span class="nc" id="L129">                        alert.setCreatedAt(LocalDateTime.now());</span>
+
+<span class="nc" id="L131">                        notificationRepository.save(alert);</span>
+<span class="nc" id="L132">                        generadas++;</span>
+<span class="nc" id="L133">                        logger.info(&quot;✅ Alerta creada para el usuario {} y video '{}'&quot;, userId, contenido.getTitulo());</span>
+                    }
+<span class="nc" id="L135">                }</span>
+            }
+<span class="nc" id="L137">        }</span>
+<span class="nc" id="L138">        return generadas;</span>
+    }
+
+    private boolean isExpiringWithinAWeek(LocalDateTime fechaDisponibleHasta) {
+<span class="nc" id="L142">        LocalDateTime now = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);</span>
+<span class="nc" id="L143">        LocalDateTime lowerBound = now.plusDays(6);</span>
+<span class="nc" id="L144">        LocalDateTime upperBound = now.plusDays(7);</span>
+
+<span class="nc" id="L146">        LocalDateTime fecha = fechaDisponibleHasta.withHour(0).withMinute(0).withSecond(0).withNano(0);</span>
+
+<span class="nc bnc" id="L148" title="All 4 branches missed.">        boolean within = (fecha.isEqual(lowerBound) || fecha.isAfter(lowerBound)) &amp;&amp;</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">                (fecha.isEqual(upperBound) || fecha.isBefore(upperBound));</span>
+
+<span class="nc" id="L151">        logger.debug(&quot;Comparando fecha {}: dentro de 6-7 días? {} (rango {} - {})&quot;,</span>
+<span class="nc" id="L152">                fecha, within, lowerBound, upperBound);</span>
+
+<span class="nc" id="L154">        return within;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

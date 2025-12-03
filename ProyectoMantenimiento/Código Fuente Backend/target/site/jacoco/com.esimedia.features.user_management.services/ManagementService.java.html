@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.services</a> &gt; <span class="el_source">ManagementService.java</span></div><h1>ManagementService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.services;
+
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.SesionRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.content.services.ValoracionService;
+import com.esimedia.features.favoritos.repository.ContenidoFavoritoRepository;
+import com.esimedia.features.user_management.dto.AdminProfileUpdateDTO;
+import com.esimedia.features.user_management.dto.CreatorProfileUpdateDTO;
+import com.esimedia.features.user_management.dto.UserProfileUpdateDTO;
+
+@Service
+public class ManagementService {
+
+<span class="fc" id="L28">    private static final Logger logger = LoggerFactory.getLogger(ManagementService.class);</span>
+    
+    // Constantes para evitar duplicación de literales
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado&quot;;
+    private static final String CREADOR_NO_ENCONTRADO = &quot;Creador no encontrado&quot;;
+    private static final String ADMIN_NO_ENCONTRADO = &quot;Administrador no encontrado&quot;;
+    private static final String NOMBRE_FIELD = &quot;nombre&quot;;
+    private static final String APELLIDOS_FIELD = &quot;apellidos&quot;;
+    private static final String FOTO_PERFIL_BASE64_INVALIDO = &quot;FotoPerfil no es un Base64 válido&quot;;
+    private static final String DATA_URI_PREFIX = &quot;data:&quot;;
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final SesionRepository sesionRepository;
+    private final ValidationService validationService;
+    private final ValoracionService valoracionService;
+    private final ContenidoFavoritoRepository contenidoFavoritoRepository;
+
+
+<span class="fc" id="L48">    public ManagementService(UsuarioNormalRepository usuarioNormalRepository, CreadorContenidoRepository creadorContenidoRepository, AdminRepository adminRepository, SesionRepository sesionRepository, ValidationService validationService, ValoracionService valoracionService, ContenidoFavoritoRepository contenidoFavoritoRepository) {</span>
+<span class="fc" id="L49">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L50">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L51">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L52">        this.sesionRepository = sesionRepository;</span>
+<span class="fc" id="L53">        this.validationService = validationService;</span>
+<span class="fc" id="L54">        this.valoracionService = valoracionService;</span>
+<span class="fc" id="L55">        this.contenidoFavoritoRepository = contenidoFavoritoRepository;</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Actualizar perfil de usuario normal (para uso propio del usuario)
+     * Campos permitidos: nombre, apellidos, alias, fechaNacimiento
+     * NO permite cambiar flagVIP (solo admins pueden hacerlo)
+     */
+    public void updateNormalUserProfile(String userId, UserProfileUpdateDTO updateDTO) {
+<span class="fc" id="L64">        logger.info(&quot;[UPDATE-PROFILE] Actualizando perfil de usuario: {}&quot;, userId);</span>
+
+<span class="fc" id="L66">        UsuarioNormal user = getUserById(userId);</span>
+        
+<span class="fc" id="L68">        updateBasicUserFields(user, updateDTO, userId);</span>
+<span class="fc" id="L69">        validateVipChangePermission(updateDTO.getFlagVIP(), false);</span>
+        
+<span class="fc" id="L71">        usuarioNormalRepository.save(user);</span>
+<span class="fc" id="L72">        logger.info(&quot;[UPDATE-PROFILE] Perfil actualizado exitosamente para usuario: {}&quot;, userId);</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Método extraído para actualizar campos básicos de usuario (reduce complejidad ciclomática)
+     */
+    private void updateBasicUserFields(UsuarioNormal user, UserProfileUpdateDTO updateDTO, String userId) {
+<span class="fc" id="L79">        updateFieldIfPresent(updateDTO.getNombre(), user::setNombre, NOMBRE_FIELD, ValidationService.MAX_NOMBRE_LENGTH);</span>
+<span class="fc" id="L80">        updateFieldIfPresent(updateDTO.getApellidos(), user::setApellidos, APELLIDOS_FIELD, ValidationService.MAX_APELLIDOS_LENGTH);</span>
+        
+        // Solo validar unicidad del alias si el alias ha cambiado y no es null
+<span class="fc bfc" id="L83" title="All 4 branches covered.">        if (updateDTO.getAlias() != null &amp;&amp; !updateDTO.getAlias().equals(user.getAlias())) {</span>
+<span class="fc" id="L84">            validateAliasUniquenessAcrossAllUsers(updateDTO.getAlias(), userId);</span>
+        }
+
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (updateDTO.getAlias() != null) {</span>
+<span class="fc" id="L88">            user.setAlias(updateDTO.getAlias());</span>
+        }
+    
+        
+<span class="fc" id="L92">        validationService.validateFechaNacimiento(updateDTO.getFechaNacimiento());</span>
+<span class="fc" id="L93">        user.setFechaNacimiento(updateDTO.getFechaNacimiento());</span>
+
+        // Procesar fotoPerfil
+<span class="fc" id="L96">        String fotoPerfil = buildFotoPerfil(updateDTO.getFotoPerfil());</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (fotoPerfil != null) {</span>
+<span class="nc" id="L98">            user.setFotoPerfil(fotoPerfil);</span>
+        }
+<span class="fc" id="L100">    }</span>
+
+    /**
+     * Método extraído para validar permisos de cambio VIP (reduce complejidad ciclomática)
+     */
+    private void validateVipChangePermission(Boolean flagVIP, boolean isAdmin) {
+<span class="pc bpc" id="L106" title="1 of 4 branches missed.">        if (flagVIP != null &amp;&amp; !isAdmin) {</span>
+<span class="fc" id="L107">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permisos para cambiar el estado VIP&quot;);
+        }
+<span class="fc" id="L110">    }</span>
+
+    /**
+     * Método extraído para actualizar campos con validación de longitud (reduce duplicación)
+     */
+    private void updateFieldIfPresent(String value, java.util.function.Consumer&lt;String&gt; setter, String fieldName, int maxLength) {
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (value != null) {</span>
+<span class="fc" id="L117">            validationService.validateFieldLength(value, fieldName, maxLength);</span>
+<span class="fc" id="L118">            setter.accept(value);</span>
+        }
+<span class="fc" id="L120">    }</span>
+
+    /**
+     * Método para validar unicidad de alias entre todos los tipos de usuario
+     */
+    private void validateAliasUniquenessAcrossAllUsers(String alias, String currentUserId) {
+        // Verificar contra usuarios normales
+<span class="fc" id="L127">        Optional&lt;UsuarioNormal&gt; existingUser = usuarioNormalRepository.findByalias(alias);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">        if (existingUser.isPresent() &amp;&amp; !existingUser.get().getIdUsuario().equals(currentUserId)) {</span>
+<span class="fc" id="L129">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El alias ya está en uso por un usuario&quot;);</span>
+        }
+
+        // Verificar contra creadores de contenido
+<span class="fc" id="L133">        Optional&lt;CreadorContenido&gt; existingCreator = creadorContenidoRepository.findByAlias(alias);</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">        if (existingCreator.isPresent() &amp;&amp; !existingCreator.get().getIdUsuario().equals(currentUserId)) {</span>
+<span class="fc" id="L135">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El alias ya está en uso por un creador&quot;);</span>
+        }
+
+        // Verificar contra administradores
+<span class="fc" id="L139">        Optional&lt;Administrador&gt; existingAdmin = adminRepository.findByalias(alias);</span>
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">        if (existingAdmin.isPresent() &amp;&amp; !existingAdmin.get().getIdUsuario().equals(currentUserId)) {</span>
+<span class="fc" id="L141">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El alias ya está en uso por un administrador&quot;);</span>
+        }
+<span class="fc" id="L143">    }</span>
+
+    /**
+     * Actualizar perfil de usuario como administrador
+     * Campos permitidos: nombre, apellidos, alias, fechaNacimiento
+     * NOTA: Los administradores NO pueden cambiar contraseñas ni suscripción (flagVIP)
+     */
+    public void adminUpdateUserProfile(String userId, UserProfileUpdateDTO updateDTO) {
+<span class="fc" id="L151">        logger.info(&quot;[ADMIN-UPDATE-PROFILE] Administrador actualizando perfil de usuario: {}&quot;, userId);</span>
+
+<span class="fc" id="L153">        UsuarioNormal user = getUserById(userId);</span>
+        
+<span class="fc" id="L155">        updateBasicUserFields(user, updateDTO, userId);</span>
+<span class="fc" id="L156">        validateAdminVipPermission(updateDTO.getFlagVIP());</span>
+        
+<span class="fc" id="L158">        usuarioNormalRepository.save(user);</span>
+<span class="fc" id="L159">        logger.info(&quot;[ADMIN-UPDATE-PROFILE] Perfil actualizado exitosamente por admin para usuario: {}&quot;, userId);</span>
+<span class="fc" id="L160">    }</span>
+
+    /**
+     * Método extraído para validar permisos específicos de admin sobre VIP
+     */
+    private void validateAdminVipPermission(Boolean flagVIP) {
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">        if (flagVIP != null &amp;&amp; flagVIP) {</span>
+<span class="fc" id="L167">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;Los administradores no pueden modificar la suscripción de los usuarios&quot;);
+        }
+<span class="fc" id="L170">    }</span>
+
+    /**
+     * Bloquear o desbloquear un usuario (solo para administradores)
+     */
+    public void toggleUserBlock(String userId, boolean blocked) {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        logger.info(&quot;[TOGGLE-BLOCK] {} usuario: {}&quot;, blocked ? &quot;Bloqueando&quot; : &quot;Desbloqueando&quot;, userId);</span>
+
+<span class="fc" id="L178">        UsuarioNormal user = usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L179">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L181">        user.setBloqueado(blocked);</span>
+<span class="fc" id="L182">        usuarioNormalRepository.save(user);</span>
+
+<span class="fc" id="L184">        logger.info(&quot;[TOGGLE-BLOCK] Usuario {} {} exitosamente&quot;,</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            userId, blocked ? &quot;bloqueado&quot; : &quot;desbloqueado&quot;);</span>
+<span class="fc" id="L186">    }</span>
+
+    /**
+     * Bloquear o desbloquear un creador de contenido (solo para administradores)
+     */
+    public void toggleCreatorBlock(String creatorId, boolean blocked) {
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        logger.info(&quot;[TOGGLE-BLOCK] {} creador: {}&quot;, blocked ? &quot;Bloqueando&quot; : &quot;Desbloqueando&quot;, creatorId);</span>
+
+<span class="fc" id="L194">        CreadorContenido creator = creadorContenidoRepository.findById(creatorId)</span>
+<span class="fc" id="L195">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L197">        creator.setBloqueado(blocked);</span>
+<span class="fc" id="L198">        creadorContenidoRepository.save(creator);</span>
+
+<span class="fc" id="L200">        logger.info(&quot;[TOGGLE-BLOCK] Creador {} {} exitosamente&quot;,</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            creatorId, blocked ? &quot;bloqueado&quot; : &quot;desbloqueado&quot;);</span>
+<span class="fc" id="L202">    }</span>
+
+    /**
+     * Obtener información de un usuario por ID
+     */
+    public UsuarioNormal getUserById(String userId) {
+<span class="fc" id="L208">        return usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L209">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+    }
+
+    /**
+     * Verificar si un usuario existe
+     */
+    public boolean userExists(String userId) {
+<span class="fc" id="L216">        return usuarioNormalRepository.existsById(userId);</span>
+    }
+
+    /**
+     * Actualizar perfil de creador de contenido (para uso propio del creador)
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil, aliasCreador, descripcion
+     * NO permite cambiar email, tipoContenido, bloqueado, validado
+     */
+    public void updateCreatorProfile(String creatorId, CreatorProfileUpdateDTO updateDTO) {
+<span class="fc" id="L225">        logger.info(&quot;[UPDATE-CREATOR-PROFILE] Actualizando perfil de creador: {}&quot;, creatorId);</span>
+
+<span class="fc" id="L227">        CreadorContenido creator = creadorContenidoRepository.findById(creatorId)</span>
+<span class="fc" id="L228">                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L230">        updateCreatorFields(creator, updateDTO, creatorId);</span>
+
+<span class="fc" id="L232">        creadorContenidoRepository.save(creator);</span>
+<span class="fc" id="L233">        logger.info(&quot;[UPDATE-CREATOR-PROFILE] Perfil actualizado exitosamente para creador: {}&quot;, creatorId);</span>
+<span class="fc" id="L234">    }</span>
+
+    /**
+     * Método extraído para actualizar campos comunes de creador (reduce duplicación)
+     */
+    private void updateCreatorFields(CreadorContenido creator, CreatorProfileUpdateDTO updateDTO, String creatorId) {
+
+        // Solo validar unicidad del alias si el alias ha cambiado y no es null
+<span class="pc bpc" id="L242" title="1 of 4 branches missed.">        if (updateDTO.getAlias() != null &amp;&amp; !updateDTO.getAlias().equals(creator.getAlias())) {</span>
+<span class="nc" id="L243">            validateAliasUniquenessAcrossAllUsers(updateDTO.getAlias(), creatorId);</span>
+        }
+
+<span class="fc" id="L246">        Optional&lt;CreadorContenido&gt; existingCreator = creadorContenidoRepository.findByAliasCreador(updateDTO.getAliasCreador());</span>
+<span class="pc bpc" id="L247" title="1 of 4 branches missed.">        if (existingCreator.isPresent() &amp;&amp; !existingCreator.get().getIdUsuario().equals(creatorId)) {</span>
+<span class="fc" id="L248">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El alias de creador ya está en uso&quot;);</span>
+        }
+
+<span class="fc" id="L251">        creator.setNombre(updateDTO.getNombre());</span>
+<span class="fc" id="L252">        creator.setApellidos(updateDTO.getApellidos());</span>
+<span class="fc" id="L253">        creator.setAliasCreador(updateDTO.getAliasCreador());</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (updateDTO.getAlias() != null) {</span>
+<span class="nc" id="L255">            creator.setAlias(updateDTO.getAlias());</span>
+        }
+
+<span class="fc" id="L258">        creator.setDescripcion(updateDTO.getDescripcion());</span>
+
+<span class="fc" id="L260">        creator.setEspecialidad(updateDTO.getEspecialidad());</span>
+
+        // Procesar fotoPerfil
+<span class="fc" id="L263">        String fotoPerfil = buildFotoPerfil(updateDTO.getFotoPerfil());</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (fotoPerfil != null) {</span>
+<span class="nc" id="L265">            creator.setFotoPerfil(fotoPerfil);</span>
+        }
+<span class="fc" id="L267">    }</span>
+
+    /**
+     * Método extraído para actualizar campos comunes de administrador (reduce duplicación)
+     */
+    private void updateAdminFields(Administrador admin, AdminProfileUpdateDTO updateDTO, String adminId) {
+        // Nombre - @NotBlank y @Size en DTO garantizan validaciones básicas
+<span class="fc" id="L274">        admin.setNombre(updateDTO.getNombre());</span>
+
+        // Apellidos - @NotBlank y @Size en DTO garantizan validaciones básicas
+<span class="fc" id="L277">        admin.setApellidos(updateDTO.getApellidos());</span>
+
+        // Alias - puede ser null, @Size y @Pattern en DTO si no es null
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (updateDTO.getAlias() != null) {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            if (!updateDTO.getAlias().equals(admin.getAlias())) {</span>
+<span class="fc" id="L282">                validateAliasUniquenessAcrossAllUsers(updateDTO.getAlias(), adminId);</span>
+            }
+<span class="fc" id="L284">            admin.setAlias(updateDTO.getAlias());</span>
+        }
+
+        // Procesar fotoPerfil (ya viene como data URI completa)
+        // fotoPerfil puede ser null, formatoFotoPerfil tiene @Pattern pero puede ser null
+<span class="pc bpc" id="L289" title="3 of 4 branches missed.">        if (updateDTO.getFotoPerfil() != null &amp;&amp; !updateDTO.getFotoPerfil().trim().isEmpty()) {</span>
+            try {
+                // La fotoPerfil ya viene como data URI completa
+<span class="nc" id="L292">                admin.setFotoPerfil(updateDTO.getFotoPerfil());</span>
+            } 
+<span class="nc" id="L294">            catch (Exception ex) {</span>
+<span class="nc" id="L295">                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, FOTO_PERFIL_BASE64_INVALIDO);</span>
+<span class="nc" id="L296">            }</span>
+        }
+<span class="fc" id="L298">    }    </span>
+    /**
+     * Actualizar perfil de administrador (para uso propio del administrador)
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil
+     * NO permite cambiar email
+     */
+    public void updateAdminProfile(String adminId, AdminProfileUpdateDTO updateDTO) {
+<span class="fc" id="L305">        logger.info(&quot;[UPDATE-ADMIN-PROFILE] Actualizando perfil de administrador: {}&quot;, adminId);</span>
+
+<span class="fc" id="L307">        Administrador admin = adminRepository.findById(adminId)</span>
+<span class="pc" id="L308">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, ADMIN_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L310">        updateAdminFields(admin, updateDTO, adminId);</span>
+
+        // Validación innecesaria - DTO ya garantiza que nombre y apellidos no son null
+
+<span class="fc" id="L314">        adminRepository.save(admin);</span>
+<span class="fc" id="L315">        logger.info(&quot;[UPDATE-ADMIN-PROFILE] Perfil actualizado exitosamente para administrador: {}&quot;, adminId);</span>
+<span class="fc" id="L316">    }</span>
+
+    /**
+     * Actualizar perfil de creador de contenido como administrador
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil, aliasCreador, descripcion, bloqueado, validado
+     * NO permite cambiar email, tipoContenido, contraseña
+     */
+    public void adminUpdateCreatorProfile(String creatorId, CreatorProfileUpdateDTO updateDTO) {
+<span class="fc" id="L324">        logger.info(&quot;[ADMIN-UPDATE-CREATOR-PROFILE] Administrador actualizando perfil de creador: {}&quot;, creatorId);</span>
+
+<span class="fc" id="L326">        CreadorContenido creator = creadorContenidoRepository.findById(creatorId)</span>
+<span class="fc" id="L327">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L329">        updateCreatorFields(creator, updateDTO, creatorId);</span>
+
+<span class="fc" id="L331">        creadorContenidoRepository.save(creator);</span>
+<span class="fc" id="L332">        logger.info(&quot;[ADMIN-UPDATE-CREATOR-PROFILE] Perfil actualizado exitosamente por admin para creador: {}&quot;, creatorId);</span>
+<span class="fc" id="L333">    }</span>
+
+    /**
+     * Actualizar perfil de administrador como administrador (un admin editando otro admin)
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil
+     * NO permite cambiar email, contraseña
+     */
+    public void adminUpdateAdminProfile(String adminId, AdminProfileUpdateDTO updateDTO) {
+<span class="fc" id="L341">        logger.info(&quot;[ADMIN-UPDATE-ADMIN-PROFILE] Administrador actualizando perfil de otro administrador: {}&quot;, adminId);</span>
+
+<span class="fc" id="L343">        Administrador admin = adminRepository.findById(adminId)</span>
+<span class="fc" id="L344">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, ADMIN_NO_ENCONTRADO));</span>
+
+<span class="fc" id="L346">        updateAdminFields(admin, updateDTO, adminId);</span>
+
+<span class="fc" id="L348">        adminRepository.save(admin);</span>
+<span class="fc" id="L349">        logger.info(&quot;[ADMIN-UPDATE-ADMIN-PROFILE] Perfil actualizado exitosamente por admin para administrador: {}&quot;, adminId);</span>
+<span class="fc" id="L350">    }</span>
+
+    // ================================
+    // MÉTODOS DE HARD-DELETE (GDPR)
+    // ================================
+
+   
+    /**
+     * GDPR Hard-Delete: Admin elimina creador de contenido específico por ID
+     * Preserva contenido, elimina datos personales y sesiones
+     */
+    public void deleteCreatorAsAdmin(String creatorId) {
+<span class="fc" id="L362">        logger.info(&quot;[HARD-DELETE-ADMIN] Eliminando creador por admin: {}&quot;, creatorId);</span>
+        
+<span class="fc" id="L364">        CreadorContenido creador = creadorContenidoRepository.findById(creatorId)</span>
+<span class="fc" id="L365">                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+        
+        // Eliminar sesiones del creador
+<span class="fc" id="L368">        sesionRepository.deleteByIdUsuario(creatorId);</span>
+        
+        // Eliminar creador (contenido se preserva por GDPR)
+<span class="fc" id="L371">        creadorContenidoRepository.delete(creador);</span>
+        
+<span class="fc" id="L373">        logger.info(&quot;[HARD-DELETE-ADMIN] Creador eliminado por admin: {}&quot;, creatorId);</span>
+<span class="fc" id="L374">    }</span>
+
+    /**
+     * GDPR Hard-Delete: Administrador elimina a otro administrador
+     * Preserva contenido, elimina datos personales y sesiones
+     * Requiere que quede al menos un administrador en el sistema
+     */
+    public void deleteAdminAsAdmin(String adminIdToDelete, String requestingAdminId) {
+<span class="fc" id="L382">        logger.info(&quot;[HARD-DELETE-ADMIN] Administrador {} eliminando a administrador {}&quot;, requestingAdminId, adminIdToDelete);</span>
+        
+        // Verificar que no se esté intentando auto-eliminación
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        if (requestingAdminId.equals(adminIdToDelete)) {</span>
+<span class="fc" id="L386">            throw new IllegalStateException(&quot;Los administradores no pueden eliminarse a sí mismos&quot;);</span>
+        }
+        
+        // Verificar que haya más de un administrador
+<span class="fc" id="L390">        long adminCount = adminRepository.count();</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">        if (adminCount &lt;= 1) {</span>
+<span class="fc" id="L392">            throw new IllegalStateException(&quot;No se puede eliminar el último administrador del sistema&quot;);</span>
+        }
+        
+<span class="fc" id="L395">        Administrador admin = adminRepository.findById(adminIdToDelete)</span>
+<span class="fc" id="L396">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, ADMIN_NO_ENCONTRADO));</span>
+        
+        // Eliminar sesiones del administrador
+<span class="fc" id="L399">        sesionRepository.deleteByIdUsuario(adminIdToDelete);</span>
+        
+        // Eliminar administrador
+<span class="fc" id="L402">        adminRepository.delete(admin);</span>
+        
+<span class="fc" id="L404">        logger.info(&quot;[HARD-DELETE-ADMIN] Administrador eliminado exitosamente: {}&quot;, adminIdToDelete);</span>
+<span class="fc" id="L405">    }</span>
+
+    /**
+     * GDPR Hard-Delete: Creador se elimina a sí mismo
+     * Preserva contenido, elimina datos personales y sesiones
+     */
+    public void deleteCreatorSelf(String creatorId) {
+<span class="fc" id="L412">        logger.info(&quot;[HARD-DELETE-SELF] Creador auto-eliminación: {}&quot;, creatorId);</span>
+        
+<span class="fc" id="L414">        CreadorContenido creador = creadorContenidoRepository.findById(creatorId)</span>
+<span class="fc" id="L415">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+        
+        // Eliminar sesiones del creador
+<span class="fc" id="L418">        sesionRepository.deleteByIdUsuario(creatorId);</span>
+        
+        // Eliminar creador (el contenido se preserva para cumplir con GDPR)
+<span class="fc" id="L421">        creadorContenidoRepository.delete(creador);</span>
+        
+<span class="fc" id="L423">        logger.info(&quot;[HARD-DELETE-SELF] Creador auto-eliminado exitosamente: {}&quot;, creatorId);</span>
+<span class="fc" id="L424">    }</span>
+
+    /**
+     * GDPR Hard-Delete: Usuario normal se elimina a sí mismo
+     * Elimina completamente datos personales y sesiones
+     */
+    public void deleteUserSelf(String userId) {
+<span class="fc" id="L431">        logger.info(&quot;[HARD-DELETE-SELF] Usuario auto-eliminación: {}&quot;, userId);</span>
+        
+<span class="fc" id="L433">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L434">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+        
+        // Eliminar valoraciones del usuario y actualizar valoraciones medias
+<span class="fc" id="L437">        valoracionService.eliminarValoracionesDeUsuario(userId);</span>
+        
+        // Eliminar sesiones del usuario
+<span class="fc" id="L440">        sesionRepository.deleteByIdUsuario(userId);</span>
+
+        // Eliminar favoritos del usuario
+<span class="fc" id="L443">        contenidoFavoritoRepository.deleteByIdUsuario(userId);</span>
+        
+        // Eliminar usuario
+<span class="fc" id="L446">        usuarioNormalRepository.delete(usuario);</span>
+        
+<span class="fc" id="L448">        logger.info(&quot;[HARD-DELETE-SELF] Usuario auto-eliminado exitosamente: {}&quot;, userId);</span>
+<span class="fc" id="L449">    }</span>
+
+    // ================================
+    // MÉTODOS DE GESTIÓN VIP
+    // ================================
+
+    /**
+     * Cambiar estado VIP de un usuario (solo el propio usuario puede hacerlo)
+     */
+    public void changeUserVipStatus(String userId, boolean vipStatus) {
+<span class="fc" id="L459">        logger.info(&quot;[VIP-STATUS-CHANGE] Cambiando estado VIP para usuario: {} a: {}&quot;, userId, vipStatus);</span>
+        
+<span class="fc" id="L461">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L462">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+        
+<span class="fc" id="L464">        usuario.setFlagVIP(vipStatus);</span>
+<span class="fc" id="L465">        usuarioNormalRepository.save(usuario);</span>
+        
+<span class="fc" id="L467">        logger.info(&quot;[VIP-STATUS-CHANGE] Estado VIP cambiado exitosamente a {} para usuario: {}&quot;, vipStatus, userId);</span>
+<span class="fc" id="L468">    }</span>
+
+    /**
+     * Obtener estado VIP actual de un usuario
+     */
+    public boolean getUserVipStatus(String userId) {
+<span class="fc" id="L474">        logger.info(&quot;[VIP-STATUS-GET] Obteniendo estado VIP para usuario: {}&quot;, userId);</span>
+        
+<span class="fc" id="L476">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L477">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+        
+<span class="fc" id="L479">        return usuario.isFlagVIP();</span>
+    }
+
+    /**
+     * Obtener perfil de creador de contenido por ID
+     */
+    public Optional&lt;CreadorContenido&gt; findCreatorById(String id) {
+<span class="fc" id="L486">        return creadorContenidoRepository.findById(id);</span>
+    }
+
+    /**
+     * Obtener perfil de administrador por ID
+     */
+    public Optional&lt;Administrador&gt; findAdminById(String id) {
+<span class="fc" id="L493">        return adminRepository.findById(id);</span>
+    }
+
+    private String buildFotoPerfil(String fotoPerfil) {
+<span class="pc bpc" id="L497" title="3 of 4 branches missed.">        if (fotoPerfil == null || fotoPerfil.trim().isEmpty()) {</span>
+<span class="fc" id="L498">            return null;</span>
+        }
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        if (fotoPerfil.startsWith(DATA_URI_PREFIX)) {</span>
+<span class="nc" id="L501">            return fotoPerfil;</span>
+        }
+<span class="nc" id="L503">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

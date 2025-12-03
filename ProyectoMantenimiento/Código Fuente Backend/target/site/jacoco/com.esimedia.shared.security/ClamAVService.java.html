@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClamAVService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.security</a> &gt; <span class="el_source">ClamAVService.java</span></div><h1>ClamAVService.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.security;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.*;
+import java.net.Socket;
+
+/**
+ * Servicio de integración con ClamAV para análisis de virus en archivos.
+ * Utiliza el protocolo INSTREAM de ClamAV para escanear archivos antes de guardarlos.
+ */
+@Service
+<span class="nc" id="L16">public class ClamAVService {</span>
+
+<span class="fc" id="L18">    private static final Logger logger = LoggerFactory.getLogger(ClamAVService.class);</span>
+    
+<span class="fc" id="L20">    private static final byte[] INSTREAM_CMD = &quot;zINSTREAM\0&quot;.getBytes();</span>
+<span class="fc" id="L21">    private static final byte[] PING_CMD = &quot;zPING\0&quot;.getBytes();</span>
+    private static final int CHUNK_SIZE = 4096;
+    private static final String VIRUS_DETECTED = &quot;FOUND&quot;;
+    private static final String SCAN_OK = &quot;OK&quot;;
+
+    @Value(&quot;${antivirus.enabled:false}&quot;)
+    private boolean antivirusEnabled;
+
+    @Value(&quot;${antivirus.clamav.host:localhost}&quot;)
+    private String clamavHost;
+
+    @Value(&quot;${antivirus.clamav.port:3310}&quot;)
+    private int clamavPort;
+
+    @Value(&quot;${antivirus.clamav.timeout:30}&quot;)
+    private int clamavTimeout;
+
+    /**
+     * Escanea un archivo usando ClamAV.
+     * 
+     * @param fileContent Contenido del archivo en bytes
+     * @param filename    Nombre del archivo (solo para logging)
+     * @return true si el archivo es seguro, false si se detectó un virus
+     * @throws AntivirusException si hay un error de conexión con ClamAV o si el servicio está deshabilitado
+     */
+    public boolean scanFile(byte[] fileContent, String filename) throws AntivirusException {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (!antivirusEnabled) {</span>
+<span class="nc" id="L48">            logger.warn(&quot;Antivirus deshabilitado. El archivo {} no será escaneado.&quot;, filename);</span>
+<span class="nc" id="L49">            return true;</span>
+        }
+
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        if (fileContent == null || fileContent.length == 0) {</span>
+<span class="nc" id="L53">            logger.warn(&quot;Archivo {} vacío. No se puede escanear.&quot;, filename);</span>
+<span class="nc" id="L54">            return true;</span>
+        }
+
+        try {
+<span class="nc" id="L58">            return performScan(fileContent, filename);</span>
+        } 
+<span class="nc" id="L60">        catch (IOException e) {</span>
+<span class="nc" id="L61">            logger.error(&quot;Error de conexión con ClamAV al escanear {}: {}&quot;, filename, e.getMessage());</span>
+<span class="nc" id="L62">            throw new AntivirusException(&quot;Error conectando con el antivirus: &quot; + e.getMessage(), e);</span>
+        } 
+<span class="nc" id="L64">        catch (Exception e) {</span>
+<span class="nc" id="L65">            logger.error(&quot;Error inesperado escaneando archivo {} con ClamAV: {}&quot;, filename, e.getMessage());</span>
+<span class="nc" id="L66">            throw new AntivirusException(&quot;Error escaneando el archivo: &quot; + e.getMessage(), e);</span>
+        }
+    }
+
+    /**
+     * Verifica la disponibilidad del servicio ClamAV.
+     * 
+     * @return true si ClamAV está disponible, false en caso contrario
+     */
+    public boolean isAvailable() {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (!antivirusEnabled) {</span>
+<span class="nc" id="L77">            return false;</span>
+        }
+
+        try {
+<span class="nc" id="L81">            return performPing();</span>
+        } 
+<span class="nc" id="L83">        catch (Exception e) {</span>
+<span class="nc" id="L84">            logger.warn(&quot;ClamAV no disponible: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L85">            return false;</span>
+        }
+    }
+
+    /**
+     * Realiza un PING a ClamAV para verificar su disponibilidad.
+     * 
+     * @return true si ClamAV responde correctamente
+     * @throws IOException si hay error de conexión
+     */
+    private boolean performPing() throws IOException {
+<span class="nc" id="L96">        try (Socket socket = createSocket()) {</span>
+<span class="nc" id="L97">            socket.getOutputStream().write(PING_CMD);</span>
+<span class="nc" id="L98">            socket.getOutputStream().flush();</span>
+
+<span class="nc" id="L100">            byte[] response = new byte[1024];</span>
+<span class="nc" id="L101">            int bytesRead = socket.getInputStream().read(response);</span>
+            
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (bytesRead &gt; 0) {</span>
+<span class="nc" id="L104">                String responseStr = new String(response, 0, bytesRead).trim();</span>
+<span class="nc" id="L105">                logger.debug(&quot;ClamAV PING response: {}&quot;, responseStr);</span>
+<span class="nc" id="L106">                return responseStr.contains(&quot;PONG&quot;);</span>
+            }
+<span class="nc" id="L108">            return false;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        }</span>
+    }
+
+    /**
+     * Realiza el escaneo del archivo usando el protocolo INSTREAM.
+     * 
+     * @param fileContent Contenido del archivo
+     * @param filename    Nombre del archivo
+     * @return true si el archivo es seguro
+     * @throws IOException si hay error de comunicación
+     */
+    private boolean performScan(byte[] fileContent, String filename) throws IOException {
+<span class="nc" id="L121">        try (Socket socket = createSocket();</span>
+<span class="nc" id="L122">             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());</span>
+<span class="nc" id="L123">             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {</span>
+
+            // Enviar comando INSTREAM
+<span class="nc" id="L126">            dos.write(INSTREAM_CMD);</span>
+<span class="nc" id="L127">            dos.flush();</span>
+<span class="nc" id="L128">            logger.info(&quot;Comando INSTREAM enviado al servicio ClamAV para: {}&quot;, filename);</span>
+
+            // Enviar tamaño del archivo seguido del contenido en chunks
+<span class="nc" id="L131">            sendFileInChunks(dos, fileContent);</span>
+
+            // Enviar 0x00000000 para indicar fin del stream
+<span class="nc" id="L134">            dos.writeInt(0);</span>
+<span class="nc" id="L135">            dos.flush();</span>
+<span class="nc" id="L136">            logger.info(&quot;Fin del stream enviado para: {}&quot;, filename);</span>
+
+            // Leer la respuesta
+<span class="nc" id="L139">            String response = reader.readLine();</span>
+<span class="nc" id="L140">            logger.debug(&quot;ClamAV response para {}: {}&quot;, filename, response);</span>
+
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (response == null) {</span>
+<span class="nc" id="L143">                logger.warn(&quot;No se recibió respuesta de ClamAV para: {}&quot;, filename);</span>
+<span class="nc" id="L144">                throw new IOException(&quot;No se recibió respuesta de ClamAV&quot;);</span>
+            }
+
+            // Verificar si se detectó un virus
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (response.contains(VIRUS_DETECTED)) {</span>
+<span class="nc" id="L149">                logger.warn(&quot;¡VIRUS DETECTADO en archivo {}! Respuesta: {}&quot;, filename, response);</span>
+<span class="nc" id="L150">                return false;</span>
+            }
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (response.contains(SCAN_OK)) {</span>
+<span class="nc" id="L154">                logger.info(&quot;Archivo {} pasó el escaneo de ClamAV correctamente&quot;, filename);</span>
+<span class="nc" id="L155">                return true;</span>
+            }
+
+<span class="nc" id="L158">            logger.warn(&quot;Respuesta inesperada de ClamAV para {}: {}&quot;, filename, response);</span>
+<span class="nc" id="L159">            return false;</span>
+
+<span class="nc bnc" id="L161" title="All 4 branches missed.">        }</span>
+    }
+
+    /**
+     * Envía el contenido del archivo en chunks al servicio ClamAV.
+     * 
+     * @param dos         DataOutputStream para escribir
+     * @param fileContent Contenido del archivo
+     * @throws IOException si hay error escribiendo
+     */
+    private void sendFileInChunks(DataOutputStream dos, byte[] fileContent) throws IOException {
+<span class="nc" id="L172">        int offset = 0;</span>
+        
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        while (offset &lt; fileContent.length) {</span>
+<span class="nc" id="L175">            int chunkLength = Math.min(CHUNK_SIZE, fileContent.length - offset);</span>
+            
+            // Escribir longitud del chunk en big-endian (4 bytes)
+<span class="nc" id="L178">            dos.writeInt(chunkLength);</span>
+            
+            // Escribir datos del chunk
+<span class="nc" id="L181">            dos.write(fileContent, offset, chunkLength);</span>
+<span class="nc" id="L182">            dos.flush();</span>
+            
+<span class="nc" id="L184">            offset += chunkLength;</span>
+<span class="nc" id="L185">            logger.debug(&quot;Chunk de {} bytes enviado. Total: {}/{}&quot;, chunkLength, offset, fileContent.length);</span>
+<span class="nc" id="L186">        }</span>
+<span class="nc" id="L187">    }</span>
+
+    /**
+     * Crea una conexión socket con ClamAV con timeout configurado.
+     * 
+     * @return Socket conectado a ClamAV
+     * @throws IOException si hay error creando la conexión
+     */
+    private Socket createSocket() throws IOException {
+<span class="nc" id="L196">        Socket socket = new Socket();</span>
+<span class="nc" id="L197">        boolean success = false;</span>
+        try {
+            // connect with a timeout (milliseconds)
+<span class="nc" id="L200">            socket.connect(new java.net.InetSocketAddress(clamavHost, clamavPort), clamavTimeout * 1000);</span>
+<span class="nc" id="L201">            socket.setSoTimeout(clamavTimeout * 1000);</span>
+<span class="nc" id="L202">            logger.debug(&quot;Socket conectado a ClamAV en {}:{} con timeout {}s&quot;, clamavHost, clamavPort, clamavTimeout);</span>
+<span class="nc" id="L203">            success = true;</span>
+<span class="nc" id="L204">            return socket;</span>
+        }
+        finally {
+            // If connection or setup failed, ensure the socket is closed to avoid resource leak
+<span class="nc bnc" id="L208" title="All 2 branches missed.">            if (!success) {</span>
+                try {
+<span class="nc" id="L210">                    socket.close();</span>
+                } 
+<span class="nc" id="L212">                catch (IOException ex) {</span>
+<span class="nc" id="L213">                    logger.debug(&quot;Error cerrando socket tras fallo de conexión: {}&quot;, ex.getMessage());</span>
+<span class="nc" id="L214">                }</span>
+            }
+        }
+    }
+
+    /**
+     * Escanea múltiples archivos.
+     * 
+     * @param files Mapa de nombre de archivo a contenido
+     * @return true si todos los archivos son seguros
+     * @throws AntivirusException si algún archivo contiene un virus o hay error de conexión
+     */
+    public boolean scanFiles(java.util.Map&lt;String, byte[]&gt; files) throws AntivirusException {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        for (var entry : files.entrySet()) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (!scanFile(entry.getValue(), entry.getKey())) {</span>
+<span class="nc" id="L229">                return false;</span>
+            }
+<span class="nc" id="L231">        }</span>
+<span class="nc" id="L232">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

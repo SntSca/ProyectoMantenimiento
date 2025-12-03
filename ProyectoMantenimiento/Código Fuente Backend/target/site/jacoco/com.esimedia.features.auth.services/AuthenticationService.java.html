@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthenticationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">AuthenticationService.java</span></div><h1>AuthenticationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.dto.LoginRequestDTO;
+import com.esimedia.features.auth.dto.LoginResponseDTO;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.shared.util.JwtUtil;
+
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
+
+@Service
+public class AuthenticationService {
+
+    @Value(&quot;${app.security.pepper}&quot;)
+    private String pepper;
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final JwtUtil jwtUtil;
+    private final LoginAttemptService loginAttemptService;
+    private final Logger logger;
+
+    // Constantes para evitar literales duplicados (SonarQube S1192)
+    private static final String KEY_EMAIL = &quot;email&quot;;
+    private static final String KEY_PASSWORD = &quot;password&quot;;
+    private static final String KEY_UNKNOWN = &quot;unknown&quot;;
+    private static final String CREDENCIALES_INVALIDAS = &quot;Credenciales inválidas&quot;;
+    private static final String CUENTA_BLOQUEADA_MSG = &quot;La cuenta está bloqueada. Contacta con un administrador.&quot;;
+
+    public AuthenticationService(UsuarioNormalRepository usuarioNormalRepository,
+                                 CreadorContenidoRepository creadorContenidoRepository,
+                                 AdminRepository adminRepository,
+                                 JwtUtil jwtUtil,
+<span class="fc" id="L52">                                 LoginAttemptService loginAttemptService) {</span>
+<span class="fc" id="L53">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L54">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L55">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L56">        this.jwtUtil = jwtUtil;</span>
+<span class="fc" id="L57">        this.loginAttemptService = loginAttemptService;</span>
+<span class="fc" id="L58">        this.logger = LoggerFactory.getLogger(AuthenticationService.class);</span>
+<span class="fc" id="L59">    }</span>
+
+    public LoginResponseDTO login(LoginRequestDTO credentials) {
+<span class="fc" id="L62">        String email = credentials.getEmail();</span>
+<span class="fc" id="L63">        String password = credentials.getPassword();</span>
+
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">        if (email == null || password == null) {</span>
+<span class="fc" id="L66">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Email y contraseña son campos obligatorios&quot;);</span>
+        }
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    if (loginAttemptService.isBlocked(email, KEY_UNKNOWN)) {</span>
+<span class="fc" id="L70">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, &quot;Usuario temporalmente bloqueado&quot;);</span>
+        }
+
+<span class="fc" id="L73">        Optional&lt;UsuarioNormal&gt; user = usuarioNormalRepository.findByemail(email);</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">        if (!user.isPresent() || !matchesPassword(password, user.get().getPassword())) {</span>
+<span class="fc" id="L75">            loginAttemptService.recordFailedAttempt(email, KEY_UNKNOWN);</span>
+<span class="fc" id="L76">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+        }
+        
+<span class="fc" id="L79">        loginAttemptService.resetAttempts(email, KEY_UNKNOWN);</span>
+<span class="fc" id="L80">        String token = generateJwtToken(user.get());</span>
+
+        String aliasOrName;
+<span class="pc bpc" id="L83" title="2 of 4 branches missed.">        if (user.get().getAlias() != null &amp;&amp; !user.get().getAlias().trim().isEmpty()) {</span>
+<span class="fc" id="L84">            aliasOrName = user.get().getAlias();</span>
+        }
+		else {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            String nombre = user.get().getNombre() != null ? user.get().getNombre() : &quot;&quot;;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            String apellidos = user.get().getApellidos() != null ? user.get().getApellidos() : &quot;&quot;;</span>
+<span class="nc" id="L89">            String primerApellido = apellidos.split(&quot; &quot;)[0];</span>
+<span class="nc" id="L90">            aliasOrName = nombre + &quot; &quot; + primerApellido;</span>
+        }
+
+<span class="fc" id="L93">        return new LoginResponseDTO(token, user.get().getEmail(), aliasOrName, user.get().getRol().name());</span>
+    }
+
+    public Usuario authenticate(Map&lt;String, String&gt; credentials) {
+<span class="fc" id="L97">        String email = credentials.get(KEY_EMAIL);</span>
+<span class="fc" id="L98">        String password = credentials.get(KEY_PASSWORD);</span>
+
+<span class="fc bfc" id="L100" title="All 4 branches covered.">        if (email == null || password == null) {</span>
+<span class="fc" id="L101">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Email y contraseña son requeridos&quot;);</span>
+        }
+
+<span class="fc" id="L104">        UsuarioNormal user = usuarioNormalRepository.findByemail(email).orElse(null);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L106">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+        }
+
+<span class="fc" id="L109">        logger.info(&quot;Usuario {} confirmado: {}&quot;, email, user.isConfirmado());</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (!user.isConfirmado()) {</span>
+<span class="fc" id="L111">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;La cuenta no ha sido confirmada. Por favor, revisa tu correo electrónico.&quot;);</span>
+        }
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (user.isBloqueado()) {</span>
+<span class="fc" id="L115">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, CUENTA_BLOQUEADA_MSG);</span>
+        }
+    
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (!matchesPassword(password, user.getPassword())) {</span>
+<span class="fc" id="L119">            logger.warn(&quot;Password incorrecta para usuario: {}&quot;, email);</span>
+<span class="fc" id="L120">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+        }
+<span class="fc" id="L122">        logger.info(&quot;Autenticación exitosa para usuario: {}&quot;, email);</span>
+<span class="fc" id="L123">        return user;</span>
+    }
+
+    
+
+    public Usuario authenticatePrivilegedUser(Map&lt;String, String&gt; credentials) {
+<span class="fc" id="L129">    String email = credentials.get(KEY_EMAIL);</span>
+<span class="fc" id="L130">    String password = credentials.get(KEY_PASSWORD);</span>
+
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">    if (email == null || password == null) {</span>
+<span class="fc" id="L133">        throw new ResponseStatusException(</span>
+            HttpStatus.BAD_REQUEST,
+            &quot;Email y contraseña son requeridos&quot;
+        );
+    }
+
+<span class="fc" id="L139">    email = email.trim();</span>
+
+<span class="fc" id="L141">    logger.info(&quot;[LOGIN-PRIVILEGED] Intentando autenticación privilegiada para email: {}&quot;, email);</span>
+
+    // Primero intentar como ADMINISTRADOR
+<span class="fc" id="L144">    Usuario adminUser = tryAuthenticateAdmin(email, password);</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">    if (adminUser != null) {</span>
+<span class="fc" id="L146">        logger.info(&quot;[LOGIN-PRIVILEGED] Autenticación privilegiada correcta para email: {} con rol {}&quot;, </span>
+<span class="fc" id="L147">                    adminUser.getEmail(), adminUser.getRol());</span>
+<span class="fc" id="L148">        return adminUser;</span>
+    }
+
+    // Si no es admin, intentar como CREADOR
+<span class="fc" id="L152">    Usuario creadorUser = tryAuthenticateCreador(email, password);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">    if (creadorUser != null) {</span>
+<span class="fc" id="L154">        logger.info(&quot;[LOGIN-PRIVILEGED] Autenticación privilegiada correcta para email: {} con rol {}&quot;, </span>
+<span class="fc" id="L155">                    creadorUser.getEmail(), creadorUser.getRol());</span>
+<span class="fc" id="L156">        return creadorUser;</span>
+    }
+
+<span class="fc" id="L159">    logger.warn(&quot;[LOGIN-PRIVILEGED] No se encontró usuario privilegiado para email: {}&quot;, email);</span>
+<span class="fc" id="L160">    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+}
+
+    private Usuario tryAuthenticateAdmin(String email, String password) {
+<span class="fc" id="L164">        logger.info(&quot;[LOGIN-PRIVILEGED] Buscando usuario como ADMINISTRADOR para email: {}&quot;, email);</span>
+<span class="fc" id="L165">        Administrador admin = adminRepository.findByemail(email).orElse(null);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (admin == null) {</span>
+<span class="fc" id="L167">            return null;</span>
+        }
+
+<span class="fc" id="L170">        logger.info(&quot;[LOGIN-PRIVILEGED] Usuario encontrado como ADMIN: {}&quot;, admin.getEmail());</span>
+
+<span class="fc" id="L172">        boolean passwordMatch = matchesPassword(password, admin.getPassword());</span>
+<span class="fc" id="L173">        logger.info(&quot;[LOGIN-PRIVILEGED] Comparando password para admin {}: {}&quot;, admin.getEmail(), passwordMatch);</span>
+
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (!passwordMatch) {</span>
+<span class="fc" id="L176">            logger.warn(&quot;[LOGIN-PRIVILEGED] Password incorrecta para admin {}&quot;, admin.getEmail());</span>
+<span class="fc" id="L177">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+        }
+
+<span class="fc" id="L180">        return admin;</span>
+    }
+
+    private Usuario tryAuthenticateCreador(String email, String password) {
+<span class="fc" id="L184">        CreadorContenido creador = creadorContenidoRepository.findByemail(email).orElse(null);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (creador == null) {</span>
+<span class="fc" id="L186">            return null;</span>
+        }
+
+<span class="fc" id="L189">        logger.info(&quot;[LOGIN-PRIVILEGED] Usuario encontrado como CREADOR: {} (validado: {}, bloqueado: {})&quot;,</span>
+<span class="fc" id="L190">                    creador.getEmail(), creador.isValidado(), creador.isBloqueado());</span>
+
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (!creador.isValidado()) {</span>
+<span class="fc" id="L193">            logger.warn(&quot;[LOGIN-PRIVILEGED] Creador no validado: {}&quot;, creador.getEmail());</span>
+<span class="fc" id="L194">            throw new ResponseStatusException(</span>
+                HttpStatus.FORBIDDEN,
+                &quot;El creador de contenido no ha sido validado por un administrador&quot;
+            );
+        }
+
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (creador.isBloqueado()) {</span>
+<span class="fc" id="L201">            logger.warn(&quot;[LOGIN-PRIVILEGED] Creador bloqueado: {}&quot;, creador.getEmail());</span>
+<span class="fc" id="L202">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, CUENTA_BLOQUEADA_MSG);</span>
+        }
+
+<span class="fc" id="L205">        boolean passwordMatch = matchesPassword(password, creador.getPassword());</span>
+<span class="fc" id="L206">        logger.info(&quot;[LOGIN-PRIVILEGED] Comparando password para creador {}: {}&quot;, creador.getEmail(), passwordMatch);</span>
+
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (!passwordMatch) {</span>
+<span class="fc" id="L209">            logger.warn(&quot;[LOGIN-PRIVILEGED] Password incorrecta para creador {}&quot;, creador.getEmail());</span>
+<span class="fc" id="L210">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);</span>
+        }
+
+<span class="fc" id="L213">        return creador;</span>
+    }
+
+
+    public String generateJwtToken(Usuario user) {
+<span class="fc" id="L218">        return jwtUtil.generateToken(user.getIdUsuario(), user.getEmail(), user.getCredentialsVersion(), user.getRol());</span>
+    }
+
+    public String generateJwtToken(Usuario user, TipoContenido tipoContenido) {
+<span class="fc" id="L222">        return jwtUtil.generateToken(user.getIdUsuario(), user.getEmail(), user.getCredentialsVersion(), user.getRol(), tipoContenido);</span>
+    }
+
+    private boolean matchesPassword(String rawPassword, String encodedPassword) {
+<span class="fc" id="L226">        String passwordWithPepper = rawPassword + pepper;</span>
+<span class="fc" id="L227">        Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);</span>
+        try {
+<span class="fc" id="L229">             boolean result = argon2.verify(encodedPassword, passwordWithPepper.toCharArray());</span>
+<span class="fc" id="L230">            logger.info(&quot;Raw password: {}&quot;, rawPassword);</span>
+<span class="fc" id="L231">            logger.info(&quot;Password with pepper: {}&quot;, passwordWithPepper);</span>
+            
+<span class="fc" id="L233">            logger.info(&quot;Stored (encoded) password: {}&quot;, encodedPassword);</span>
+<span class="fc" id="L234">            logger.info(&quot;Password match result: {}&quot;, result);</span>
+<span class="fc" id="L235">            return result;</span>
+        } 
+        finally {
+<span class="fc" id="L238">            argon2.wipeArray(passwordWithPepper.toCharArray());</span>
+        }
+    }
+
+
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

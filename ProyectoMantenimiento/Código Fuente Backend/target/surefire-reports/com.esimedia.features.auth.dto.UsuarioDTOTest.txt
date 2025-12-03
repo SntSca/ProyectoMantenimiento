@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.esimedia.features.auth.dto.UsuarioDTOTest
+-------------------------------------------------------------------------------
+Tests run: 30, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.099 s -- in com.esimedia.features.auth.dto.UsuarioDTOTest

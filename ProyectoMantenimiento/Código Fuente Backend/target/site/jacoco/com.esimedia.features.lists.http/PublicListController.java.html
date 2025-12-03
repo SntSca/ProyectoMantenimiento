@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicListController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.http</a> &gt; <span class="el_source">PublicListController.java</span></div><h1>PublicListController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.http;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.lists.dto.AgregarContenidoPublicoDTO;
+import com.esimedia.features.lists.dto.ContenidoListaResponseDTO;
+import com.esimedia.features.lists.dto.EliminarContenidoPublicoDTO;
+import com.esimedia.features.lists.dto.ListaPublicaReproduccionDTO;
+import com.esimedia.features.lists.dto.ListaResponseDTO;
+import com.esimedia.features.lists.dto.ListaUpdateFieldsPublicasDTO;
+import com.esimedia.features.lists.services.PublicListService;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+import jakarta.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/content/lists&quot;)
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;, allowedHeaders = &quot;*&quot;, exposedHeaders = &quot;Authorization&quot;)
+public class PublicListController {
+
+<span class="fc" id="L37">    private static final Logger logger = LoggerFactory.getLogger(PublicListController.class);</span>
+    private static final String ERROR_INTERNO_SERVIDOR = &quot;Error interno del servidor&quot;;
+
+    private final PublicListService publicListService;
+    private final JwtValidationUtil jwtValidationService;
+
+    public PublicListController(PublicListService publicListService,
+<span class="fc" id="L44">                               JwtValidationUtil jwtValidationService) {</span>
+<span class="fc" id="L45">        this.publicListService = publicListService;</span>
+<span class="fc" id="L46">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Crear una lista de reproducción pública
+     */
+    @PostMapping(&quot;/public&quot;)
+    public ResponseEntity&lt;String&gt; crearListaPublica(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody ListaPublicaReproduccionDTO listaDTO) {
+        ResponseEntity&lt;String&gt; response;
+        try {
+            
+            // Validar que es un creador de contenido y obtener su ID
+<span class="nc" id="L60">            String userId = jwtValidationService.validarGetCreador(authHeader);</span>
+
+            // Validar que el usuario del JWT es el mismo que está en el DTO
+<span class="nc bnc" id="L63" title="All 2 branches missed.">            if (!userId.equals(listaDTO.getIdCreadorUsuario())) {</span>
+<span class="nc" id="L64">                response = ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
+<span class="nc" id="L65">                    .body(&quot;No puedes crear listas para otros usuarios&quot;);</span>
+            }
+            else {
+<span class="nc" id="L68">                String result = publicListService.crearListaPublica(listaDTO);</span>
+<span class="nc" id="L69">                response = ResponseEntity.ok(result);</span>
+            }
+        }
+<span class="nc" id="L72">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L73">            logger.warn(&quot;Error creando lista pública: {}&quot;, e.getReason());</span>
+<span class="nc" id="L74">            response = ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L76">        catch (Exception e) {</span>
+<span class="nc" id="L77">            logger.error(&quot;Error interno creando lista pública: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L78">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L79">                .body(ERROR_INTERNO_SERVIDOR);</span>
+<span class="nc" id="L80">        }</span>
+<span class="nc" id="L81">        return response;</span>
+    }
+
+    /**
+     * Agregar contenido a una lista pública
+     */
+    @PutMapping(&quot;/public/add-content&quot;)
+    public ResponseEntity&lt;String&gt; agregarContenidoListaPublica(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody AgregarContenidoPublicoDTO agregarDTO) {
+        ResponseEntity&lt;String&gt; response;
+        try {
+            
+            // Validar que es un creador de contenido
+<span class="nc" id="L95">            jwtValidationService.validarGetCreador(authHeader);</span>
+
+<span class="nc" id="L97">            String result = publicListService.agregarContenidoListaPublica(agregarDTO);</span>
+<span class="nc" id="L98">            response = ResponseEntity.ok(result);</span>
+        }
+<span class="nc" id="L100">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L101">            logger.warn(&quot;Error agregando contenido a lista pública: {}&quot;, e.getReason());</span>
+<span class="nc" id="L102">            response = ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L104">        catch (Exception e) {</span>
+<span class="nc" id="L105">            logger.error(&quot;Error interno agregando contenido a lista pública: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L106">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L107">                .body(ERROR_INTERNO_SERVIDOR);</span>
+<span class="nc" id="L108">        }</span>
+<span class="nc" id="L109">        return response;</span>
+    }
+
+    /**
+     * Consultar todas las listas públicas con contenidos completos
+     */
+    @GetMapping(&quot;/public/contents&quot;)
+    public ResponseEntity&lt;List&lt;ListaResponseDTO&gt;&gt; consultarTodasListasPublicasConContenidos(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader) {
+        ResponseEntity&lt;List&lt;ListaResponseDTO&gt;&gt; response;
+        try {
+            // Validar que es un usuario registrado (cualquier usuario puede ver listas públicas)
+<span class="fc" id="L121">            jwtValidationService.validarGenerico(authHeader);</span>
+            
+            // Filtrar listas según el rol del usuario
+<span class="fc" id="L124">            Rol userRole = jwtValidationService.getRolFromToken(authHeader);</span>
+
+<span class="fc" id="L126">            List&lt;ListaResponseDTO&gt; listas = publicListService.obtenerTodasListasPublicasConContenidos();</span>
+            
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            if (userRole == Rol.NORMAL) {</span>
+<span class="nc" id="L129">                listas = listas.stream()</span>
+<span class="nc" id="L130">                    .filter(lista -&gt; Boolean.TRUE.equals(lista.getVisibilidad()))</span>
+<span class="nc" id="L131">                    .map(lista -&gt; {</span>
+<span class="nc" id="L132">                        ListaResponseDTO filteredLista = new ListaResponseDTO();</span>
+<span class="nc" id="L133">                        filteredLista.setIdLista(lista.getIdLista());</span>
+<span class="nc" id="L134">                        filteredLista.setNombre(lista.getNombre());</span>
+<span class="nc" id="L135">                        filteredLista.setDescripcion(lista.getDescripcion());</span>
+<span class="nc" id="L136">                        filteredLista.setIdCreadorUsuario(lista.getIdCreadorUsuario());</span>
+<span class="nc" id="L137">                        filteredLista.setVisibilidad(lista.getVisibilidad());</span>
+                        // Filtrar contenidos visibles
+<span class="nc" id="L139">                        List&lt;ContenidoListaResponseDTO&gt; contenidosVisibles = lista.getContenidos().stream()</span>
+<span class="nc" id="L140">                            .filter(contenido -&gt; contenido.isVisibilidad())</span>
+<span class="nc" id="L141">                            .toList();</span>
+<span class="nc" id="L142">                        filteredLista.setContenidos(contenidosVisibles);</span>
+<span class="nc" id="L143">                        return filteredLista;</span>
+                    })
+<span class="nc" id="L145">                    .toList();</span>
+            }
+            
+<span class="fc" id="L148">            response = ResponseEntity.ok(listas);</span>
+        }
+<span class="fc" id="L150">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L151">            logger.warn(&quot;Error consultando todas las listas públicas con contenidos: {}&quot;, e.getReason());</span>
+<span class="fc" id="L152">            response = ResponseEntity.status(e.getStatusCode()).body(null);</span>
+        }
+<span class="fc" id="L154">        catch (Exception e) {</span>
+<span class="fc" id="L155">            logger.error(&quot;Error interno consultando todas las listas públicas con contenidos: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L156">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);</span>
+<span class="fc" id="L157">        }</span>
+<span class="fc" id="L158">        return response;</span>
+    }
+
+    /**
+     * Actualizar campos principales de una lista pública (nombre, descripción, visibilidad)
+     * Solo el creador puede modificar sus listas
+     */
+    @PutMapping(&quot;/public/fields&quot;)
+    public ResponseEntity&lt;String&gt; actualizarCamposListaPublica(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody ListaUpdateFieldsPublicasDTO updateDTO) {
+        ResponseEntity&lt;String&gt; response;
+        try {
+            // Validar que es un creador de contenido y obtener su ID
+<span class="nc" id="L172">            jwtValidationService.validarGetCreador(authHeader);</span>
+            
+<span class="nc" id="L174">            String result = publicListService.actualizarCamposListaPublica(updateDTO);</span>
+<span class="nc" id="L175">            response = ResponseEntity.ok(result);</span>
+        }
+<span class="nc" id="L177">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L178">            logger.warn(&quot;Error actualizando campos de lista pública: {}&quot;, e.getReason());</span>
+<span class="nc" id="L179">            response = ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L181">        catch (Exception e) {</span>
+<span class="nc" id="L182">            logger.error(&quot;Error interno actualizando campos de lista pública: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L183">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L184">                .body(ERROR_INTERNO_SERVIDOR);</span>
+<span class="nc" id="L185">        }</span>
+<span class="nc" id="L186">        return response;</span>
+    }
+
+    /**
+     * Eliminar lista pública
+     */
+    @DeleteMapping(&quot;/public/{idLista}&quot;)
+    public ResponseEntity&lt;String&gt; eliminarListaPublica(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String idLista) {
+        ResponseEntity&lt;String&gt; response;
+        try {
+            // Validar que es un creador de contenido y obtener su ID
+<span class="nc" id="L199">            String userId = jwtValidationService.validarGetCreador(authHeader);</span>
+
+<span class="nc" id="L201">            String result = publicListService.eliminarListaPublica(idLista, userId);</span>
+<span class="nc" id="L202">            response = ResponseEntity.ok(result);</span>
+        }
+<span class="nc" id="L204">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L205">            logger.warn(&quot;Error eliminando lista pública: {}&quot;, e.getReason());</span>
+<span class="nc" id="L206">            response = ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L208">        catch (Exception e) {</span>
+<span class="nc" id="L209">            logger.error(&quot;Error interno eliminando lista pública: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L210">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L211">                .body(ERROR_INTERNO_SERVIDOR);</span>
+<span class="nc" id="L212">        }</span>
+<span class="nc" id="L213">        return response;</span>
+    }
+
+    /**
+     * Eliminar contenido de una lista pública
+     */
+    @DeleteMapping(&quot;/public/remove-content&quot;)
+    public ResponseEntity&lt;String&gt; eliminarContenidoListaPublica(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody EliminarContenidoPublicoDTO eliminarDTO) {
+        ResponseEntity&lt;String&gt; response;
+        try {
+            // Validar que es un creador de contenido
+<span class="nc" id="L226">            jwtValidationService.validarGetCreador(authHeader);</span>
+            
+<span class="nc" id="L228">            String result = publicListService.eliminarContenidoListaPublica(eliminarDTO);</span>
+<span class="nc" id="L229">            response = ResponseEntity.ok(result);</span>
+        }
+<span class="nc" id="L231">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L232">            logger.warn(&quot;Error eliminando contenido de lista pública: {}&quot;, e.getReason());</span>
+<span class="nc" id="L233">            response = ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L235">        catch (Exception e) {</span>
+<span class="nc" id="L236">            logger.error(&quot;Error interno eliminando contenido de lista pública: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L237">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L238">                .body(ERROR_INTERNO_SERVIDOR);</span>
+<span class="nc" id="L239">        }</span>
+<span class="nc" id="L240">        return response;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

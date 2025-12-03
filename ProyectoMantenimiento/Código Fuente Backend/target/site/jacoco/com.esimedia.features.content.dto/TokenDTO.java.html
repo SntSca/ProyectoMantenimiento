@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TokenDTO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.dto</a> &gt; <span class="el_source">TokenDTO.java</span></div><h1>TokenDTO.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
+import com.esimedia.features.auth.enums.EstadoToken;
+import com.esimedia.features.auth.enums.TipoToken;
+
+/**
+ * DTO para la transferencia de datos de Token
+ */
+<span class="pc bpc" id="L15" title="35 of 78 branches missed.">@Data</span>
+<span class="fc" id="L16">@NoArgsConstructor</span>
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TokenDTO {
+    
+<span class="fc" id="L20">    private String id;</span>
+    
+    @Pattern(regexp = &quot;^(\\d{1,3}\\.){3}\\d{1,3}$&quot;, 
+             message = &quot;La IP del cliente debe tener un formato válido&quot;)
+<span class="fc" id="L24">    private String ipCliente;</span>
+    
+    @NotBlank(message = &quot;El email del usuario no puede estar vacío&quot;)
+    @Email(message = &quot;El email debe tener un formato válido&quot;)
+<span class="fc" id="L28">    private String emailUsuario;</span>
+    
+    @NotNull(message = &quot;La fecha de inicio no puede ser nula&quot;)
+<span class="fc" id="L31">    private LocalDateTime fechaInicio;</span>
+    
+<span class="fc" id="L33">    private LocalDateTime fechaUltimaActividad;</span>
+    
+    @NotNull(message = &quot;El estado del token no puede ser nulo&quot;)
+<span class="fc" id="L36">    private EstadoToken estado;</span>
+    
+    @NotBlank(message = &quot;El ID del JWT no puede estar vacío&quot;)
+<span class="fc" id="L39">    private String jwtTokenId;</span>
+    
+    @NotNull(message = &quot;El tipo de token no puede ser nulo&quot;)
+<span class="fc" id="L42">    private TipoToken tipoToken;</span>
+    
+<span class="fc" id="L44">    private LocalDateTime fechaCreacionToken;</span>
+
+    // Constructor privado para uso del Builder
+<span class="fc" id="L47">    private TokenDTO(Builder builder) {</span>
+<span class="fc" id="L48">        this.id = builder.id;</span>
+<span class="fc" id="L49">        this.ipCliente = builder.ipCliente;</span>
+<span class="fc" id="L50">        this.emailUsuario = builder.emailUsuario;</span>
+<span class="fc" id="L51">        this.fechaInicio = builder.fechaInicio;</span>
+<span class="fc" id="L52">        this.fechaUltimaActividad = builder.fechaUltimaActividad;</span>
+<span class="fc" id="L53">        this.estado = builder.estado;</span>
+<span class="fc" id="L54">        this.jwtTokenId = builder.jwtTokenId;</span>
+<span class="fc" id="L55">        this.tipoToken = builder.tipoToken;</span>
+<span class="fc" id="L56">        this.fechaCreacionToken = builder.fechaCreacionToken;</span>
+<span class="fc" id="L57">    }</span>
+
+
+
+    // Método estático para iniciar el builder
+    public static Builder builder() {
+<span class="fc" id="L63">        return new Builder();</span>
+    }
+
+    // Getters, setters y toString generados automáticamente por @Data
+
+    /**
+     * Clase Builder para TokenDTO
+     */
+    public static class Builder {
+        private String id;
+        private String ipCliente;
+        private String emailUsuario;
+        private LocalDateTime fechaInicio;
+        private LocalDateTime fechaUltimaActividad;
+        private EstadoToken estado;
+        private String jwtTokenId;
+        private TipoToken tipoToken;
+        private LocalDateTime fechaCreacionToken;
+
+        // Constructor privado
+        private Builder() {
+        }
+
+        public Builder id(String id) {
+<span class="fc" id="L87">            this.id = id;</span>
+<span class="fc" id="L88">            return this;</span>
+        }
+
+        public Builder ipCliente(String ipCliente) {
+<span class="fc" id="L92">            this.ipCliente = ipCliente;</span>
+<span class="fc" id="L93">            return this;</span>
+        }
+        
+        public Builder emailUsuario(String emailUsuario) {
+<span class="fc" id="L97">            this.emailUsuario = emailUsuario;</span>
+<span class="fc" id="L98">            return this;</span>
+        }
+
+        public Builder fechaInicio(LocalDateTime fechaInicio) {
+<span class="fc" id="L102">            this.fechaInicio = fechaInicio;</span>
+<span class="fc" id="L103">            return this;</span>
+        }
+
+        public Builder fechaUltimaActividad(LocalDateTime fechaUltimaActividad) {
+<span class="fc" id="L107">            this.fechaUltimaActividad = fechaUltimaActividad;</span>
+<span class="fc" id="L108">            return this;</span>
+        }
+
+        public Builder estado(EstadoToken estado) {
+<span class="fc" id="L112">            this.estado = estado;</span>
+<span class="fc" id="L113">            return this;</span>
+        }
+
+        public Builder jwtTokenId(String jwtTokenId) {
+<span class="fc" id="L117">            this.jwtTokenId = jwtTokenId;</span>
+<span class="fc" id="L118">            return this;</span>
+        }
+
+        public Builder tipoToken(TipoToken tipoToken) {
+<span class="fc" id="L122">            this.tipoToken = tipoToken;</span>
+<span class="fc" id="L123">            return this;</span>
+        }
+
+        // Métodos de conveniencia para crear tokens comunes
+        public Builder tokenRegistro(String jwtId, String ip, String email) {
+<span class="fc" id="L128">            return this</span>
+<span class="fc" id="L129">                    .tipoToken(TipoToken.REGISTRO)</span>
+<span class="fc" id="L130">                    .estado(EstadoToken.SIN_CONFIRMAR)</span>
+<span class="fc" id="L131">                    .jwtTokenId(jwtId)</span>
+<span class="fc" id="L132">                    .ipCliente(ip)</span>
+<span class="fc" id="L133">                    .emailUsuario(email)</span>
+<span class="fc" id="L134">                    .fechaInicio(LocalDateTime.now())</span>
+<span class="fc" id="L135">                    .fechaUltimaActividad(LocalDateTime.now());</span>
+        }
+
+        public Builder tokenRecuperacion(String jwtId, String ip, String email) {
+<span class="fc" id="L139">            return this</span>
+<span class="fc" id="L140">                    .tipoToken(TipoToken.RECUPERACION_PASSWORD)</span>
+<span class="fc" id="L141">                    .estado(EstadoToken.SIN_CONFIRMAR)</span>
+<span class="fc" id="L142">                    .jwtTokenId(jwtId)</span>
+<span class="fc" id="L143">                    .ipCliente(ip)</span>
+<span class="fc" id="L144">                    .emailUsuario(email)</span>
+<span class="fc" id="L145">                    .fechaInicio(LocalDateTime.now())</span>
+<span class="fc" id="L146">                    .fechaUltimaActividad(LocalDateTime.now());</span>
+        }
+
+        public Builder tokenAcceso(String jwtId, String ip, String email) {
+<span class="fc" id="L150">            return this</span>
+<span class="fc" id="L151">                    .tipoToken(TipoToken.ACCESO)</span>
+<span class="fc" id="L152">                    .estado(EstadoToken.SIN_CONFIRMAR)</span>
+<span class="fc" id="L153">                    .jwtTokenId(jwtId)</span>
+<span class="fc" id="L154">                    .ipCliente(ip)</span>
+<span class="fc" id="L155">                    .emailUsuario(email)</span>
+<span class="fc" id="L156">                    .fechaInicio(LocalDateTime.now())</span>
+<span class="fc" id="L157">                    .fechaUltimaActividad(LocalDateTime.now());</span>
+        }
+
+        // Método para construir el TokenDTO
+        public TokenDTO build() {
+<span class="fc" id="L162">            return new TokenDTO(this);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

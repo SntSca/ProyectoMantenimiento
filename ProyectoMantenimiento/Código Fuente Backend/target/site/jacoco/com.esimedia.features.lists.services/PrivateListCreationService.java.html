@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrivateListCreationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PrivateListCreationService.java</span></div><h1>PrivateListCreationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.lists.dto.ListaPrivadaReproduccionDTO;
+import com.esimedia.features.lists.entity.ListaContenidoPrivada;
+import com.esimedia.features.lists.entity.ListaPrivada;
+import com.esimedia.features.lists.repository.ListaContenidoPrivadaRepository;
+import com.esimedia.features.lists.repository.ListaPrivadaRepository;
+import com.esimedia.shared.util.ContentValidationUtil;
+
+@Service
+public class PrivateListCreationService {
+
+<span class="fc" id="L17">    private static final Logger logger = LoggerFactory.getLogger(PrivateListCreationService.class);</span>
+
+    private final ListaPrivadaRepository listaPrivadaRepository;
+    private final ListaContenidoPrivadaRepository listaContenidoPrivadaRepository;
+    private final ContentValidationUtil contentValidationUtil;
+
+    public PrivateListCreationService(
+            ListaPrivadaRepository listaPrivadaRepository,
+            ListaContenidoPrivadaRepository listaContenidoPrivadaRepository,
+<span class="fc" id="L26">            ContentValidationUtil contentValidationUtil) {</span>
+<span class="fc" id="L27">        this.listaPrivadaRepository = listaPrivadaRepository;</span>
+<span class="fc" id="L28">        this.listaContenidoPrivadaRepository = listaContenidoPrivadaRepository;</span>
+<span class="fc" id="L29">        this.contentValidationUtil = contentValidationUtil;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Crear una lista de reproducción privada
+     */
+    public String crearListaPrivada(ListaPrivadaReproduccionDTO listaDTO) {
+<span class="fc" id="L36">        logger.info(&quot;Creando lista privada: {} para usuario: {}&quot;,</span>
+<span class="fc" id="L37">            listaDTO.getNombre(), listaDTO.getIdCreadorUsuario());</span>
+
+        // Validar que los contenidos existen (audio o video)
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (String idContenido : listaDTO.getContenidos()) {</span>
+<span class="fc" id="L41">            contentValidationUtil.validarContenidoExistente(idContenido);</span>
+<span class="fc" id="L42">        }</span>
+
+        // Crear la lista privada
+<span class="fc" id="L45">        ListaPrivada lista = ListaPrivada.builder()</span>
+<span class="fc" id="L46">            .nombre(listaDTO.getNombre())</span>
+<span class="fc" id="L47">            .descripcion(listaDTO.getDescripcion())</span>
+<span class="fc" id="L48">            .idCreadorUsuario(listaDTO.getIdCreadorUsuario())</span>
+<span class="fc" id="L49">            .build();</span>
+
+<span class="fc" id="L51">        ListaPrivada listaGuardada = listaPrivadaRepository.save(lista);</span>
+
+        // Agregar contenidos a la lista
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (String idContenido : listaDTO.getContenidos()) {</span>
+<span class="fc" id="L55">            ListaContenidoPrivada contenido = ListaContenidoPrivada.builder()</span>
+<span class="fc" id="L56">                .idLista(listaGuardada.getIdLista())</span>
+<span class="fc" id="L57">                .idContenido(idContenido)</span>
+<span class="fc" id="L58">                .build();</span>
+<span class="fc" id="L59">            listaContenidoPrivadaRepository.save(contenido);</span>
+<span class="fc" id="L60">        }</span>
+
+<span class="fc" id="L62">        logger.info(&quot;Lista privada creada exitosamente: {}&quot;, listaGuardada.getIdLista());</span>
+<span class="fc" id="L63">        return &quot;Lista privada creada exitosamente&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

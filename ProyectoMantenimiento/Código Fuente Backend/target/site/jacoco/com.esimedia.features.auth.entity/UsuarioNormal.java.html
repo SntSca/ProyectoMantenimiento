@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioNormal.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.entity</a> &gt; <span class="el_source">UsuarioNormal.java</span></div><h1>UsuarioNormal.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.entity;
+
+import java.util.Date;
+
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+<span class="pc" id="L14">@Data</span>
+<span class="pc bpc" id="L15" title="7 of 28 branches missed.">@EqualsAndHashCode(callSuper = true)</span>
+<span class="fc" id="L16">@NoArgsConstructor</span>
+<span class="pc" id="L17">@SuperBuilder</span>
+@Document(collection = &quot;usuariosNormales&quot;)
+public class UsuarioNormal extends Usuario {
+    
+    @Field(&quot;flagVIP&quot;)
+<span class="fc" id="L22">    private boolean flagVIP;</span>
+    
+    @Field(&quot;fechaNacimiento&quot;)
+    @Past(message = &quot;La fecha de nacimiento debe ser anterior a la fecha actual&quot;)
+<span class="fc" id="L26">    private Date fechaNacimiento;</span>
+    
+    @Field(&quot;bloqueado&quot;)
+<span class="fc" id="L29">    private boolean bloqueado;</span>
+    
+    @Field(&quot;confirmado&quot;)
+<span class="fc" id="L32">    private boolean confirmado;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

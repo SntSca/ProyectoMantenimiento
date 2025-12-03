@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.http</a> &gt; <span class="el_source">ManagementController.java</span></div><h1>ManagementController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.http;
+
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import jakarta.validation.Valid;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.services.SesionService;
+import com.esimedia.features.user_management.dto.AdminProfileUpdateDTO;
+import com.esimedia.features.user_management.dto.BlockUserDTO;
+import com.esimedia.features.user_management.dto.CreatorProfileUpdateDTO;
+import com.esimedia.features.user_management.dto.UserProfileUpdateDTO;
+import com.esimedia.features.user_management.services.ManagementService;
+import com.esimedia.features.user_management.services.PasswordManagementService;
+import com.esimedia.features.user_management.services.UserQueryService;
+import com.esimedia.features.user_management.services.UserRetrievalService;
+import com.esimedia.features.auth.dto.UserResponseDTO;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+
+
+
+@RestController
+@RequestMapping(&quot;/management&quot;)
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;, allowedHeaders = &quot;*&quot;, exposedHeaders = &quot;Authorization&quot;)
+public class ManagementController {
+
+<span class="nc" id="L44">    private static final Logger logger = LoggerFactory.getLogger(ManagementController.class);</span>
+
+    // Constantes para strings duplicados
+    private static final String USUARIO_NO_ENCONTRADO = &quot;El usuario no ha podido ser encontrado&quot;;
+    private static final String PERFIL_ACTUALIZADO_EXITOSAMENTE = &quot;Perfil actualizado exitosamente&quot;;
+    private static final String CONTRASENA_CAMBIADA_EXITOSAMENTE = &quot;Contraseña cambiada exitosamente. Inicie sesión nuevamente.&quot;;
+    private static final String NO_PERMISO_CAMBIAR_CONTRASENA = &quot;No tienes permiso para cambiar esta contraseña&quot;;
+    private static final String NO_PERMISO_ACTUALIZAR_PERFIL = &quot;No tienes permiso para actualizar este perfil&quot;;
+    private static final String NO_PERMISO_CAMBIAR_VIP = &quot;No tienes permiso para cambiar el estado VIP&quot;;
+    private static final String NO_PERMISO_CONSULTAR_VIP = &quot;No tienes permiso para consultar el estado VIP&quot;;
+    private static final String CREADOR_ELIMINADO_EXITOSAMENTE = &quot;Creador eliminado exitosamente&quot;;
+    private static final String ADMINISTRADOR_ELIMINADO_EXITOSAMENTE = &quot;Administrador eliminado exitosamente&quot;;
+    private static final String USUARIO_ELIMINADO_EXITOSAMENTE = &quot;Usuario eliminado exitosamente&quot;;
+    private static final String PERFIL_ACTUALIZADO_POR_ADMIN = &quot;Perfil actualizado exitosamente por administrador&quot;;
+    private static final String PERFIL_CREADOR_ACTUALIZADO_POR_ADMIN = &quot;Perfil del creador actualizado exitosamente por administrador&quot;;
+    private static final String PERFIL_ADMIN_ACTUALIZADO = &quot;Perfil del administrador actualizado exitosamente&quot;;
+    private static final String MESSAGE_KEY = &quot;message&quot;;
+    private static final String USER_ID_KEY = &quot;userId&quot;;
+    private static final String BLOCKED_KEY = &quot;blocked&quot;;
+
+
+    private final ManagementService managementService;
+    private final SesionService sesionService;
+    private final JwtValidationUtil jwtValidationService;
+    private final UserRetrievalService userRetrievalService;
+    private final PasswordManagementService passwordManagementService;
+    private final UserQueryService userQueryService;
+
+    public ManagementController(ManagementService managementService, 
+                               SesionService sesionService, 
+                               JwtValidationUtil jwtValidationService,
+                               UserRetrievalService userRetrievalService,
+                               PasswordManagementService passwordManagementService,
+<span class="nc" id="L77">                               UserQueryService userQueryService) {</span>
+<span class="nc" id="L78">        this.managementService = managementService;</span>
+<span class="nc" id="L79">        this.sesionService = sesionService;</span>
+<span class="nc" id="L80">        this.jwtValidationService = jwtValidationService;</span>
+<span class="nc" id="L81">        this.userRetrievalService = userRetrievalService;</span>
+<span class="nc" id="L82">        this.passwordManagementService = passwordManagementService;</span>
+<span class="nc" id="L83">        this.userQueryService = userQueryService;</span>
+<span class="nc" id="L84">    }</span>
+
+    // ========== ENDPOINTS PARA GESTIÓN DE USUARIOS NORMALES ==========
+
+    /**
+     * Obtener perfil de usuario normal por ID
+     */
+    @GetMapping(&quot;/user/{userConsultId}&quot;)
+    public ResponseEntity&lt;UserResponseDTO&gt; getUserProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader, @PathVariable String userConsultId) {
+        try {
+            
+<span class="nc" id="L95">            String userId = jwtValidationService.validarGetUsuario(authHeader);</span>
+
+<span class="nc" id="L97">            UsuarioNormal user = userRetrievalService.findById(userConsultId)</span>
+<span class="nc" id="L98">                .orElseThrow(() -&gt; new ResponseStatusException(</span>
+                    HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));
+<span class="nc bnc" id="L100" title="All 4 branches missed.">            if (user.getIdUsuario().equals(userId) || jwtValidationService.esAdmin(authHeader)) {</span>
+<span class="nc" id="L101">                UserResponseDTO dto = new UserResponseDTO();</span>
+<span class="nc" id="L102">                dto.setIdUsuario(user.getIdUsuario());</span>
+<span class="nc" id="L103">                dto.setNombre(user.getNombre());</span>
+<span class="nc" id="L104">                dto.setApellidos(user.getApellidos());</span>
+<span class="nc" id="L105">                dto.setEmail(user.getEmail());</span>
+<span class="nc" id="L106">                dto.setAlias(user.getAlias());</span>
+<span class="nc" id="L107">                dto.setFotoPerfil(user.getFotoPerfil());</span>
+<span class="nc" id="L108">                dto.setFechaRegistro(user.getFechaRegistro());</span>
+<span class="nc" id="L109">                dto.setTwoFactorEnabled(user.isTwoFactorEnabled());</span>
+<span class="nc" id="L110">                dto.setThirdFactorEnabled(user.isThirdFactorEnabled());</span>
+<span class="nc" id="L111">                dto.setRol(user.getRol());</span>
+                // Campos específicos de UsuarioNormal
+<span class="nc" id="L113">                dto.setFlagVIP(user.isFlagVIP());</span>
+<span class="nc" id="L114">                dto.setFechaNacimiento(user.getFechaNacimiento());</span>
+<span class="nc" id="L115">                dto.setBloqueadoUsuarioNormal(user.isBloqueado());</span>
+<span class="nc" id="L116">                dto.setConfirmado(user.isConfirmado());</span>
+<span class="nc" id="L117">                return ResponseEntity.ok(dto);</span>
+            }
+            else {
+<span class="nc" id="L120">                throw new ResponseStatusException(</span>
+                    HttpStatus.UNAUTHORIZED, NO_PERMISO_CAMBIAR_CONTRASENA);
+            }
+        } 
+<span class="nc" id="L124">        catch (RuntimeException e) {</span>
+<span class="nc" id="L125">            throw new IllegalStateException(&quot;Error obteniendo perfil de usuario &quot;, e);</span>
+        }
+    }
+
+    /**
+     * Obtener perfil de creador de contenido por ID
+     * - El propio creador puede ver su perfil
+     * - Los administradores pueden ver cualquier perfil de creador
+     */
+    @GetMapping(&quot;/creator/{creatorIdConsult}&quot;)
+    public ResponseEntity&lt;UserResponseDTO&gt; getCreatorProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader, @PathVariable String creatorIdConsult) {
+        try {
+<span class="nc" id="L137">            String authenticatedUserId = jwtValidationService.validarGetCreador(authHeader);</span>
+
+<span class="nc" id="L139">            CreadorContenido creator = managementService.findCreatorById(creatorIdConsult)</span>
+<span class="nc" id="L140">            .orElseThrow(() -&gt; new ResponseStatusException(</span>
+                HttpStatus.NOT_FOUND, &quot;Creador de contenido no encontrado&quot;));
+
+            // El propio creador puede ver su perfil, o un administrador
+<span class="nc bnc" id="L144" title="All 4 branches missed.">            if (creator.getIdUsuario().equals(authenticatedUserId) || jwtValidationService.esAdmin(authHeader)) {</span>
+<span class="nc" id="L145">                UserResponseDTO dto = new UserResponseDTO();</span>
+<span class="nc" id="L146">                dto.setIdUsuario(creator.getIdUsuario());</span>
+<span class="nc" id="L147">                dto.setNombre(creator.getNombre());</span>
+<span class="nc" id="L148">                dto.setApellidos(creator.getApellidos());</span>
+<span class="nc" id="L149">                dto.setEmail(creator.getEmail());</span>
+<span class="nc" id="L150">                dto.setAlias(creator.getAlias());</span>
+<span class="nc" id="L151">                dto.setFotoPerfil(creator.getFotoPerfil());</span>
+<span class="nc" id="L152">                dto.setFechaRegistro(creator.getFechaRegistro());</span>
+<span class="nc" id="L153">                dto.setTwoFactorEnabled(creator.isTwoFactorEnabled());</span>
+<span class="nc" id="L154">                dto.setThirdFactorEnabled(creator.isThirdFactorEnabled());</span>
+<span class="nc" id="L155">                dto.setRol(creator.getRol());</span>
+                // Campos específicos de CreadorContenido
+<span class="nc" id="L157">                dto.setAliasCreador(creator.getAliasCreador());</span>
+<span class="nc" id="L158">                dto.setDescripcion(creator.getDescripcion());</span>
+<span class="nc" id="L159">                dto.setBloqueadoCreador(creator.isBloqueado());</span>
+<span class="nc" id="L160">                dto.setEspecialidad(creator.getEspecialidad());</span>
+<span class="nc" id="L161">                dto.setTipoContenido(creator.getTipoContenido());</span>
+<span class="nc" id="L162">                dto.setValidado(creator.isValidado());</span>
+<span class="nc" id="L163">                return ResponseEntity.ok(dto);</span>
+            } 
+            else {
+<span class="nc" id="L166">            throw new ResponseStatusException(</span>
+                HttpStatus.UNAUTHORIZED, NO_PERMISO_CAMBIAR_CONTRASENA);
+            }
+        } 
+<span class="nc" id="L170">        catch (RuntimeException e) {</span>
+<span class="nc" id="L171">            throw new IllegalStateException(&quot;Error obteniendo perfil de creador&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Obtener perfil de administrador por ID
+     * - El propio administrador puede ver su perfil
+     * - Los administradores pueden ver cualquier perfil de administrador
+     */
+    @GetMapping(&quot;/admin/{adminIdConsult}&quot;)
+    public ResponseEntity&lt;UserResponseDTO&gt; getAdminProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader, @PathVariable String adminIdConsult) {
+        try {
+<span class="nc" id="L183">            jwtValidationService.validarGetAdmin(authHeader);</span>
+
+<span class="nc" id="L185">            Administrador admin = managementService.findAdminById(adminIdConsult)</span>
+<span class="nc" id="L186">            .orElseThrow(() -&gt; new ResponseStatusException(</span>
+                HttpStatus.NOT_FOUND, &quot;Administrador no encontrado&quot;));
+            
+<span class="nc" id="L189">            UserResponseDTO dto = new UserResponseDTO();</span>
+<span class="nc" id="L190">            dto.setIdUsuario(admin.getIdUsuario());</span>
+<span class="nc" id="L191">            dto.setNombre(admin.getNombre());</span>
+<span class="nc" id="L192">            dto.setApellidos(admin.getApellidos());</span>
+<span class="nc" id="L193">            dto.setEmail(admin.getEmail());</span>
+<span class="nc" id="L194">            dto.setAlias(admin.getAlias());</span>
+<span class="nc" id="L195">            dto.setFotoPerfil(admin.getFotoPerfil());</span>
+<span class="nc" id="L196">            dto.setFechaRegistro(admin.getFechaRegistro());</span>
+<span class="nc" id="L197">            dto.setTwoFactorEnabled(admin.isTwoFactorEnabled());</span>
+<span class="nc" id="L198">            dto.setThirdFactorEnabled(admin.isThirdFactorEnabled());</span>
+<span class="nc" id="L199">            dto.setRol(admin.getRol());</span>
+            // Campos específicos de Administrador
+<span class="nc" id="L201">            dto.setDepartamento(admin.getDepartamento());</span>
+<span class="nc" id="L202">            return ResponseEntity.ok(dto);</span>
+
+        } 
+<span class="nc" id="L205">        catch (RuntimeException e) {</span>
+<span class="nc" id="L206">            throw new IllegalStateException(&quot;Error obteniendo perfil de administrador &quot; + adminIdConsult, e);</span>
+        }
+    }
+
+    /**
+     * Actualizar perfil de usuario normal
+     * Campos permitidos: nombre, apellidos, alias, fechaNacimiento
+     * NOTA: Los administradores NO pueden cambiar flagVIP ni contraseÃ±as
+     */
+    @PutMapping(&quot;/profile/{userId}&quot;)
+    public ResponseEntity&lt;String&gt; updateUserProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                   @PathVariable String userId,
+                                                   @Valid @RequestBody UserProfileUpdateDTO updateDTO) {
+<span class="nc" id="L219">        logger.info(&quot;Actualizando perfil de usuario: {}&quot;, userId);</span>
+        try {
+<span class="nc" id="L221">            String authenticatedUserId = jwtValidationService.validarGenerico(authHeader);</span>
+            
+            // Solo el propio usuario puede actualizar su perfil (no los administradores en este endpoint)
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            if (!authenticatedUserId.equals(userId)) {</span>
+<span class="nc" id="L225">                throw new ResponseStatusException(</span>
+                    HttpStatus.FORBIDDEN, NO_PERMISO_ACTUALIZAR_PERFIL);
+            }
+
+<span class="nc" id="L229">            managementService.updateNormalUserProfile(userId, updateDTO);</span>
+<span class="nc" id="L230">            return ResponseEntity.ok(PERFIL_ACTUALIZADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L232">        catch (RuntimeException e) {</span>
+<span class="nc" id="L233">            throw new IllegalStateException(&quot;Error actualizando perfil de usuario &quot; + userId, e);</span>
+        }
+    }
+
+
+    /**
+     * Cambiar contraseÃ±a de usuario (solo el propio usuario puede hacerlo)
+     */
+    @PutMapping(&quot;/user/{userId}/password&quot;)
+    public ResponseEntity&lt;String&gt; changeUserPassword(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                    @PathVariable String userId,
+                                                    @Valid @RequestBody com.esimedia.features.user_management.dto.PasswordChangeDTO passwordChangeDTO) {
+<span class="nc" id="L245">        logger.info(&quot;Cambio de contraseÃ±a solicitado para usuario: {}&quot;, userId);</span>
+        try {
+<span class="nc" id="L247">            String authenticatedUserId = jwtValidationService.validarGetUsuario(authHeader);</span>
+            
+            // Solo el propio usuario puede cambiar su contraseÃ±a
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (!authenticatedUserId.equals(userId)) {</span>
+<span class="nc" id="L251">                throw new ResponseStatusException(</span>
+                    HttpStatus.FORBIDDEN, NO_PERMISO_CAMBIAR_CONTRASENA);
+            }
+
+<span class="nc" id="L255">            passwordManagementService.changePassword(userId, passwordChangeDTO);</span>
+
+            // Expirar todas las sesiones para forzar re-login (rotación por cambio de credenciales)
+<span class="nc" id="L258">            sesionService.eliminarTodasSesionesUsuario(userId);</span>
+
+<span class="nc" id="L260">            return ResponseEntity.ok(CONTRASENA_CAMBIADA_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L262">        catch (RuntimeException e) {</span>
+<span class="nc" id="L263">            throw new IllegalStateException(&quot;Error cambiando contraseÃ±a de usuario &quot; + userId, e);</span>
+        }
+    }
+
+    /**
+     * Cambiar contraseña de creador de contenido (solo el propio creador puede hacerlo)
+     */
+    @PutMapping(&quot;/creator/{creatorId}/password&quot;)
+    public ResponseEntity&lt;String&gt; changeCreatorPassword(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                       @PathVariable String creatorId,
+                                                       @Valid @RequestBody com.esimedia.features.user_management.dto.PasswordChangeDTO passwordChangeDTO) {
+<span class="nc" id="L274">        logger.info(&quot;Cambio de contraseÃ±a solicitado para creador: {}&quot;, creatorId);</span>
+        try {
+<span class="nc" id="L276">            String authenticatedUserId = jwtValidationService.validarGetCreador(authHeader);</span>
+            
+            // Solo el propio creador puede cambiar su contraseÃ±a
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            if (!authenticatedUserId.equals(creatorId)) {</span>
+<span class="nc" id="L280">                throw new ResponseStatusException(</span>
+                    HttpStatus.FORBIDDEN, NO_PERMISO_CAMBIAR_CONTRASENA);
+            }
+
+<span class="nc" id="L284">            passwordManagementService.changePassword(creatorId, passwordChangeDTO);</span>
+
+            // Expirar todas las sesiones para forzar re-login (rotaciÃ³n por cambio de credenciales)
+<span class="nc" id="L287">            sesionService.eliminarTodasSesionesUsuario(creatorId);</span>
+
+<span class="nc" id="L289">            return ResponseEntity.ok(CONTRASENA_CAMBIADA_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L291">        catch (RuntimeException e) {</span>
+<span class="nc" id="L292">            throw new IllegalStateException(&quot;Error cambiando contraseÃ±a de creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    /**
+     * Cambiar contraseÃ±a de administrador (solo el propio administrador puede hacerlo)
+     */
+    @PutMapping(&quot;/admin/{adminId}/password&quot;)
+    public ResponseEntity&lt;String&gt; changeAdminPassword(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                     @PathVariable String adminId,
+                                                     @Valid @RequestBody com.esimedia.features.user_management.dto.PasswordChangeDTO passwordChangeDTO) {
+<span class="nc" id="L303">        logger.info(&quot;Cambio de contraseÃ±a solicitado para administrador: {}&quot;, adminId);</span>
+        try {
+<span class="nc" id="L305">            String authenticatedUserId = jwtValidationService.validarGetAdmin(authHeader);</span>
+            
+            // Solo el propio administrador puede cambiar su contraseÃ±a
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            if (!authenticatedUserId.equals(adminId)) {</span>
+<span class="nc" id="L309">                throw new ResponseStatusException(</span>
+                    HttpStatus.FORBIDDEN, NO_PERMISO_CAMBIAR_CONTRASENA);
+            }
+
+<span class="nc" id="L313">            passwordManagementService.changePassword(adminId, passwordChangeDTO);</span>
+
+            // Expirar todas las sesiones para forzar re-login (rotación por cambio de credenciales)
+<span class="nc" id="L316">            sesionService.eliminarTodasSesionesUsuario(adminId);</span>
+
+<span class="nc" id="L318">            return ResponseEntity.ok(CONTRASENA_CAMBIADA_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L320">        catch (RuntimeException e) {</span>
+<span class="nc" id="L321">            throw new IllegalStateException(&quot;Error cambiando contraseÃ±a de administrador &quot; + adminId, e);</span>
+        }
+    }
+
+    // ========== ENDPOINTS PARA GESTIÃ“N DE ADMINISTRADORES ==========
+
+    /**
+     * Actualizar perfil de usuario como administrador
+     * Campos permitidos: nombre, apellidos, alias, fechaNacimiento, flagVIP
+     */
+    @PutMapping(&quot;/admin/user/{userId}&quot;)
+    public ResponseEntity&lt;String&gt; adminUpdateUserProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                        @PathVariable String userId,
+                                                        @Valid @RequestBody UserProfileUpdateDTO updateDTO) {
+<span class="nc" id="L335">        logger.info(&quot;Administrador actualizando perfil de usuario: {}&quot;, userId);</span>
+        try {
+<span class="nc" id="L337">            jwtValidationService.validarGetAdmin(authHeader);</span>
+<span class="nc" id="L338">            managementService.adminUpdateUserProfile(userId, updateDTO);</span>
+<span class="nc" id="L339">            return ResponseEntity.ok(PERFIL_ACTUALIZADO_POR_ADMIN);</span>
+        }
+<span class="nc" id="L341">        catch (RuntimeException e) {</span>
+<span class="nc" id="L342">            throw new IllegalStateException(&quot;Error en actualizaciÃ³n administrativa de usuario &quot; + userId, e);</span>
+        }
+    }
+
+    /**
+     * Bloquear/desbloquear usuario (solo para admins)
+     */
+    @PutMapping(&quot;/admin/user/{userId}/block&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; toggleUserBlock(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                 @PathVariable String userId,
+                                                 @Valid @RequestBody BlockUserDTO blockData) {
+<span class="nc" id="L353">        logger.info(&quot;Cambio de estado de bloqueo para usuario: {}&quot;, userId);</span>
+        try {
+<span class="nc" id="L355">            jwtValidationService.validarGetAdmin(authHeader);</span>
+           
+<span class="nc" id="L357">            Boolean blocked = blockData.getBlocked();</span>
+
+<span class="nc" id="L359">            managementService.toggleUserBlock(userId, blocked);</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">            String message = Boolean.TRUE.equals(blocked) ? &quot;Usuario bloqueado&quot; : &quot;Usuario desbloqueado&quot;;</span>
+<span class="nc" id="L361">            return ResponseEntity.ok(Map.of(</span>
+                MESSAGE_KEY, message,
+                USER_ID_KEY, userId,
+                BLOCKED_KEY, blocked
+            ));
+        }
+<span class="nc" id="L367">        catch (RuntimeException e) {</span>
+<span class="nc" id="L368">            throw new IllegalStateException(&quot;Error cambiando estado de bloqueo de usuario &quot; + userId, e);</span>
+        }
+    }
+
+    /**
+     * Bloquear/desbloquear creador de contenido (solo para admins)
+     */
+    @PutMapping(&quot;/admin/creator/{creatorId}/block&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; toggleCreatorBlock(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                 @PathVariable String creatorId,
+                                                 @Valid @RequestBody BlockUserDTO blockData) {
+<span class="nc" id="L379">        logger.info(&quot;Cambio de estado de bloqueo para creador: {}&quot;, creatorId);</span>
+        try {
+<span class="nc" id="L381">            jwtValidationService.validarGetAdmin(authHeader);</span>
+           
+<span class="nc" id="L383">            Boolean blocked = blockData.getBlocked();</span>
+
+<span class="nc" id="L385">            managementService.toggleCreatorBlock(creatorId, blocked);</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">            String message = Boolean.TRUE.equals(blocked) ? &quot;Creador bloqueado&quot; : &quot;Creador desbloqueado&quot;;</span>
+<span class="nc" id="L387">            return ResponseEntity.ok(Map.of(</span>
+                MESSAGE_KEY, message,
+                &quot;creatorId&quot;, creatorId,
+                BLOCKED_KEY, blocked
+            ));
+        }
+<span class="nc" id="L393">        catch (RuntimeException e) {</span>
+<span class="nc" id="L394">            throw new IllegalStateException(&quot;Error cambiando estado de bloqueo de creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    // ========== ENDPOINTS PARA GESTIÃ“N DE PERFILES DE CREADORES Y ADMINS ==========
+
+    /**
+     * Actualizar perfil de creador de contenido
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil, aliasCreador, descripcion
+     * NOTA: Los creadores NO pueden cambiar email ni tipo de contenido
+     */
+    @PutMapping(&quot;/creator/profile/{creatorId}&quot;)
+    public ResponseEntity&lt;String&gt; updateCreatorProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                      @PathVariable String creatorId,
+                                                      @Valid @RequestBody CreatorProfileUpdateDTO updateDTO) {
+<span class="nc" id="L409">        logger.info(&quot;Actualizando perfil de creador: {}&quot;, creatorId);</span>
+        try {
+<span class="nc" id="L411">            String authenticatedUserId = jwtValidationService.validarGetCreador(authHeader);</span>
+            
+            // Solo el propio creador puede actualizar su perfil (no los administradores en este endpoint)
+<span class="nc bnc" id="L414" title="All 2 branches missed.">            if (!authenticatedUserId.equals(creatorId)) {</span>
+<span class="nc" id="L415">                throw new ResponseStatusException(</span>
+                    HttpStatus.FORBIDDEN, NO_PERMISO_ACTUALIZAR_PERFIL);
+            }
+
+<span class="nc" id="L419">            managementService.updateCreatorProfile(creatorId, updateDTO);</span>
+<span class="nc" id="L420">            return ResponseEntity.ok(PERFIL_ACTUALIZADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L422">        catch (RuntimeException e) {</span>
+<span class="nc" id="L423">            throw new IllegalStateException(&quot;Error actualizando perfil de creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    /**
+     * Actualizar perfil de administrador (cualquier administrador puede cambiar a cualquier otro)
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil
+     * NOTA: Los administradores NO pueden cambiar email
+     */
+    @PutMapping(&quot;/admin/profile&quot;)
+    public ResponseEntity&lt;String&gt; updateAdminProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                    @Valid @RequestBody AdminProfileUpdateDTO updateDTO) {
+<span class="nc" id="L435">        logger.info(&quot;Actualizando perfil de administrador&quot;);</span>
+        try {
+<span class="nc" id="L437">            String adminId = jwtValidationService.validarGetAdmin(authHeader);</span>
+
+<span class="nc" id="L439">            managementService.updateAdminProfile(adminId, updateDTO);</span>
+<span class="nc" id="L440">            return ResponseEntity.ok(PERFIL_ACTUALIZADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L442">        catch (RuntimeException e) {</span>
+<span class="nc" id="L443">            throw new IllegalStateException(&quot;Error actualizando perfil de administrador&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Actualizar perfil de creador de contenido como administrador
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil, aliasCreador, descripcion
+     */
+    @PutMapping(&quot;/admin/creator/{creatorId}&quot;)
+    public ResponseEntity&lt;String&gt; adminUpdateCreatorProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                           @PathVariable String creatorId,
+                                                           @Valid @RequestBody CreatorProfileUpdateDTO updateDTO) {
+<span class="nc" id="L455">        logger.info(&quot;Administrador actualizando perfil de creador: {}&quot;, creatorId);</span>
+        try {
+<span class="nc" id="L457">            jwtValidationService.validarGetAdmin(authHeader);</span>
+<span class="nc" id="L458">            managementService.adminUpdateCreatorProfile(creatorId, updateDTO);</span>
+<span class="nc" id="L459">            return ResponseEntity.ok(PERFIL_CREADOR_ACTUALIZADO_POR_ADMIN);</span>
+        }
+<span class="nc" id="L461">        catch (RuntimeException e) {</span>
+<span class="nc" id="L462">            throw new IllegalStateException(&quot;Error en actualizaciÃ³n administrativa de creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    /**
+     * Actualizar perfil de administrador como administrador (un admin editando otro admin)
+     * Campos permitidos: nombre, apellidos, alias, fotoPerfil
+     */
+    @PutMapping(&quot;/admin/admin/{adminId}&quot;)
+    public ResponseEntity&lt;String&gt; adminUpdateAdminProfile(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                         @PathVariable String adminId,
+                                                         @Valid @RequestBody AdminProfileUpdateDTO updateDTO) {
+<span class="nc" id="L474">        logger.info(&quot;Administrador actualizando perfil de otro administrador: {}&quot;, adminId);</span>
+        try {
+<span class="nc" id="L476">            jwtValidationService.validarGetAdmin(authHeader);</span>
+<span class="nc" id="L477">            managementService.adminUpdateAdminProfile(adminId, updateDTO);</span>
+<span class="nc" id="L478">            return ResponseEntity.ok(PERFIL_ADMIN_ACTUALIZADO);</span>
+        }
+<span class="nc" id="L480">        catch (RuntimeException e) {</span>
+<span class="nc" id="L481">            throw new IllegalStateException(&quot;Error en actualizaciÃ³n administrativa de administrador &quot; + adminId, e);</span>
+        }
+    }
+
+    // ========== ENDPOINTS PARA GESTIÃ“N DE CREADORES DE CONTENIDO ==========
+
+    /**
+     * Validar un creador de contenido pendiente
+     */
+    @PutMapping(&quot;/validate-creator/{creatorId}&quot;)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; validateCreator(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                 @PathVariable String creatorId) {
+<span class="nc" id="L493">        logger.info(&quot;Validando creador con ID: {}&quot;, creatorId);</span>
+        try {
+            // Solo administradores
+<span class="nc" id="L496">            jwtValidationService.validarGetAdmin(authHeader); </span>
+<span class="nc" id="L497">            String result = userQueryService.validateCreator(creatorId);</span>
+<span class="nc" id="L498">            return ResponseEntity.ok(Map.of(MESSAGE_KEY, result));</span>
+        }
+<span class="nc" id="L500">        catch (RuntimeException e) {</span>
+<span class="nc" id="L501">            throw new IllegalStateException(&quot;Error validando creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    // ================================
+    // ENDPOINTS DE HARD-DELETE (GDPR)
+    // ================================
+
+    /**
+     * GDPR Hard-Delete: Admin elimina creador de contenido por ID
+     * Solo administradores pueden usar este endpoint
+     */
+    @DeleteMapping(&quot;/admin/delete/creator/{creatorId}&quot;)
+    public ResponseEntity&lt;String&gt; deleteCreatorAsAdmin(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                      @PathVariable String creatorId) {
+<span class="nc" id="L516">        logger.info(&quot;Admin eliminando creador: {}&quot;, creatorId);</span>
+        try {
+            // Solo administradores
+<span class="nc" id="L519">            jwtValidationService.validarGetAdmin(authHeader); </span>
+<span class="nc" id="L520">            managementService.deleteCreatorAsAdmin(creatorId);</span>
+<span class="nc" id="L521">            return ResponseEntity.ok(CREADOR_ELIMINADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L523">        catch (RuntimeException e) {</span>
+<span class="nc" id="L524">            throw new IllegalStateException(&quot;Error eliminando creador &quot; + creatorId, e);</span>
+        }
+    }
+
+    /**
+     * GDPR Hard-Delete: Administrador elimina a otro administrador por ID
+     * Solo administradores pueden usar este endpoint
+     * Requiere que quede al menos un administrador en el sistema
+     */
+    @DeleteMapping(&quot;/admin/delete/admin/{adminId}&quot;)
+    public ResponseEntity&lt;String&gt; deleteAdminAsAdmin(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                      @PathVariable String adminId) {
+<span class="nc" id="L536">        logger.info(&quot;Admin eliminando a otro administrador: {}&quot;, adminId);</span>
+        try {
+            // Solo administradores
+<span class="nc" id="L539">            String requestingAdminId = jwtValidationService.validarGetAdmin(authHeader);</span>
+<span class="nc" id="L540">            managementService.deleteAdminAsAdmin(adminId, requestingAdminId);</span>
+<span class="nc" id="L541">            return ResponseEntity.ok(ADMINISTRADOR_ELIMINADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L543">        catch (RuntimeException e) {</span>
+<span class="nc" id="L544">            throw new IllegalStateException(&quot;Error eliminando administrador &quot; + adminId, e);</span>
+        }
+    }
+
+    /**
+     * GDPR Hard-Delete: Creador se elimina a sÃ­ mismo
+     * Solo creadores pueden usar este endpoint
+     */
+    @DeleteMapping(&quot;/creator/delete/self&quot;)
+    public ResponseEntity&lt;String&gt; deleteCreatorSelf(@RequestHeader(&quot;Authorization&quot;) String authHeader) {
+<span class="nc" id="L554">        logger.info(&quot;Creador auto-eliminaciÃ³n&quot;);</span>
+        try {
+<span class="nc" id="L556">            String creatorId = jwtValidationService.validarGetCreador(authHeader);</span>
+<span class="nc" id="L557">            managementService.deleteCreatorSelf(creatorId);</span>
+<span class="nc" id="L558">            return ResponseEntity.ok(CREADOR_ELIMINADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L560">        catch (RuntimeException e) {</span>
+<span class="nc" id="L561">            throw new IllegalStateException(&quot;Error en auto-eliminaciÃ³n de creador&quot;, e);</span>
+        }
+    }
+
+    /**
+     * GDPR Hard-Delete: Usuario normal se elimina a sÃ­ mismo
+     * Solo usuarios normales pueden usar este endpoint
+     */
+    @DeleteMapping(&quot;/user/delete/self&quot;)
+    public ResponseEntity&lt;String&gt; deleteUserSelf(@RequestHeader(&quot;Authorization&quot;) String authHeader) {
+<span class="nc" id="L571">        logger.info(&quot;Usuario auto-eliminación&quot;);</span>
+        try {
+            // Solo usuarios normales
+<span class="nc" id="L574">            String userId = jwtValidationService.validarGenerico(authHeader); </span>
+<span class="nc" id="L575">            managementService.deleteUserSelf(userId);</span>
+<span class="nc" id="L576">            return ResponseEntity.ok(USUARIO_ELIMINADO_EXITOSAMENTE);</span>
+        }
+<span class="nc" id="L578">        catch (RuntimeException e) {</span>
+<span class="nc" id="L579">            throw new IllegalStateException(&quot;Error en auto-eliminación de usuario&quot;, e);</span>
+        }
+    }
+
+    // =============================
+    // ENDPOINTS DE GESTIÃ“N VIP
+    // =============================
+
+
+    /**
+     * Cambiar estado VIP del usuario autenticado
+     * PUT /management/users/my-vip-status
+     */
+    @PutMapping(&quot;/users/my-vip-status&quot;)
+    public ResponseEntity&lt;String&gt; changeMyVipStatus(@RequestHeader(&quot;Authorization&quot;) String authHeader,
+                                                   @Valid @RequestBody UserProfileUpdateDTO updateDTO) {
+<span class="nc" id="L595">        logger.info(&quot;Cambio de estado VIP solicitado&quot;);</span>
+        try {
+<span class="nc" id="L597">            String userId = jwtValidationService.validarGetUsuario(authHeader);</span>
+<span class="nc bnc" id="L598" title="All 2 branches missed.">            if (userId == null) {</span>
+<span class="nc" id="L599">                throw new ResponseStatusException(</span>
+                    HttpStatus.UNAUTHORIZED, NO_PERMISO_CAMBIAR_VIP);
+            }
+<span class="nc" id="L602">            managementService.changeUserVipStatus(userId, updateDTO.getFlagVIP());</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">            String statusText = Boolean.TRUE.equals(updateDTO.getFlagVIP()) ? &quot;VIP&quot; : &quot;Normal&quot;;</span>
+<span class="nc" id="L604">            return ResponseEntity.ok(&quot;Estado cambiado a: &quot; + statusText);</span>
+        }
+<span class="nc" id="L606">        catch (RuntimeException e) {</span>
+<span class="nc" id="L607">            throw new IllegalStateException(&quot;Error cambiando estado VIP&quot;, e);</span>
+        }
+    }
+
+
+    /**
+     * Obtener estado VIP del usuario autenticado
+     * GET /management/users/my-vip-status
+     */
+    @GetMapping(&quot;/users/my-vip-status&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getMyVipStatus(@RequestHeader(&quot;Authorization&quot;) String authHeader) {
+<span class="nc" id="L618">        logger.info(&quot;Consultando estado VIP&quot;);</span>
+        try {
+<span class="nc" id="L620">            String userId = jwtValidationService.validarGenerico(authHeader);</span>
+<span class="nc bnc" id="L621" title="All 2 branches missed.">            if (userId == null) {</span>
+<span class="nc" id="L622">                throw new ResponseStatusException(</span>
+                    HttpStatus.UNAUTHORIZED, NO_PERMISO_CONSULTAR_VIP);
+            }
+<span class="nc" id="L625">            boolean isVip = managementService.getUserVipStatus(userId);</span>
+<span class="nc" id="L626">            Map&lt;String, Object&gt; response = Map.of(</span>
+<span class="nc" id="L627">                &quot;flagVIP&quot;, isVip,</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">                &quot;status&quot;, isVip ? &quot;VIP&quot; : &quot;Normal&quot;</span>
+            );
+<span class="nc" id="L630">            return ResponseEntity.ok(response);</span>
+        }
+<span class="nc" id="L632">        catch (RuntimeException e) {</span>
+<span class="nc" id="L633">            throw new IllegalStateException(&quot;Error obteniendo estado VIP&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtValidationUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.util</a> &gt; <span class="el_source">JwtValidationUtil.java</span></div><h1>JwtValidationUtil.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.util;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+/**
+ * Servicio centralizado para validación de tokens JWT con reglas de negocio.
+ * Unifica las validaciones comunes de autorización basadas en roles y tipos de contenido.
+ */
+@Service
+public class JwtValidationUtil {
+    
+<span class="fc" id="L28">    private static final Logger logger = LoggerFactory.getLogger(JwtValidationUtil.class);</span>
+    
+    // Constantes para literales duplicados
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado&quot;;
+    
+    private final JwtUtil jwtUtil;
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository administradorRepository;
+    public JwtValidationUtil(JwtUtil jwtUtil, 
+                               UsuarioNormalRepository usuarioNormalRepository,
+                               CreadorContenidoRepository creadorContenidoRepository,
+<span class="nc" id="L40">                               AdminRepository administradorRepository) {</span>
+<span class="nc" id="L41">        this.jwtUtil = jwtUtil;</span>
+<span class="nc" id="L42">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="nc" id="L43">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="nc" id="L44">        this.administradorRepository = administradorRepository;</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Valida un token JWT con reglas de negocio específicas.
+     * 
+     * @param authHeader Header Authorization con JWT
+     * @param allowedRoles Lista de roles permitidos para la operación
+     * @param requiredTipoContenido Tipo de contenido requerido (null si no aplica)
+     * @return Username del usuario validado
+     * @throws ResponseStatusException si la validación falla
+     */
+    public String validateJwtWithBusinessRules(String authHeader, List&lt;Rol&gt; allowedRoles, TipoContenido requiredTipoContenido) {
+
+        
+        try {
+
+<span class="nc" id="L61">            String userId = jwtUtil.getUserIdFromToken(authHeader);</span>
+<span class="nc" id="L62">            String rolString = jwtUtil.getRolFromToken(authHeader);</span>
+
+            // Convertir rol string a enum
+<span class="nc" id="L65">            Rol userRole = Rol.valueOf(rolString);</span>
+
+<span class="nc" id="L67">            logger.debug(&quot;Validando token para usuario: {} con rol: {}&quot;, userId, userRole);</span>
+            // Verificar que el rol esté permitido
+<span class="nc bnc" id="L69" title="All 2 branches missed.">            if (!allowedRoles.contains(userRole)) {</span>
+<span class="nc" id="L70">                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, </span>
+                    &quot;No tiene permisos para realizar esta operación&quot;);
+            }
+
+            // Validaciones específicas por tipo de usuario
+<span class="nc" id="L75">            validateUserByRole(userId, userRole);</span>
+
+<span class="nc" id="L77">            return userId;</span>
+            
+        } 
+<span class="nc" id="L80">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L81">            throw e;</span>
+        } 
+<span class="nc" id="L83">        catch (Exception e) {</span>
+<span class="nc" id="L84">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Token de autorización inválido&quot;);</span>
+        }
+    }
+    
+    /**
+     * Valida reglas específicas según el rol del usuario.
+     */
+    private void validateUserByRole(String userId, Rol userRole) {
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        switch (userRole) {</span>
+            case NORMAL:
+<span class="nc" id="L94">                validateUsuarioNormal(userId);</span>
+<span class="nc" id="L95">                break;</span>
+                
+            case CREADOR:
+<span class="nc" id="L98">                validateCreadorContenido(userId);</span>
+<span class="nc" id="L99">                break;</span>
+            case ADMINISTRADOR:
+<span class="nc" id="L101">                validateAdministrador(userId);</span>
+<span class="nc" id="L102">                logger.debug(&quot;Administrador {} validado correctamente&quot;, userId);</span>
+<span class="nc" id="L103">                break;</span>
+            default:
+<span class="nc" id="L105">                logger.warn(&quot;Rol no reconocido: {}&quot;, userRole);</span>
+<span class="nc" id="L106">                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Rol de usuario no reconocido&quot;);</span>
+        }
+<span class="nc" id="L108">    }</span>
+    
+    /**
+     * Valida que un usuario normal esté en la BD.
+     */
+    private void validateUsuarioNormal(String userId) {
+<span class="nc" id="L114">        Optional&lt;UsuarioNormal&gt; usuarioOpt = usuarioNormalRepository.findById(userId);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (usuarioOpt.isEmpty()) {</span>
+<span class="nc" id="L116">            logger.warn(&quot;Usuario normal no encontrado: {}&quot;, userId);</span>
+<span class="nc" id="L117">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, USUARIO_NO_ENCONTRADO);</span>
+        }
+<span class="nc" id="L119">        logger.debug(&quot;Usuario normal {} validado correctamente&quot;, userId);</span>
+<span class="nc" id="L120">    }</span>
+    
+    /**
+     * Valida que un creador de contenido tenga el tipo correcto.
+     */
+    private void validateCreadorContenido(String userId) {
+<span class="nc" id="L126">        Optional&lt;CreadorContenido&gt; creadorOpt = creadorContenidoRepository.findById(userId);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (creadorOpt.isEmpty()) {</span>
+<span class="nc" id="L128">            logger.warn(&quot;Creador de contenido no encontrado: {}&quot;, userId);</span>
+<span class="nc" id="L129">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, USUARIO_NO_ENCONTRADO);</span>
+        }
+        
+
+        
+<span class="nc" id="L134">        logger.debug(&quot;Creador de contenido {} validado correctamente&quot;, userId);</span>
+<span class="nc" id="L135">    }</span>
+    
+    private void validateAdministrador(String userId) {
+        //Miramos en su repository por si existiera algún administrador con las credenciales
+<span class="nc" id="L139">        Optional&lt;Administrador&gt; adminOpt = administradorRepository.findById(userId);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (adminOpt.isEmpty()) {</span>
+<span class="nc" id="L141">            logger.warn(&quot;Administrador no encontrado: {}&quot;, userId);</span>
+<span class="nc" id="L142">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, USUARIO_NO_ENCONTRADO);</span>
+        }
+<span class="nc" id="L144">        logger.debug(&quot;Administrador {} validado correctamente&quot;, userId);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Método de conveniencia para validaciones comunes de acceso a contenido.
+     * Permite solo NORMAL para acceder a contenido.
+     */
+    public String validateContentAccess(String authHeader, TipoContenido tipoContenido) {
+<span class="nc" id="L152">        List&lt;Rol&gt; allowedRoles = List.of(Rol.NORMAL, Rol.ADMINISTRADOR, Rol.CREADOR);</span>
+<span class="nc" id="L153">        return validateJwtWithBusinessRules(authHeader, allowedRoles, tipoContenido);</span>
+    }
+    
+    /**
+     * Método de conveniencia para validaciones de subida de contenido.
+     * Solo permite CREADOR del tipo especificado.
+     */
+    public String validateContentUpload(String authHeader, TipoContenido tipoContenido) {
+<span class="nc" id="L161">        List&lt;Rol&gt; allowedRoles = List.of(Rol.CREADOR);</span>
+<span class="nc" id="L162">        logger.debug(&quot;Validando subida de contenido para tipo: {}&quot;, tipoContenido);</span>
+<span class="nc" id="L163">        return validateJwtWithBusinessRules(authHeader, allowedRoles, tipoContenido);</span>
+    }
+
+    public String validarGenerico(String authHeader) {
+<span class="nc" id="L167">        List&lt;Rol&gt; allowedRoles = List.of(Rol.CREADOR, Rol.NORMAL, Rol.ADMINISTRADOR);</span>
+<span class="nc" id="L168">        return validateJwtWithBusinessRules(authHeader, allowedRoles, null);</span>
+    }
+    
+    public String validarGetUsuario(String authHeader) {
+<span class="nc" id="L172">        List&lt;Rol&gt; allowedRoles = List.of(Rol.ADMINISTRADOR, Rol.NORMAL);</span>
+<span class="nc" id="L173">        return validateJwtWithBusinessRules(authHeader, allowedRoles, null);</span>
+    }
+
+    public String validarGetAdmin(String authHeader) {
+<span class="nc" id="L177">        List&lt;Rol&gt; allowedRoles = List.of(Rol.ADMINISTRADOR);</span>
+<span class="nc" id="L178">        return validateJwtWithBusinessRules(authHeader, allowedRoles, null);</span>
+    }
+
+    public String validarGetCreador(String authHeader) {
+<span class="nc" id="L182">        List&lt;Rol&gt; allowedRoles = List.of(Rol.ADMINISTRADOR, Rol.CREADOR);</span>
+<span class="nc" id="L183">        return validateJwtWithBusinessRules(authHeader, allowedRoles, null);</span>
+    }
+    
+    public Rol getRolFromToken(String authHeader) {
+        try {
+<span class="nc" id="L188">            String rolString = jwtUtil.getRolFromToken(authHeader);</span>
+<span class="nc" id="L189">            return Rol.valueOf(rolString);</span>
+        }
+<span class="nc" id="L191">        catch (Exception e) {</span>
+<span class="nc" id="L192">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Token de autorización inválido&quot;);</span>
+        }
+    }
+    
+    public boolean esAdmin(String authHeader) {
+<span class="nc" id="L197">        String rolString = jwtUtil.getRolFromToken(authHeader);</span>
+<span class="nc" id="L198">        Rol userRole = Rol.valueOf(rolString);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        return userRole == Rol.ADMINISTRADOR;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

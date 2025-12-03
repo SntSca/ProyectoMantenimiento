@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TipoToken.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.enums</a> &gt; <span class="el_source">TipoToken.java</span></div><h1>TipoToken.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.enums;
+
+<span class="fc" id="L3">public enum TipoToken {</span>
+<span class="fc" id="L4">    CONFIRMACION_CUENTA(&quot;CONFIRMACION_CUENTA&quot;),</span>
+<span class="fc" id="L5">    RESET_PASSWORD(&quot;RESET_PASSWORD&quot;),</span>
+<span class="fc" id="L6">    REGISTRO(&quot;REGISTRO&quot;),</span>
+<span class="fc" id="L7">    RECUPERACION_PASSWORD(&quot;RECUPERACION_PASSWORD&quot;),</span>
+<span class="fc" id="L8">    CONFIRMACION_EMAIL(&quot;CONFIRMACION_EMAIL&quot;),</span>
+<span class="fc" id="L9">    ACCESO(&quot;ACCESO&quot;),</span>
+<span class="fc" id="L10">    REFRESH(&quot;REFRESH&quot;);</span>
+
+    private final String valor;
+
+<span class="fc" id="L14">    TipoToken(String valor) {</span>
+<span class="fc" id="L15">        this.valor = valor;</span>
+<span class="fc" id="L16">    }</span>
+
+    public String getValor() {
+<span class="nc" id="L19">        return valor;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L24">        return valor;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

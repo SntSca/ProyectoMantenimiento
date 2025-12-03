@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LeakLookupService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">LeakLookupService.java</span></div><h1>LeakLookupService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+/**
+ * Servicio para verificar contraseñas contra brechas de datos usando Leak-Lookup.
+ * Este servicio verifica internamente si una contraseña ha sido comprometida en breaches públicos.
+ * 
+ * Implementa seguridad mediante k-anonymity: solo se envían los primeros 5 caracteres del hash SHA-1
+ * a la API, reduciendo el riesgo de exposición de la contraseña.
+ * 
+ * Integración con Leak-Lookup API: https://leak-lookup.com/api
+ * 
+ * El usuario no verá directamente esta validación, solo recibirá un mensaje si la contraseña
+ * ha sido comprometida.
+ */
+@Service
+public class LeakLookupService {
+
+<span class="fc" id="L32">    private static final Logger logger = LoggerFactory.getLogger(LeakLookupService.class);</span>
+    
+    // Configuración de la API Leak-Lookup
+    private static final String LEAK_LOOKUP_API_URL = &quot;https://leak-lookup.com/api&quot;;
+    private static final String HASHES_KEY = &quot;hashes&quot;;
+    
+    @Value(&quot;${leak-lookup.api-key:5a1e5e8f4470da68b2fad056f72ba737}&quot;)
+    private String leakLookupApiKey;
+    
+    @Value(&quot;${leak-lookup.enabled:true}&quot;)
+    private boolean enableLeakCheck;
+    
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    
+<span class="fc" id="L47">    public LeakLookupService(RestTemplate restTemplate, ObjectMapper objectMapper) {</span>
+<span class="fc" id="L48">        this.restTemplate = restTemplate;</span>
+<span class="fc" id="L49">        this.objectMapper = objectMapper;</span>
+<span class="fc" id="L50">    }</span>
+    
+    /**
+     * Verifica si una contraseña ha sido comprometida en alguna brecha de datos.
+     * Implementa k-anonymity: solo envía los primeros 5 caracteres del hash SHA-1.
+     * 
+     * IMPORTANTE: El usuario NUNCA recibe la contraseña en texto plano en la respuesta.
+     * Solo se le informa de que la contraseña ha sido comprometida.
+     * 
+     * @param password La contraseña a verificar (nunca se envía al servidor externo en texto plano)
+     * @return true si la contraseña ha sido comprometida, false en caso contrario
+     */
+    public boolean isPasswordCompromised(String password) {
+<span class="fc" id="L63">        boolean compromised = false;</span>
+        
+        // Si el servicio está deshabilitado, no hacer la verificación
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!enableLeakCheck) {</span>
+<span class="fc" id="L67">            logger.debug(&quot;Leak-Lookup check deshabilitado. Omitiendo verificación de brechas.&quot;);</span>
+        } 
+<span class="fc bfc" id="L69" title="All 4 branches covered.">        else if (password == null || password.isEmpty()) {</span>
+            // No verificar contraseñas nulas o vacías
+        } 
+        else {
+            try {
+<span class="fc" id="L74">                logger.debug(&quot;Verificando contraseña contra brechas de datos con Leak-Lookup...&quot;);</span>
+<span class="fc" id="L75">                compromised = checkWithLeakLookupAPI(password);</span>
+                
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                if (compromised) {</span>
+<span class="nc" id="L78">                    logger.warn(&quot;Contraseña comprometida detectada durante registro/cambio de contraseña&quot;);</span>
+                }
+            } 
+<span class="nc" id="L81">        catch (Exception e) {</span>
+<span class="nc" id="L82">                logger.error(&quot;Error al verificar contraseña contra brechas: {}&quot;, e.getMessage(), e);</span>
+                // En caso de error, permitir el registro para no bloquear al usuario
+                // compromised remains false
+<span class="fc" id="L85">            }</span>
+        }
+        
+<span class="fc" id="L88">        return compromised;</span>
+    }
+    
+    /**
+     * Verifica una contraseña de manera segura contra Leak-Lookup con k-anonymity.
+     * 
+     * Proceso:
+     * 1. Calcula SHA-1 de la contraseña
+     * 2. Envía solo los primeros 5 caracteres a la API (k-anonymity)
+     * 3. Recibe lista de hashes parciales comprometidos
+     * 4. Verifica si el hash completo coincide con alguno en la lista
+     */
+    private boolean checkWithLeakLookupAPI(String password) throws Exception {
+        // 1. Calcular SHA-1 hash de la contraseña
+<span class="fc" id="L102">        String passwordHash = computeSHA1(password);</span>
+<span class="fc" id="L103">        String hashPrefix = passwordHash.substring(0, Math.min(5, passwordHash.length())).toUpperCase();</span>
+<span class="fc" id="L104">        String hashSuffix = passwordHash.substring(5).toUpperCase();</span>
+        
+<span class="fc" id="L106">        logger.debug(&quot;Hash prefix enviado a API: {}&quot;, hashPrefix);</span>
+        
+        try {
+            // 2. Llamar a Leak-Lookup API con el prefijo (k-anonymity)
+<span class="fc" id="L110">            String apiUrl = LEAK_LOOKUP_API_URL + &quot;?key=&quot; + leakLookupApiKey + &quot;&amp;hash=&quot; + hashPrefix;</span>
+            
+<span class="fc" id="L112">            logger.debug(&quot;Llamando a Leak-Lookup API: {}&quot;, apiUrl.replace(leakLookupApiKey, &quot;***&quot;));</span>
+            
+<span class="fc" id="L114">            ResponseEntity&lt;String&gt; response = restTemplate.getForEntity(apiUrl, String.class);</span>
+            
+            // 3. Verificar respuesta exitosa
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {</span>
+<span class="fc" id="L118">                logger.warn(&quot;Respuesta inesperada de Leak-Lookup API: {}&quot;, response.getStatusCode());</span>
+<span class="fc" id="L119">                return false;</span>
+            }
+            
+            // 4. Parsear respuesta JSON y verificar hashes
+<span class="fc" id="L123">            return checkHashesInResponse(response.getBody(), hashSuffix);</span>
+            
+        } 
+<span class="fc" id="L126">        catch (RestClientException e) {</span>
+<span class="fc" id="L127">            logger.error(&quot;Error de conectividad con Leak-Lookup API: {}&quot;, e.getMessage(), e);</span>
+            // Permitir registro si la API no está disponible
+<span class="fc" id="L129">            return false;</span>
+        }
+    }
+    
+    /**
+     * Verifica si el hash de la contraseña está en la lista de hashes comprometidos.
+     */
+    private boolean checkHashesInResponse(String responseBody, String hashSuffix) throws Exception {
+<span class="fc" id="L137">        JsonNode responseNode = objectMapper.readTree(responseBody);</span>
+        
+        // Verificar que existe el array de hashes
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if (!responseNode.has(HASHES_KEY) || !responseNode.get(HASHES_KEY).isArray()) {</span>
+<span class="nc" id="L141">            logger.debug(&quot;Contraseña no encontrada en brechas de Leak-Lookup&quot;);</span>
+<span class="nc" id="L142">            return false;</span>
+        }
+        
+        // Buscar el hash en la lista de comprometidos
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (JsonNode hashNode : responseNode.get(HASHES_KEY)) {</span>
+<span class="fc" id="L147">            String compromisedHash = hashNode.asText().toUpperCase();</span>
+            
+            // Comparar solo el sufijo (la API devuelve el resto del hash después del prefijo)
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (compromisedHash.equalsIgnoreCase(hashSuffix)) {</span>
+<span class="fc" id="L151">                logger.warn(&quot;Contraseña comprometida detectada en Leak-Lookup&quot;);</span>
+<span class="fc" id="L152">                return true;</span>
+            }
+<span class="fc" id="L154">        }</span>
+        
+<span class="fc" id="L156">        logger.debug(&quot;Contraseña no encontrada en brechas de Leak-Lookup&quot;);</span>
+<span class="fc" id="L157">        return false;</span>
+    }
+    
+    /**
+     * Calcula el hash SHA-1 de una contraseña.
+     * SHA-1 es utilizado por Leak-Lookup y Have I Been Pwned para compatibilidad.
+     */
+    private String computeSHA1(String password) throws NoSuchAlgorithmException {
+<span class="fc" id="L165">        MessageDigest digest = MessageDigest.getInstance(&quot;SHA-1&quot;);</span>
+<span class="fc" id="L166">        byte[] encodedHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L167">        return bytesToHex(encodedHash);</span>
+    }
+    
+    /**
+     * Convierte bytes a representación hexadecimal.
+     */
+    private static String bytesToHex(byte[] hash) {
+<span class="fc" id="L174">        StringBuilder hexString = new StringBuilder();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (byte b : hash) {</span>
+<span class="fc" id="L176">            String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            if (hex.length() == 1) {</span>
+<span class="fc" id="L178">                hexString.append('0');</span>
+            }
+<span class="fc" id="L180">            hexString.append(hex);</span>
+        }
+<span class="fc" id="L182">        return hexString.toString();</span>
+    }
+    
+    /**
+     * Mensaje informativo para el usuario cuando la contraseña es comprometida
+     */
+    public static String getCompromisedPasswordMessage() {
+<span class="fc" id="L189">        return &quot;La contraseña seleccionada ha sido comprometida en brechas de datos públicas. &quot; +</span>
+               &quot;Por tu seguridad, por favor selecciona una contraseña diferente.&quot;;
+    }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

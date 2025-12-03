@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserQueryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.services</a> &gt; <span class="el_source">UserQueryService.java</span></div><h1>UserQueryService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.services;
+
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+@Service
+public class UserQueryService {
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final Logger logger;
+
+    // Constantes para mensajes de error y log
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado&quot;;
+    private static final String CREADOR_NO_ENCONTRADO = &quot;Creador no encontrado&quot;;
+    private static final String USUARIO_NORMAL_ACTUALIZADO = &quot;Usuario normal actualizado: {}&quot;;
+    private static final String CREADOR_ACTUALIZADO = &quot;Creador actualizado: {}&quot;;
+    private static final String ADMIN_ACTUALIZADO = &quot;Admin actualizado: {}&quot;;
+    private static final String CREADOR_VALIDADO_EXITOSAMENTE = &quot;Creador validado exitosamente&quot;;
+
+    public UserQueryService(UsuarioNormalRepository usuarioNormalRepository,
+                            CreadorContenidoRepository creadorContenidoRepository,
+<span class="fc" id="L37">                            AdminRepository adminRepository) {</span>
+<span class="fc" id="L38">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L39">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L40">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L41">        this.logger = LoggerFactory.getLogger(UserQueryService.class);</span>
+<span class="fc" id="L42">    }</span>
+
+    public UsuarioNormal findUsuarioNormalByEmail(String email) {
+<span class="fc" id="L45">        return usuarioNormalRepository.findByemail(email)</span>
+<span class="fc" id="L46">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+    }
+
+    public CreadorContenido findCreadorByEmail(String email) {
+<span class="fc" id="L50">        return creadorContenidoRepository.findByemail(email)</span>
+<span class="fc" id="L51">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO));</span>
+    }
+
+    public Administrador findAdminByEmail(String email) {
+<span class="fc" id="L55">        return adminRepository.findByemail(email)</span>
+<span class="fc" id="L56">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+    }
+
+    public Optional&lt;UsuarioNormal&gt; findUsuarioNormalById(String id) {
+<span class="fc" id="L60">        return usuarioNormalRepository.findById(id);</span>
+    }
+
+    public Optional&lt;CreadorContenido&gt; findCreadorById(String id) {
+<span class="fc" id="L64">        return creadorContenidoRepository.findById(id);</span>
+    }
+
+    public Optional&lt;Administrador&gt; findAdminById(String id) {
+<span class="fc" id="L68">        return adminRepository.findById(id);</span>
+    }
+
+    public Object findAnyUserById(String id) {
+<span class="fc" id="L72">        Optional&lt;UsuarioNormal&gt; normal = usuarioNormalRepository.findById(id);</span>
+<span class="fc" id="L73">        Optional&lt;CreadorContenido&gt; creador = creadorContenidoRepository.findById(id);</span>
+<span class="fc" id="L74">        Optional&lt;Administrador&gt; admin = adminRepository.findById(id);</span>
+
+<span class="fc" id="L76">        Object result = null;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (normal.isPresent()) {</span>
+<span class="fc" id="L78">            result = normal.get();</span>
+        } 
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		else if (creador.isPresent()) {</span>
+<span class="fc" id="L81">            result = creador.get();</span>
+        } 
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		else if (admin.isPresent()) {</span>
+<span class="fc" id="L84">            result = admin.get();</span>
+        }
+
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (result == null) {</span>
+<span class="fc" id="L88">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);</span>
+        }
+
+<span class="fc" id="L91">        return result;</span>
+    }
+
+    public void updateUsuarioNormal(UsuarioNormal user) {
+<span class="fc" id="L95">        usuarioNormalRepository.save(user);</span>
+<span class="fc" id="L96">        logger.info(USUARIO_NORMAL_ACTUALIZADO, user.getIdUsuario());</span>
+<span class="fc" id="L97">    }</span>
+
+    public void updateCreador(CreadorContenido creador) {
+<span class="fc" id="L100">        creadorContenidoRepository.save(creador);</span>
+<span class="fc" id="L101">        logger.info(CREADOR_ACTUALIZADO, creador.getIdUsuario());</span>
+<span class="fc" id="L102">    }</span>
+
+    public void updateAdmin(Administrador admin) {
+<span class="fc" id="L105">        adminRepository.save(admin);</span>
+<span class="fc" id="L106">        logger.info(ADMIN_ACTUALIZADO, admin.getIdUsuario());</span>
+<span class="fc" id="L107">    }</span>
+
+    public Optional&lt;UsuarioNormal&gt; findByEmail(String email) {
+<span class="fc" id="L110">        return usuarioNormalRepository.findByemail(email);</span>
+    }
+
+    public Optional&lt;UsuarioNormal&gt; findByAlias(String alias) {
+<span class="fc" id="L114">        return usuarioNormalRepository.findByalias(alias);</span>
+    }
+
+    public Optional&lt;UsuarioNormal&gt; findById(String id) {
+<span class="fc" id="L118">        return usuarioNormalRepository.findById(id);</span>
+    }
+
+    public Optional&lt;Usuario&gt; findAnyUserByAlias(String alias) {
+<span class="fc" id="L122">        Optional&lt;Usuario&gt; result = usuarioNormalRepository.findByalias(alias).map(u -&gt; (Usuario) u);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (!result.isPresent()) {</span>
+<span class="fc" id="L124">            result = creadorContenidoRepository.findByAlias(alias).map(u -&gt; (Usuario) u);</span>
+        }
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (!result.isPresent()) {</span>
+<span class="fc" id="L127">            result = adminRepository.findByalias(alias).map(u -&gt; (Usuario) u);</span>
+        }
+<span class="fc" id="L129">        return result;</span>
+    }
+
+
+    public void deleteUser(String userId) {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (!usuarioNormalRepository.existsById(userId)) {</span>
+<span class="fc" id="L135">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);</span>
+        }
+<span class="fc" id="L137">        usuarioNormalRepository.deleteById(userId);</span>
+<span class="fc" id="L138">    }</span>
+
+    public String validateCreator(String creatorId) {
+<span class="fc" id="L141">        Optional&lt;CreadorContenido&gt; creatorOpt = creadorContenidoRepository.findById(creatorId);</span>
+        
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (!creatorOpt.isPresent()) {</span>
+<span class="fc" id="L144">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, CREADOR_NO_ENCONTRADO);</span>
+        }
+
+<span class="fc" id="L147">        CreadorContenido creator = creatorOpt.get();</span>
+<span class="fc" id="L148">        creator.setValidado(true);</span>
+<span class="fc" id="L149">        creadorContenidoRepository.save(creator);</span>
+
+<span class="fc" id="L151">        return CREADOR_VALIDADO_EXITOSAMENTE;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

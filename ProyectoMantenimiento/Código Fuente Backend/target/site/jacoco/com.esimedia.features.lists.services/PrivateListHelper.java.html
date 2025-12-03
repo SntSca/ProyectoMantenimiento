@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrivateListHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PrivateListHelper.java</span></div><h1>PrivateListHelper.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.esimedia.features.content.entity.ContenidoAudioTag;
+import com.esimedia.features.content.entity.ContenidoVideoTag;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.features.content.entity.ContenidosVideo;
+import com.esimedia.features.content.entity.Tags;
+import com.esimedia.features.content.repository.ContenidoAudioTagRepository;
+import com.esimedia.features.content.repository.ContenidoVideoTagRepository;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.ContenidosVideoRepository;
+import com.esimedia.features.content.repository.TagsRepository;
+import com.esimedia.features.lists.dto.ContenidoListaResponseDTO;
+import com.esimedia.shared.util.ContentProcessingUtil;
+import com.esimedia.shared.util.ContentUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+public class PrivateListHelper {
+
+<span class="fc" id="L28">    private static final Logger logger = LoggerFactory.getLogger(PrivateListHelper.class);</span>
+
+    private final ContenidosAudioRepository contenidoAudioRepository;
+    private final ContenidosVideoRepository contenidoVideoRepository;
+    private final ContenidoAudioTagRepository contenidoAudioTagRepository;
+    private final ContenidoVideoTagRepository contenidoVideoTagRepository;
+    private final TagsRepository tagsRepository;
+
+    public PrivateListHelper(
+            ContenidosAudioRepository contenidoAudioRepository,
+            ContenidosVideoRepository contenidoVideoRepository,
+            ContenidoAudioTagRepository contenidoAudioTagRepository,
+            ContenidoVideoTagRepository contenidoVideoTagRepository,
+<span class="fc" id="L41">            TagsRepository tagsRepository) {</span>
+<span class="fc" id="L42">        this.contenidoAudioRepository = contenidoAudioRepository;</span>
+<span class="fc" id="L43">        this.contenidoVideoRepository = contenidoVideoRepository;</span>
+<span class="fc" id="L44">        this.contenidoAudioTagRepository = contenidoAudioTagRepository;</span>
+<span class="fc" id="L45">        this.contenidoVideoTagRepository = contenidoVideoTagRepository;</span>
+<span class="fc" id="L46">        this.tagsRepository = tagsRepository;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Método auxiliar para obtener contenidos completos (audios y videos) con tags
+     */
+    public List&lt;ContenidoListaResponseDTO&gt; obtenerContenidosCompletos(List&lt;String&gt; idsContenidos) {
+<span class="fc" id="L53">        List&lt;ContenidoListaResponseDTO&gt; contenidosCompletos = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (String idContenido : idsContenidos) {</span>
+<span class="fc" id="L56">            logger.info(&quot;Buscando contenido con ID: {}&quot;, idContenido);</span>
+            
+<span class="fc" id="L58">            ContenidoListaResponseDTO dto = buscarAudio(idContenido)</span>
+<span class="fc" id="L59">                .orElseGet(() -&gt; buscarVideo(idContenido).orElse(null));</span>
+            
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (dto != null) {</span>
+<span class="fc" id="L62">                contenidosCompletos.add(dto);</span>
+            }
+            else {
+<span class="fc" id="L65">                logger.debug(&quot;No encontrado en audios ni videos para ID: {}&quot;, idContenido);</span>
+            }
+<span class="fc" id="L67">        }</span>
+
+<span class="fc" id="L69">        logger.info(&quot;Contenidos encontrados: {}&quot;, contenidosCompletos.size());</span>
+<span class="fc" id="L70">        return contenidosCompletos;</span>
+    }
+
+    /**
+     * Busca un contenido de audio por ID y lo convierte a DTO
+     */
+    private Optional&lt;ContenidoListaResponseDTO&gt; buscarAudio(String idContenido) {
+<span class="fc" id="L77">        return contenidoAudioRepository.findById(idContenido)</span>
+<span class="fc" id="L78">            .map(audio -&gt; {</span>
+<span class="fc" id="L79">                logger.info(&quot;Encontrado audio con ID: {}&quot;, idContenido);</span>
+<span class="fc" id="L80">                List&lt;String&gt; tagNames = obtenerTagsNombres(</span>
+<span class="fc" id="L81">                    contenidoAudioTagRepository.findByIdContenido(idContenido)</span>
+<span class="fc" id="L82">                        .stream()</span>
+<span class="fc" id="L83">                        .map(ContenidoAudioTag::getIdTag)</span>
+<span class="fc" id="L84">                        .toList()</span>
+                );
+                
+<span class="fc" id="L87">                return construirDTOAudio(audio, tagNames);</span>
+            });
+    }
+
+    /**
+     * Busca un contenido de video por ID y lo convierte a DTO
+     */
+    private Optional&lt;ContenidoListaResponseDTO&gt; buscarVideo(String idContenido) {
+<span class="fc" id="L95">        return contenidoVideoRepository.findById(idContenido)</span>
+<span class="fc" id="L96">            .map(video -&gt; {</span>
+<span class="fc" id="L97">                logger.debug(&quot;Encontrado video con ID: {}&quot;, idContenido);</span>
+<span class="fc" id="L98">                List&lt;String&gt; tagNames = obtenerTagsNombres(</span>
+<span class="fc" id="L99">                    contenidoVideoTagRepository.findByIdContenido(idContenido)</span>
+<span class="fc" id="L100">                        .stream()</span>
+<span class="fc" id="L101">                        .map(ContenidoVideoTag::getIdTag)</span>
+<span class="fc" id="L102">                        .toList()</span>
+                );
+                
+<span class="fc" id="L105">                return construirDTOVideo(video, tagNames);</span>
+            });
+    }
+
+    /**
+     * Obtiene los nombres de los tags a partir de sus IDs
+     */
+    private List&lt;String&gt; obtenerTagsNombres(List&lt;String&gt; tagIds) {
+<span class="fc" id="L113">        return tagsRepository.findByIdTagIn(tagIds)</span>
+<span class="fc" id="L114">            .stream()</span>
+<span class="fc" id="L115">            .map(Tags::getNombre)</span>
+<span class="fc" id="L116">            .toList();</span>
+    }
+
+    /**
+     * Construye el DTO de respuesta para un audio
+     */
+    private ContenidoListaResponseDTO construirDTOAudio(ContenidosAudio audio, List&lt;String&gt; tagNames) {
+<span class="fc" id="L123">        String miniaturaDataUri = ContentUtil.createDataUri(audio.getMiniatura(), audio.getFormatoMiniatura());</span>
+<span class="fc" id="L124">        String ficheroDataUri = ContentUtil.createDataUriFromBinary(audio.getFichero(), audio.getFicheroExtension());</span>
+        
+<span class="fc" id="L126">        return ContenidoListaResponseDTO.builder()</span>
+<span class="fc" id="L127">            .id(audio.getId())</span>
+<span class="fc" id="L128">            .titulo(audio.getTitulo())</span>
+<span class="fc" id="L129">            .descripcion(audio.getDescripcion())</span>
+<span class="fc" id="L130">            .duracion(audio.getDuracion())</span>
+<span class="fc" id="L131">            .especialidad(audio.getEspecialidad())</span>
+<span class="fc" id="L132">            .visibilidad(audio.isVisibilidad())</span>
+<span class="fc" id="L133">            .esVIP(audio.isEsVIP())</span>
+<span class="fc" id="L134">            .miniatura(miniaturaDataUri)</span>
+<span class="fc" id="L135">            .formatoMiniatura(audio.getFormatoMiniatura())</span>
+<span class="fc" id="L136">            .fechaSubida(ContentProcessingUtil.formatDate(audio.getFechaSubida()))</span>
+<span class="fc" id="L137">            .fechaExpiracion(ContentProcessingUtil.formatDate(audio.getFechaDisponibleHasta()))</span>
+<span class="fc" id="L138">            .valoracionMedia(audio.getValoracionMedia())</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            .restriccionEdad(audio.getRestriccionEdad() != null ? audio.getRestriccionEdad().getValor() : null)</span>
+<span class="fc" id="L140">            .tags(tagNames)</span>
+<span class="fc" id="L141">            .fichero(ficheroDataUri)</span>
+<span class="fc" id="L142">            .ficheroExtension(audio.getFicheroExtension())</span>
+<span class="fc" id="L143">            .build();</span>
+    }
+
+    /**
+     * Construye el DTO de respuesta para un video
+     */
+    private ContenidoListaResponseDTO construirDTOVideo(ContenidosVideo video, List&lt;String&gt; tagNames) {
+<span class="fc" id="L150">        String miniaturaDataUri = ContentUtil.createDataUri(video.getMiniatura(), video.getFormatoMiniatura());</span>
+        
+<span class="fc" id="L152">        return ContenidoListaResponseDTO.builder()</span>
+<span class="fc" id="L153">            .id(video.getId())</span>
+<span class="fc" id="L154">            .titulo(video.getTitulo())</span>
+<span class="fc" id="L155">            .descripcion(video.getDescripcion())</span>
+<span class="fc" id="L156">            .duracion(video.getDuracion())</span>
+<span class="fc" id="L157">            .especialidad(video.getEspecialidad())</span>
+<span class="fc" id="L158">            .visibilidad(video.isVisibilidad())</span>
+<span class="fc" id="L159">            .esVIP(video.isEsVIP())</span>
+<span class="fc" id="L160">            .miniatura(miniaturaDataUri)</span>
+<span class="fc" id="L161">            .formatoMiniatura(video.getFormatoMiniatura())</span>
+<span class="fc" id="L162">            .fechaSubida(ContentProcessingUtil.formatDate(video.getFechaSubida()))</span>
+<span class="fc" id="L163">            .fechaExpiracion(ContentProcessingUtil.formatDate(video.getFechaDisponibleHasta()))</span>
+<span class="fc" id="L164">            .valoracionMedia(video.getValoracionMedia())</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            .restriccionEdad(video.getRestriccionEdad() != null ? video.getRestriccionEdad().getValor() : null)</span>
+<span class="fc" id="L166">            .tags(tagNames)</span>
+<span class="fc" id="L167">            .urlArchivo(video.getUrlArchivo())</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            .resolucion(video.getResolucion() != null ? video.getResolucion().toString() : null)</span>
+<span class="fc" id="L169">            .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

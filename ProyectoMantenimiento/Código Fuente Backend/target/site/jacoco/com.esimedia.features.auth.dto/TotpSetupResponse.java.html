@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TotpSetupResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.dto</a> &gt; <span class="el_source">TotpSetupResponse.java</span></div><h1>TotpSetupResponse.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+<span class="pc bpc" id="L9" title="12 of 22 branches missed.">@Data</span>
+<span class="fc" id="L10">@NoArgsConstructor</span>
+<span class="fc" id="L11">@AllArgsConstructor</span>
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TotpSetupResponse {
+
+    @NotBlank(message = &quot;La URL del código QR no puede estar vacía&quot;)
+    @Pattern(regexp = &quot;^data:image/.*$&quot;, message = &quot;La URL del código QR debe ser una imagen en formato data URI&quot;)
+<span class="fc" id="L17">    private String qrCodeUrl;</span>
+    
+    @NotBlank(message = &quot;La clave secreta no puede estar vacía&quot;)
+    @Size(min = 16, max = 32, message = &quot;La clave secreta debe tener entre 16 y 32 caracteres&quot;)
+<span class="fc" id="L21">    private String secretKey;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

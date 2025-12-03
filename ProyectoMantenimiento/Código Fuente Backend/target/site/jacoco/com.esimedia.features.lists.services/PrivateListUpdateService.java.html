@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrivateListUpdateService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PrivateListUpdateService.java</span></div><h1>PrivateListUpdateService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.lists.dto.ListaUpdateDTO;
+import com.esimedia.features.lists.dto.ListaUpdateFieldsPrivadasDTO;
+import com.esimedia.features.lists.entity.ListaPrivada;
+import com.esimedia.features.lists.repository.ListaContenidoPrivadaRepository;
+import com.esimedia.features.lists.repository.ListaPrivadaRepository;
+
+import java.util.Optional;
+
+@Service
+public class PrivateListUpdateService {
+
+<span class="fc" id="L20">    private static final Logger logger = LoggerFactory.getLogger(PrivateListUpdateService.class);</span>
+
+    private static final String LISTA_PRIVADA_NO_ENCONTRADA = &quot;Lista privada no encontrada&quot;;
+
+    private final ListaPrivadaRepository listaPrivadaRepository;
+    private final ListaContenidoPrivadaRepository listaContenidoPrivadaRepository;
+
+    public PrivateListUpdateService(
+            ListaPrivadaRepository listaPrivadaRepository,
+<span class="fc" id="L29">            ListaContenidoPrivadaRepository listaContenidoPrivadaRepository) {</span>
+<span class="fc" id="L30">        this.listaPrivadaRepository = listaPrivadaRepository;</span>
+<span class="fc" id="L31">        this.listaContenidoPrivadaRepository = listaContenidoPrivadaRepository;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Actualizar una lista privada
+     */
+    public String actualizarListaPrivada(ListaUpdateDTO updateDTO, String idUsuario) {
+<span class="fc" id="L38">        logger.info(&quot;Actualizando lista privada: {} por usuario: {}&quot;, updateDTO.getIdLista(), idUsuario);</span>
+
+        // Verificar que la lista existe
+<span class="fc" id="L41">        Optional&lt;ListaPrivada&gt; listaOpt = listaPrivadaRepository.findById(updateDTO.getIdLista());</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (listaOpt.isEmpty()) {</span>
+<span class="fc" id="L43">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, LISTA_PRIVADA_NO_ENCONTRADA);</span>
+        }
+
+<span class="fc" id="L46">        ListaPrivada lista = listaOpt.get();</span>
+
+        // Verificar que el usuario es el propietario
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (!lista.getIdCreadorUsuario().equals(idUsuario)) {</span>
+<span class="fc" id="L50">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permiso para actualizar esta lista&quot;);
+        }
+
+        // Actualizar campos
+<span class="fc" id="L55">        lista.setNombre(updateDTO.getNombre());</span>
+<span class="fc" id="L56">        lista.setDescripcion(updateDTO.getDescripcion());</span>
+<span class="fc" id="L57">        lista.setVisibilidad(updateDTO.getVisibilidad());</span>
+
+<span class="fc" id="L59">        listaPrivadaRepository.save(lista);</span>
+
+<span class="fc" id="L61">        logger.info(&quot;Lista privada actualizada exitosamente: {}&quot;, updateDTO.getIdLista());</span>
+<span class="fc" id="L62">        return &quot;Lista privada actualizada exitosamente&quot;;</span>
+    }
+
+    /**
+     * Actualizar campos principales de una lista privada (nombre, descripción, visibilidad)
+     * @param updateDTO DTO con los nuevos valores
+     * @param idUsuario ID del usuario (debe ser el propietario)
+     * @return Mensaje de confirmación
+     */
+    public String actualizarCamposListaPrivada(ListaUpdateFieldsPrivadasDTO updateDTO, String idUsuario) {
+<span class="fc" id="L72">        ListaPrivada lista = listaPrivadaRepository.findById(updateDTO.getIdLista())</span>
+<span class="fc" id="L73">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Lista no encontrada&quot;));</span>
+
+        // Verificar que el usuario es el propietario
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (!lista.getIdCreadorUsuario().equals(idUsuario)) {</span>
+<span class="fc" id="L77">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permisos para modificar esta lista privada&quot;);
+        }
+
+        // Actualizar campos
+<span class="fc" id="L82">        lista.setNombre(updateDTO.getNombre());</span>
+<span class="fc" id="L83">        lista.setDescripcion(updateDTO.getDescripcion());</span>
+        // Las listas privadas siempre mantienen su visibilidad (false)
+
+<span class="fc" id="L86">        listaPrivadaRepository.save(lista);</span>
+
+<span class="fc" id="L88">        return &quot;Lista privada actualizada exitosamente&quot;;</span>
+    }
+
+    /**
+     * Eliminar lista privada
+     */
+    public String eliminarListaPrivada(String idLista, String idUsuario) {
+<span class="fc" id="L95">        logger.info(&quot;Eliminando lista privada: {} por usuario: {}&quot;, idLista, idUsuario);</span>
+
+        // Verificar que la lista existe
+<span class="fc" id="L98">        Optional&lt;ListaPrivada&gt; listaOpt = listaPrivadaRepository.findById(idLista);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (listaOpt.isEmpty()) {</span>
+<span class="fc" id="L100">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, LISTA_PRIVADA_NO_ENCONTRADA);</span>
+        }
+
+<span class="fc" id="L103">        ListaPrivada lista = listaOpt.get();</span>
+
+        // Verificar que el usuario es el propietario de la lista
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (!lista.getIdCreadorUsuario().equals(idUsuario)) {</span>
+<span class="fc" id="L107">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permiso para eliminar esta lista&quot;);
+        }
+
+        // Eliminar todos los contenidos de la lista
+<span class="fc" id="L112">        listaContenidoPrivadaRepository.deleteByIdLista(idLista);</span>
+
+        // Eliminar la lista
+<span class="fc" id="L115">        listaPrivadaRepository.delete(lista);</span>
+
+<span class="fc" id="L117">        logger.info(&quot;Lista privada eliminada exitosamente: {}&quot;, idLista);</span>
+<span class="fc" id="L118">        return &quot;Lista privada eliminada exitosamente&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdministradorDTO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.dto</a> &gt; <span class="el_source">AdministradorDTO.java</span></div><h1>AdministradorDTO.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+<span class="fc" id="L9">@Data</span>
+<span class="pc bpc" id="L10" title="9 of 16 branches missed.">@EqualsAndHashCode(callSuper = true)</span>
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AdministradorDTO extends UsuarioDTO {
+    
+    @NotBlank(message = &quot;El departamento no puede estar vacío&quot;)
+    @Size(min = 2, max = 100, message = &quot;El departamento debe tener entre 2 y 100 caracteres&quot;)
+    @Pattern(regexp = &quot;^[\\p{L}\\s&amp;.-]{2,}$&quot;, message = &quot;El departamento contiene caracteres inválidos&quot;)
+<span class="fc" id="L17">    private String departamento;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

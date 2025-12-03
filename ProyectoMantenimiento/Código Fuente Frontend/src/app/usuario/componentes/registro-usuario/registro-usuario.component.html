@@ -1,0 +1,333 @@
+<div class="registro-container usuario-variant">
+  <!-- Botón de volver -->
+  <button type="button" class="back-to-home" [routerLink]="APP_ROUTES.home">
+    <span class="back-icon">←</span>
+    <span>Volver al inicio</span>
+  </button>
+
+  <main class="registro-card usuario-variant">
+    <!-- Formulario de registro -->
+    <section class="form-section usuario-variant">
+      <!-- Header -->
+      <header class="app-header usuario-variant">
+        <div class="header-content">
+          <h2 class="header-title">Registro de Usuario</h2>
+          <p class="header-subtitle">Únete y descubre contenido increíble.</p>
+        </div>
+      </header>
+
+      <!-- Formulario -->
+      <form class="registro-form" [formGroup]="userForm" (ngSubmit)="onSubmit()">
+        <!-- Fila 1: Nombre y Primer Apellido -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label" for="nombre">
+              Nombre <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="nombre" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('nombre')"
+              placeholder="Ingresa tu nombre"
+              formControlName="nombre">
+            <div class="error-message" *ngIf="isFieldInvalid('nombre')">
+              {{ getFieldError('nombre') }}
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="primerApellido">
+              Primer Apellido <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="primerApellido" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('primerApellido')"
+              placeholder="Primer apellido"
+              formControlName="primerApellido">
+            <div class="error-message" *ngIf="isFieldInvalid('primerApellido')">
+              {{ getFieldError('primerApellido') }}
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Fila 2: Segundo Apellido y Fecha de Nacimiento -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label" for="segundoApellido">
+              Segundo Apellido
+            </label>
+            <input 
+              type="text" 
+              id="segundoApellido" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('segundoApellido')"
+              placeholder="Segundo apellido (opcional)"
+              formControlName="segundoApellido">
+            <div class="error-message" *ngIf="isFieldInvalid('segundoApellido')">
+              {{ getFieldError('segundoApellido') }}
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="fechaNacimiento">
+              Fecha de Nacimiento <span class="required">*</span>
+            </label>
+            <input 
+              type="date" 
+              id="fechaNacimiento" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('fechaNacimiento')"
+              formControlName="fechaNacimiento">
+            <div class="error-message" *ngIf="isFieldInvalid('fechaNacimiento')">
+              {{ getFieldError('fechaNacimiento') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila 3: Email y Alias -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label" for="email">
+              Email <span class="required">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="email" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('email')"
+              placeholder="tu-email@ejemplo.com"
+              formControlName="email">
+            <div class="error-message" *ngIf="isFieldInvalid('email')">
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="alias">
+              Alias <span class="field-helper">(máx. 12 caracteres)</span>
+            </label>
+            <input 
+              type="text" 
+              id="alias" 
+              class="form-input" 
+              [class.invalid]="isFieldInvalid('alias')"
+              placeholder="Tu alias"
+              formControlName="alias"
+              maxlength="12">
+            <div class="error-message" *ngIf="isFieldInvalid('alias')">
+              {{ getFieldError('alias') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila 4: Contraseña, Confirmar Contraseña y Suscripción VIP -->
+        <div class="form-row">
+          <div class="form-field">
+            <label class="field-label" for="password">
+              Contraseña <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                type="{{ showPassword ? 'text' : 'password' }}" 
+                id="password" 
+                class="form-input" 
+                [class.invalid]="isFieldInvalid('password')"
+                placeholder="Crea una contraseña segura"
+                formControlName="password">
+              <button type="button" class="toggle-password" (click)="togglePassword('password')">
+                <span class="eye-icon">{{ showPassword ? '🙈' : '👁️' }}</span>
+              </button>
+            </div>
+            <div class="error-message" *ngIf="isFieldInvalid('password')">
+              {{ getFieldError('password') }}
+            </div>
+            <div class="password-requirements-inline">
+              <div class="requirement" *ngFor="let requirement of getPasswordRequirements()">
+                - {{ requirement }}
+              </div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="confirmarPassword">
+              Confirmar Contraseña <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                type="{{ showConfirmPassword ? 'text' : 'password' }}" 
+                id="confirmarPassword" 
+                class="form-input" 
+                [class.invalid]="isFieldInvalid('confirmarPassword')"
+                placeholder="Repite tu contraseña"
+                formControlName="confirmarPassword">
+              <button type="button" class="toggle-password" (click)="togglePassword('confirmPassword')">
+                <span class="eye-icon">{{ showConfirmPassword ? '🙈' : '👁️' }}</span>
+              </button>
+            </div>
+            <div class="error-message" *ngIf="isFieldInvalid('confirmarPassword')">
+              {{ getFieldError('confirmarPassword') }}
+            </div>
+          </div>
+        </div>
+        
+
+
+        <!-- Foto de perfil -->
+        <div class="form-field">
+          <span class="field-label">Foto de Perfil</span>
+          <div class="photo-upload">
+            <div class="photo-preview">
+                <img [src]="fotoPreviewUrl || 'assets/porDefecto.jpg'" alt="Avatar por defecto" class="avatar">
+            </div>
+            <div class="photo-actions">
+              <input 
+                type="file"  
+                id="photoUpload" 
+                [accept]="acceptExtensionsImagen"
+                (change)="onFotoPerfilSelected($event)" 
+                style="display: none;">
+                <button 
+                  type="button" 
+                  class="usuario-btn secondary"
+                  (click)="triggerFileUpload()">
+                   Subir
+                </button>
+            </div>
+          </div>
+          <span class="field-helper">
+              Usaremos imagen por defecto si no subes ninguna.
+              Formatos permitidos: {{ formatosImagen.extensiones.join(', ') }}.
+          </span>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-actions">
+          <button type="submit" class="usuario-btn" [disabled]="isSubmitDisabled()">
+            <span *ngIf="!isLoading">Crear Cuenta</span>
+            <span *ngIf="isLoading">Creando cuenta...</span>
+          </button>
+          <button type="button" class="usuario-btn secondary" [routerLink]="USUARIO_ROUTES.login">
+            ¿Ya tienes cuenta? Inicia sesión
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Panel de información -->
+    <aside class="tips-section usuario-variant">
+      <header class="app-header compact minimal usuario-variant">
+        <div class="header-content">
+          <h3 class="header-title">¿Qué puedes hacer como usuario?</h3>
+        </div>
+      </header>
+      
+      <div class="tip-item">
+        <div class="tip-icon">
+          🎥
+        </div>
+        <p class="tip-text">
+          Descubre contenido<br>
+          de calidad y creadores.
+        </p>
+      </div>
+
+
+      <div class="tip-item">
+        <div class="tip-icon">
+          🔔
+        </div>
+        <p class="tip-text">
+          Recibe notificaciones<br>
+          de nuevo contenido.
+        </p>
+      </div>
+
+      <div class="tip-item">
+        <div class="tip-icon">
+          📱
+        </div>
+        <p class="tip-text">
+          Guarda contenido para<br>
+          ver más tarde.
+        </p>
+      </div>
+
+      <div class="tip-item">
+        <div class="tip-icon">
+          🎯
+        </div>
+        <p class="tip-text">
+          Personaliza tu feed<br>
+          según tus intereses.
+        </p>
+      </div>
+
+      <div class="tip-item">
+        <div class="tip-icon">
+          💬
+        </div>
+        <p class="tip-text">
+          Comparte con los demás<br>
+          tus valoraciones 
+        </p>
+      </div>
+
+  
+
+      <!-- Sección VIP Premium en Tips -->
+      <div class="vip-tips-section">
+        <div class="vip-header">
+          <div class="vip-icon">👑</div>
+          <h4 class="vip-title">¡Hazte VIP!</h4>
+        </div>
+        <p class="vip-description">
+          Accede a contenido exclusivo, sin anuncios y funciones premium
+        </p>
+        <button 
+          type="button" 
+          class="usuario-btn"
+          [class.vip-cancel]="!flagVIP"
+          [class.vip-golden]="flagVIP"
+          *ngIf="!flagVIP"
+          (click)="showUpgradeToVip()">
+          <div class="btn-icon">⭐</div>
+          <div class="btn-text">
+            Ser VIP
+          </div>
+        </button>
+        <button 
+          type="button" 
+          class="usuario-btn vip-cancel"
+          *ngIf="flagVIP"
+          (click)="showCancelVip()">
+          <div class="btn-icon">👑</div>
+          <div class="btn-text">
+            Cancelar VIP
+          </div>
+        </button>
+      </div>
+
+      <!-- CTA para gestores -->
+      <button type="button" class="gestor-btn" [routerLink]="GESTOR_ROUTES.registro">
+        <div class="cta-icon">
+          👤
+        </div>
+        <p class="cta-text">
+          ¿Eres un gestor?<br>
+          Regístrate como Gestor
+        </p>
+      </button>
+    </aside>
+  </main>
+</div>
+
+<!-- Componente VIP con modales de suscripción y cancelación -->
+<app-vip
+  [showVipConfirmation]="showVipConfirmation"
+  [showCancelVipConfirmation]="showCancelVipConfirmation"
+  (confirmVipUpgrade)="confirmVipUpgrade()"
+  (cancelVipUpgrade)="cancelVipUpgrade()"
+  (confirmVipCancel)="confirmVipCancel()"
+  (cancelVipCancel)="cancelVipCancel()">
+</app-vip>

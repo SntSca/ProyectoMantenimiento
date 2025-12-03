@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreadorContenido.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.entity</a> &gt; <span class="el_source">CreadorContenido.java</span></div><h1>CreadorContenido.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.entity;
+
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import com.esimedia.features.auth.enums.TipoContenido;
+
+import org.springframework.data.mongodb.core.index.Indexed;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+<span class="fc" id="L16">@Data</span>
+<span class="pc bpc" id="L17" title="12 of 48 branches missed.">@EqualsAndHashCode(callSuper = true)</span>
+<span class="fc" id="L18">@NoArgsConstructor</span>
+<span class="pc" id="L19">@SuperBuilder</span>
+@Document(collection = &quot;creadoresContenido&quot;)
+public class CreadorContenido extends Usuario {
+
+    @Indexed(unique = true)
+    @Field(&quot;aliasCreador&quot;)
+    @NotBlank(message = &quot;El alias de creador no puede estar vacío&quot;)
+    @Size(min = 3, max = 20, message = &quot;El alias de creador debe tener entre 3 y 20 caracteres&quot;)
+    @Pattern(regexp = &quot;^[a-zA-Z][a-zA-Z\\d_-]{2,}$&quot;, message = &quot;El alias de creador debe comenzar con una letra&quot;)
+<span class="fc" id="L28">    private String aliasCreador;</span>
+
+    @Field(&quot;descripcion&quot;)
+    @Size(max = 500, message = &quot;La descripción no puede exceder 500 caracteres&quot;)
+<span class="fc" id="L32">    private String descripcion;</span>
+
+    @Field(&quot;bloqueado&quot;)
+<span class="fc" id="L35">    private boolean bloqueado;</span>
+
+    @Field(&quot;especialidad&quot;)
+    @NotBlank(message = &quot;La especialidad no puede estar vacía&quot;)
+    @Size(min = 2, max = 100, message = &quot;La especialidad debe tener entre 2 y 100 caracteres&quot;)
+    @Pattern(regexp = &quot;^[\\p{L}\\s&amp;.-]{2,}$&quot;, message = &quot;La especialidad contiene caracteres inválidos&quot;)
+<span class="fc" id="L41">    private String especialidad;</span>
+
+    @Field(&quot;tipoContenido&quot;)
+    @NotNull(message = &quot;El tipo de contenido no puede ser nulo&quot;)
+<span class="fc" id="L45">    private TipoContenido tipoContenido;</span>
+
+    @Field(&quot;validado&quot;)
+<span class="fc" id="L48">    private boolean validado;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

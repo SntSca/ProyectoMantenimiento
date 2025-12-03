@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodigoVerificacion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.entity</a> &gt; <span class="el_source">CodigoVerificacion.java</span></div><h1>CodigoVerificacion.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.entity;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.esimedia.features.auth.enums.TipoVerificacion;
+
+import java.time.LocalDateTime;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+<span class="pc bpc" id="L14" title="29 of 58 branches missed.">@Data</span>
+<span class="fc" id="L15">@NoArgsConstructor</span>
+@Document(collection = &quot;codigos_verificacion&quot;)
+public class CodigoVerificacion {
+
+    @Id
+<span class="fc" id="L20">    private String id;</span>
+    
+    @NotBlank(message = &quot;El ID del usuario no puede estar vacío&quot;)
+<span class="fc" id="L23">    private String userId;</span>
+    
+    @NotBlank(message = &quot;El código no puede estar vacío&quot;)
+    @Pattern(regexp = &quot;^\\d{6}$&quot;, message = &quot;El código debe tener exactamente 6 dígitos&quot;)
+<span class="fc" id="L27">    private String codigo;</span>
+    
+    @NotNull(message = &quot;El tipo de verificación no puede ser nulo&quot;)
+<span class="fc" id="L30">    private TipoVerificacion tipo;</span>
+    
+    @NotNull(message = &quot;La fecha de creación no puede ser nula&quot;)
+    @PastOrPresent(message = &quot;La fecha de creación no puede ser futura&quot;)
+<span class="fc" id="L34">    private LocalDateTime fechaCreacion;</span>
+    
+    @NotNull(message = &quot;La fecha de expiración no puede ser nula&quot;)
+    @Future(message = &quot;La fecha de expiración debe ser futura&quot;)
+<span class="fc" id="L38">    private LocalDateTime fechaExpiracion;</span>
+    
+<span class="fc" id="L40">    private boolean usado;</span>
+    
+<span class="fc" id="L42">    public CodigoVerificacion(String userId, String codigo, TipoVerificacion tipo, int minutosExpiracion) {</span>
+<span class="fc" id="L43">        this.userId = userId;</span>
+<span class="fc" id="L44">        this.codigo = codigo;</span>
+<span class="fc" id="L45">        this.tipo = tipo;</span>
+<span class="fc" id="L46">        this.fechaCreacion = LocalDateTime.now();</span>
+<span class="fc" id="L47">        this.fechaExpiracion = this.fechaCreacion.plusMinutes(minutosExpiracion);</span>
+<span class="fc" id="L48">        this.usado = false;</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * Verifica si el código ha expirado
+     */
+    public boolean hasExpirado() {
+<span class="fc" id="L55">        return LocalDateTime.now().isAfter(fechaExpiracion);</span>
+    }
+    
+    /**
+     * Verifica si el código es válido (no usado y no expirado)
+     */
+    public boolean isValido() {
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        return !usado &amp;&amp; !hasExpirado();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

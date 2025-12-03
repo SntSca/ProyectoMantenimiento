@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.http</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.http;
+
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.services.AuthenticationService;
+import com.esimedia.features.auth.services.LoginAttemptService;
+import com.esimedia.features.auth.services.SesionService;
+import com.esimedia.features.user_management.services.UserRetrievalService;
+import com.esimedia.features.auth.services.SessionTimeoutService;
+import com.esimedia.shared.util.JwtUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@RestController
+@RequestMapping(&quot;/users/auth&quot;)
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;, allowedHeaders = &quot;*&quot;, exposedHeaders = &quot;Authorization&quot;)
+public class AuthController {
+
+<span class="nc" id="L34">    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);</span>
+    
+    // Constantes para literales utilizados frecuentemente
+    private static final String EMAIL_FIELD = &quot;email&quot;;
+    private static final String RETRY_AFTER_HEADER = &quot;Retry-After&quot;;
+    private static final String SEGUNDOS_LITERAL = &quot;segundos&quot;;
+    private static final String TOKEN_FIELD = &quot;token&quot;;
+    private static final String FROM_IP_LITERAL = &quot; desde IP: &quot;;
+    private static final String DEMASIADOS_INTENTOS_USUARIO = &quot;Demasiados intentos para este usuario. Inténtalo de nuevo en &quot;;
+    private static final String DEMASIADOS_INTENTOS_LOGIN_IP = &quot;Demasiados intentos desde esta IP. Inténtalo de nuevo en &quot;;
+    private static final String ERROR_AUTENTICACION_PREFIX = &quot;Error de autenticación para usuario: &quot;;
+    private static final String ERROR_INTERNO_LOGOUT = &quot;Error interno durante el logout&quot;;
+    private static final String LOGOUT_EXITOSO = &quot;Logout exitoso&quot;;
+    private static final String LOGOUT_PROCESADO = &quot;Logout procesado (no había sesión activa)&quot;;
+    private static final String MESSAGE_KEY = &quot;message&quot;;
+    private static final String ERROR_KEY = &quot;error&quot;;
+    private static final String TWO_FACTOR_ENABLED_KEY = &quot;twoFactorEnabled&quot;;
+    private static final String THIRD_FACTOR_ENABLED_KEY = &quot;thirdFactorEnabled&quot;;
+
+
+    private final AuthenticationService authenticationService;
+    private final SesionService sesionService;
+    private final LoginAttemptService attemptService;
+    private final UserRetrievalService userRetrievalService;
+    private final SessionTimeoutService sessionTimeoutService;
+    private final JwtUtil jwtUtil;
+
+    public AuthController(AuthenticationService authenticationService,
+                         SesionService sesionService,
+                         LoginAttemptService attemptService,
+                         UserRetrievalService userRetrievalService,
+                         SessionTimeoutService sessionTimeoutService,
+<span class="nc" id="L66">                         JwtUtil jwtUtil) {</span>
+<span class="nc" id="L67">        this.authenticationService = authenticationService;</span>
+<span class="nc" id="L68">        this.sesionService = sesionService;</span>
+<span class="nc" id="L69">        this.attemptService = attemptService;</span>
+<span class="nc" id="L70">        this.userRetrievalService = userRetrievalService;</span>
+<span class="nc" id="L71">        this.sessionTimeoutService = sessionTimeoutService;</span>
+<span class="nc" id="L72">        this.jwtUtil = jwtUtil;</span>
+<span class="nc" id="L73">    }</span>
+
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;Object&gt; login(@RequestBody Map&lt;String, String&gt; credentials, HttpServletRequest request) {
+<span class="nc" id="L77">        String ip = request.getRemoteAddr();</span>
+<span class="nc" id="L78">        String username = credentials.getOrDefault(EMAIL_FIELD, &quot;&quot;);</span>
+<span class="nc" id="L79">        logger.info(&quot;[LOGIN] Petición recibida en /users/auth/login para usuario: {} desde IP: {}&quot;, username, ip);</span>
+
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (attemptService.isIpBlocked(ip)) {</span>
+<span class="nc" id="L82">            long retryAfter = attemptService.getIpRetryAfterSeconds(ip);</span>
+<span class="nc" id="L83">            logger.warn(&quot;[LOGIN] IP bloqueada: {}. Retry-After: {}&quot;, ip, retryAfter);</span>
+<span class="nc" id="L84">            return ResponseEntity.status(429)</span>
+<span class="nc" id="L85">                .header(RETRY_AFTER_HEADER, String.valueOf(retryAfter))</span>
+<span class="nc" id="L86">                .body(DEMASIADOS_INTENTOS_LOGIN_IP + retryAfter + &quot; &quot; + SEGUNDOS_LITERAL + &quot;.&quot;);</span>
+        }
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (attemptService.isBlocked(username, ip)) {</span>
+<span class="nc" id="L89">            long retryAfter = attemptService.getUserRetryAfterSeconds(username, ip);</span>
+<span class="nc" id="L90">            logger.warn(&quot;[LOGIN] Usuario bloqueado: {} desde IP: {}. Retry-After: {}&quot;, username, ip, retryAfter);</span>
+<span class="nc" id="L91">            return ResponseEntity.status(429)</span>
+<span class="nc" id="L92">                .header(RETRY_AFTER_HEADER, String.valueOf(retryAfter))</span>
+<span class="nc" id="L93">                .body(DEMASIADOS_INTENTOS_USUARIO + retryAfter + &quot; &quot; + SEGUNDOS_LITERAL + &quot;.&quot;);</span>
+        }
+
+        try {
+            // Limpiar sesiones existentes del usuario antes de autenticar
+<span class="nc" id="L98">            Optional&lt;Usuario&gt; existingUser = this.userRetrievalService.findAnyUserByEmail(username);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            if (existingUser.isPresent()) {</span>
+<span class="nc" id="L100">                logger.info(&quot;[LOGIN] Limpiando sesiones existentes para usuario: {}&quot;, username);</span>
+<span class="nc" id="L101">                sesionService.eliminarTodasSesionesUsuario(existingUser.get().getIdUsuario());</span>
+<span class="nc" id="L102">                sesionService.limpiarTodasLasSesiones(existingUser.get().getIdUsuario());</span>
+            }
+
+<span class="nc" id="L105">            logger.info(&quot;[LOGIN] Llamando a service.authenticate para usuario: {}&quot;, username);</span>
+<span class="nc" id="L106">            Usuario user = this.authenticationService.authenticate(credentials);</span>
+<span class="nc" id="L107">            logger.info(&quot;[LOGIN] Autenticación exitosa para usuario: {}&quot;, username);</span>
+            
+            
+<span class="nc" id="L110">            attemptService.resetAttempts(username, ip);</span>
+<span class="nc" id="L111">            String jwt = this.authenticationService.generateJwtToken(user);</span>
+<span class="nc" id="L112">            logger.info(&quot;[LOGIN] Token generado para usuario: {}&quot;, username);</span>
+            
+<span class="nc" id="L114">            sesionService.rotarSesionPorFixation(String.valueOf(user.getIdUsuario()), ip, jwt);</span>
+<span class="nc" id="L115">            logger.info(&quot;[LOGIN] Sesión rotada para usuario: {}&quot;, username);</span>
+            
+<span class="nc" id="L117">            sessionTimeoutService.registerSession(String.valueOf(user.getIdUsuario()), user.getRol());</span>
+<span class="nc" id="L118">            logger.info(&quot;[LOGIN] Absolute timeout registrado para usuario {} con rol {}&quot;, username, user.getRol());</span>
+            
+<span class="nc" id="L120">            return ResponseEntity.ok(Map.of(</span>
+                TOKEN_FIELD, jwt,
+<span class="nc" id="L122">                TWO_FACTOR_ENABLED_KEY, user.isTwoFactorEnabled(),</span>
+<span class="nc" id="L123">                THIRD_FACTOR_ENABLED_KEY, user.isThirdFactorEnabled()</span>
+            ));
+        }
+<span class="nc" id="L126">        catch (ResponseStatusException e) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            if (e.getStatusCode() == HttpStatus.FORBIDDEN) {</span>
+<span class="nc" id="L128">                throw e;</span>
+            }
+<span class="nc" id="L130">            attemptService.recordFailedAttempt(username, ip);</span>
+<span class="nc" id="L131">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, </span>
+                ERROR_AUTENTICACION_PREFIX + username + FROM_IP_LITERAL + ip, e);
+        }
+<span class="nc" id="L134">        catch (Exception e) {</span>
+<span class="nc" id="L135">            attemptService.recordFailedAttempt(username, ip);</span>
+<span class="nc" id="L136">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, </span>
+                ERROR_AUTENTICACION_PREFIX + username + FROM_IP_LITERAL + ip, e);
+        }
+    }
+
+    @PostMapping(&quot;/logout&quot;)
+    public ResponseEntity&lt;Object&gt; logout(@RequestHeader(&quot;Authorization&quot;) String authHeader) {
+<span class="nc" id="L143">        logger.info(&quot;[LOGOUT] Petición de logout recibida&quot;);</span>
+        try{
+<span class="nc" id="L145">            String userId = jwtUtil.getUserIdFromToken(authHeader);</span>
+<span class="nc" id="L146">            authHeader = authHeader.substring(7);</span>
+            
+<span class="nc" id="L148">            boolean sesionEliminada = sesionService.eliminarSesionPorJwt(authHeader);</span>
+            
+<span class="nc" id="L150">            sessionTimeoutService.invalidateSession(userId);</span>
+<span class="nc" id="L151">            logger.info(&quot;[LOGOUT] Sesión de timeout absoluto invalidada para usuario: {}&quot;, userId);</span>
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (sesionEliminada) {</span>
+<span class="nc" id="L154">                logger.info(&quot;[LOGOUT] Sesión eliminada exitosamente&quot;);</span>
+<span class="nc" id="L155">                return ResponseEntity.ok(Map.of(MESSAGE_KEY, LOGOUT_EXITOSO));</span>
+            }
+            else {
+<span class="nc" id="L158">                logger.warn(&quot;[LOGOUT] No se encontró sesión para el JWT proporcionado&quot;);</span>
+<span class="nc" id="L159">                return ResponseEntity.ok(Map.of(MESSAGE_KEY, LOGOUT_PROCESADO));</span>
+            }
+            
+        }
+<span class="nc" id="L163">        catch (Exception e) {</span>
+<span class="nc" id="L164">            logger.error(&quot;[LOGOUT] Error durante el logout&quot;, e);</span>
+<span class="nc" id="L165">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L166">                .body(Map.of(ERROR_KEY, ERROR_INTERNO_LOGOUT));</span>
+        }
+    }
+
+    @PostMapping(&quot;/privileged-login&quot;)
+    public ResponseEntity&lt;Object&gt; privilegedLogin(@RequestBody Map&lt;String, String&gt; credentials, HttpServletRequest request) {
+<span class="nc" id="L172">        String ip = request.getRemoteAddr();</span>
+<span class="nc" id="L173">        String username = credentials.getOrDefault(EMAIL_FIELD, &quot;&quot;).trim();</span>
+
+<span class="nc" id="L175">        logger.info(&quot;[LOGIN-PRIVILEGED] Petición recibida en /users/auth/privileged-login para usuario: {} desde IP: {}&quot;, username, ip);</span>
+
+        // Validación básica de email
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (username.isEmpty()) {</span>
+<span class="nc" id="L179">            logger.warn(&quot;[LOGIN-PRIVILEGED] Email vacío en petición de login privilegiado desde IP: {}&quot;, ip);</span>
+<span class="nc" id="L180">            return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L181">                    .body(&quot;El campo 'email' es obligatorio para login privilegiado.&quot;);</span>
+        }
+
+        // Comprobaciones de bloqueo por IP / usuario
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (attemptService.isIpBlocked(ip)) {</span>
+<span class="nc" id="L186">            long retryAfter = attemptService.getIpRetryAfterSeconds(ip);</span>
+<span class="nc" id="L187">            logger.warn(&quot;[LOGIN-PRIVILEGED] IP bloqueada: {}. Retry-After: {}&quot;, ip, retryAfter);</span>
+<span class="nc" id="L188">            return ResponseEntity.status(429)</span>
+<span class="nc" id="L189">                .header(RETRY_AFTER_HEADER, String.valueOf(retryAfter))</span>
+<span class="nc" id="L190">                .body(DEMASIADOS_INTENTOS_LOGIN_IP + retryAfter + &quot; &quot; + SEGUNDOS_LITERAL + &quot;.&quot;);</span>
+        }
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (attemptService.isBlocked(username, ip)) {</span>
+<span class="nc" id="L193">            long retryAfter = attemptService.getUserRetryAfterSeconds(username, ip);</span>
+<span class="nc" id="L194">            logger.warn(&quot;[LOGIN-PRIVILEGED] Usuario bloqueado: {} desde IP: {}. Retry-After: {}&quot;, username, ip, retryAfter);</span>
+<span class="nc" id="L195">            return ResponseEntity.status(429)</span>
+<span class="nc" id="L196">                .header(RETRY_AFTER_HEADER, String.valueOf(retryAfter))</span>
+<span class="nc" id="L197">                .body(DEMASIADOS_INTENTOS_USUARIO + retryAfter + &quot; &quot; + SEGUNDOS_LITERAL + &quot;.&quot;);</span>
+        }
+
+        try {
+            // Limpiar sesiones existentes del usuario antes de autenticar
+<span class="nc" id="L202">            Optional&lt;Usuario&gt; existingUser = this.userRetrievalService.findAnyUserByEmail(username);</span>
+<span class="nc" id="L203">            existingUser.ifPresent(usuario -&gt; {</span>
+<span class="nc" id="L204">                logger.info(&quot;[LOGIN-PRIVILEGED] Limpiando sesiones existentes para usuario privilegiado: {}&quot;, username);</span>
+<span class="nc" id="L205">                sesionService.eliminarTodasSesionesUsuario(usuario.getIdUsuario());</span>
+<span class="nc" id="L206">                sesionService.limpiarSesionesExpiradasEInvalidas();</span>
+<span class="nc" id="L207">                sesionService.limpiarTodasLasSesiones(usuario.getIdUsuario());</span>
+<span class="nc" id="L208">            });</span>
+
+<span class="nc" id="L210">            logger.info(&quot;[LOGIN-PRIVILEGED] Llamando a authenticatePrivilegedUser para usuario: {}&quot;, username);</span>
+<span class="nc" id="L211">            Usuario user = this.authenticationService.authenticatePrivilegedUser(credentials);</span>
+<span class="nc" id="L212">            logger.info(&quot;[LOGIN-PRIVILEGED] Autenticación exitosa para usuario privilegiado: {} con rol {}&quot;, username, user.getRol());</span>
+            
+            // Reset de intentos fallidos
+<span class="nc" id="L215">            attemptService.resetAttempts(username, ip);</span>
+
+            // Generar JWT (incluyendo tipoContenido en el caso de CreadorContenido)
+            String jwt;
+<span class="nc bnc" id="L219" title="All 2 branches missed.">            if (user instanceof CreadorContenido creador) {</span>
+<span class="nc" id="L220">                jwt = this.authenticationService.generateJwtToken(creador, creador.getTipoContenido());</span>
+            } else {
+<span class="nc" id="L222">                jwt = this.authenticationService.generateJwtToken(user);</span>
+            }
+<span class="nc" id="L224">            logger.info(&quot;[LOGIN-PRIVILEGED] Token generado para usuario privilegiado: {}&quot;, username);</span>
+            
+            // Rotar sesión por fixation (expira anteriores y crea nueva)
+<span class="nc" id="L227">            sesionService.rotarSesionPorFixation(String.valueOf(user.getIdUsuario()), ip, jwt);</span>
+<span class="nc" id="L228">            logger.info(&quot;[LOGIN-PRIVILEGED] Sesión rotada para usuario privilegiado: {}&quot;, username);</span>
+            
+            // Registrar sesión con absolute timeout
+<span class="nc" id="L231">            sessionTimeoutService.registerSession(String.valueOf(user.getIdUsuario()), user.getRol());</span>
+<span class="nc" id="L232">            logger.info(&quot;[LOGIN-PRIVILEGED] Absolute timeout registrado para usuario privilegiado {} con rol {}&quot;, username, user.getRol());</span>
+            
+<span class="nc" id="L234">            return ResponseEntity.ok(Map.of(</span>
+                TOKEN_FIELD, jwt,
+<span class="nc" id="L236">                TWO_FACTOR_ENABLED_KEY, user.isTwoFactorEnabled(),</span>
+<span class="nc" id="L237">                THIRD_FACTOR_ENABLED_KEY, user.isThirdFactorEnabled()</span>
+            ));
+        }
+<span class="nc" id="L240">        catch (ResponseStatusException e) {</span>
+            // Si es FORBIDDEN (cuenta bloqueada), relanzar tal cual para preservar el mensaje
+<span class="nc bnc" id="L242" title="All 2 branches missed.">            if (e.getStatusCode() == HttpStatus.FORBIDDEN) {</span>
+<span class="nc" id="L243">                logger.warn(&quot;[LOGIN-PRIVILEGED] Usuario privilegiado {} bloqueado: {}&quot;, username, e.getReason());</span>
+<span class="nc" id="L244">                throw e;</span>
+            }
+<span class="nc" id="L246">            attemptService.recordFailedAttempt(username, ip);</span>
+<span class="nc" id="L247">            logger.error(&quot;[LOGIN-PRIVILEGED] Error de autenticación (ResponseStatusException) para usuario privilegiado: {} desde IP: {}&quot;, username, ip, e);</span>
+<span class="nc" id="L248">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, </span>
+                ERROR_AUTENTICACION_PREFIX + username + FROM_IP_LITERAL + ip, e);
+        }
+<span class="nc" id="L251">        catch (Exception e) {</span>
+<span class="nc" id="L252">            attemptService.recordFailedAttempt(username, ip);</span>
+<span class="nc" id="L253">            logger.error(&quot;[LOGIN-PRIVILEGED] Error inesperado de autenticación para usuario privilegiado: {} desde IP: {}&quot;, username, ip, e);</span>
+<span class="nc" id="L254">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, </span>
+                ERROR_AUTENTICACION_PREFIX + username + FROM_IP_LITERAL + ip, e);
+        }
+    }
+
+    @PostMapping(&quot;/logout/session&quot;)
+    public ResponseEntity&lt;Object&gt; logoutSession(@RequestBody Map&lt;String, String&gt; requestBody) {
+<span class="nc" id="L261">        logger.info(&quot;[LOGOUT SESSION] Petición de logout de sesión específica recibida&quot;);</span>
+        ResponseEntity&lt;Object&gt; response;
+        try {
+<span class="nc" id="L264">            String jwt = requestBody.get(&quot;jwt&quot;);</span>
+<span class="nc bnc" id="L265" title="All 4 branches missed.">            if (jwt == null || jwt.trim().isEmpty()) {</span>
+<span class="nc" id="L266">                logger.warn(&quot;[LOGOUT SESSION] JWT no proporcionado&quot;);</span>
+<span class="nc" id="L267">                response = ResponseEntity.badRequest().body(Map.of(ERROR_KEY, &quot;JWT requerido&quot;));</span>
+            }
+            else {
+                // Eliminar la sesión de la base de datos por JWT
+<span class="nc" id="L271">                boolean sesionEliminada = sesionService.eliminarSesionPorJwt(jwt);</span>
+
+<span class="nc bnc" id="L273" title="All 2 branches missed.">                if (sesionEliminada) {</span>
+<span class="nc" id="L274">                    logger.info(&quot;[LOGOUT SESSION] Sesión eliminada exitosamente para JWT&quot;);</span>
+<span class="nc" id="L275">                    response = ResponseEntity.ok(Map.of(MESSAGE_KEY, LOGOUT_EXITOSO));</span>
+                }
+                else {
+<span class="nc" id="L278">                    logger.warn(&quot;[LOGOUT SESSION] No se encontró sesión para el JWT proporcionado&quot;);</span>
+<span class="nc" id="L279">                    response = ResponseEntity.ok(Map.of(MESSAGE_KEY, LOGOUT_PROCESADO));</span>
+                }
+            }
+        }
+<span class="nc" id="L283">        catch (Exception e) {</span>
+<span class="nc" id="L284">            logger.error(&quot;[LOGOUT SESSION] Error durante el logout de sesión&quot;, e);</span>
+<span class="nc" id="L285">            response = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="nc" id="L286">                .body(Map.of(ERROR_KEY, ERROR_INTERNO_LOGOUT));</span>
+<span class="nc" id="L287">        }</span>
+<span class="nc" id="L288">        return response;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

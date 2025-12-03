@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContenidoFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.entity</a> &gt; <span class="el_source">ContenidoFactory.java</span></div><h1>ContenidoFactory.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.entity;
+
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.content.dto.ContentAudioUploadDTO;
+import com.esimedia.features.content.dto.ContentUploadDTO;
+import com.esimedia.features.content.dto.ContentVideoUploadDTO;
+import com.esimedia.shared.util.ContentUtil;
+
+/**
+ * Factory para crear instancias de Contenido a partir de DTOs.
+ * Utiliza el patrón Factory Method para encapsular la lógica de creación
+ * y mantener el código desacoplado de las implementaciones concretas.
+ */
+public class ContenidoFactory {
+
+    private ContenidoFactory() {
+            }
+
+
+    /**
+     * Crea una instancia de Contenido a partir de un ContentUploadDTO.
+     * 
+     * @param dto el DTO de contenido
+     * @return una instancia de Contenido del tipo apropiado
+     * @throws IllegalArgumentException si el tipo de DTO no es soportado
+     * @throws NullPointerException si el dto es null
+     */
+    public static Contenido crearContenido(ContentUploadDTO dto) throws IllegalArgumentException, NullPointerException {
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (dto == null) {</span>
+<span class="fc" id="L30">            throw new NullPointerException(&quot;El DTO no puede ser null&quot;);</span>
+        }
+
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (dto instanceof ContentAudioUploadDTO contentAudioUploadDTO) {</span>
+<span class="fc" id="L34">            return crearContenidoAudio(contentAudioUploadDTO);</span>
+        } 
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        else if (dto instanceof ContentVideoUploadDTO contentVideoUploadDTO) {</span>
+<span class="fc" id="L37">            return crearContenidoVideo(contentVideoUploadDTO);</span>
+        }
+        else {
+<span class="fc" id="L40">            throw new IllegalArgumentException(&quot;Tipo de DTO no soportado: &quot; + dto.getClass().getSimpleName());</span>
+        }
+    }
+
+    /**
+     * Crea un ContenidosAudio a partir de un ContentAudioUploadDTO
+     */
+    private static ContenidosAudio crearContenidoAudio(ContentAudioUploadDTO audioDTO) {
+<span class="fc" id="L48">        byte[] imagenBytes = null;</span>
+<span class="fc" id="L49">        String imagenExtension = null;</span>
+        
+        // Solo procesar miniatura si se proporciona
+<span class="pc bpc" id="L52" title="3 of 4 branches missed.">        if (audioDTO.getMiniatura() != null &amp;&amp; !audioDTO.getMiniatura().trim().isEmpty()) {</span>
+<span class="nc" id="L53">            imagenBytes = ContentUtil.decodeImage(audioDTO.getMiniatura());</span>
+<span class="nc" id="L54">            imagenExtension = audioDTO.getFormatoMiniatura();</span>
+        }
+<span class="fc" id="L56">        return ContenidosAudio.builder()</span>
+<span class="fc" id="L57">            .titulo(audioDTO.getTitulo())</span>
+<span class="fc" id="L58">            .descripcion(audioDTO.getDescripcion())</span>
+<span class="fc" id="L59">            .duracion(audioDTO.getDuracion())</span>
+<span class="fc" id="L60">            .esVIP(Boolean.TRUE.equals(audioDTO.getEsVIP()))</span>
+<span class="fc" id="L61">            .miniatura(imagenBytes)</span>
+<span class="fc" id="L62">            .formatoMiniatura(imagenExtension)</span>
+<span class="fc" id="L63">            .fichero(ContentUtil.decodeAudio(audioDTO.getFichero()))</span>
+<span class="fc" id="L64">            .ficheroExtension(audioDTO.getFicheroExtension())</span>
+<span class="fc" id="L65">            .build();</span>
+    }
+
+    /**
+     * Crea un ContenidosVideo a partir de un ContentVideoUploadDTO
+     */
+    private static ContenidosVideo crearContenidoVideo(ContentVideoUploadDTO videoDTO) {
+<span class="fc" id="L72">        byte[] imagenBytes = null;</span>
+<span class="fc" id="L73">        String imagenExtension = null;</span>
+        
+        // Solo procesar miniatura si se proporciona
+<span class="pc bpc" id="L76" title="3 of 4 branches missed.">        if (videoDTO.getMiniatura() != null &amp;&amp; !videoDTO.getMiniatura().trim().isEmpty()) {</span>
+<span class="nc" id="L77">            imagenBytes = ContentUtil.decodeImage(videoDTO.getMiniatura());</span>
+<span class="nc" id="L78">            imagenExtension = videoDTO.getFormatoMiniatura();</span>
+        }
+        
+<span class="fc" id="L81">        return ContenidosVideo.builder()</span>
+<span class="fc" id="L82">            .titulo(videoDTO.getTitulo())</span>
+<span class="fc" id="L83">            .descripcion(videoDTO.getDescripcion())</span>
+<span class="fc" id="L84">            .duracion(videoDTO.getDuracion())</span>
+<span class="fc" id="L85">            .esVIP(Boolean.TRUE.equals(videoDTO.getEsVIP()))</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            .restriccionEdad(videoDTO.getRestriccionEdad() != null ? </span>
+<span class="pc" id="L87">                getRestriccionEdadFromValue(videoDTO.getRestriccionEdad()) : null)</span>
+<span class="fc" id="L88">            .miniatura(imagenBytes)</span>
+<span class="fc" id="L89">            .formatoMiniatura(imagenExtension)</span>
+<span class="fc" id="L90">            .urlArchivo(videoDTO.getUrlArchivo())</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            .resolucion(videoDTO.getResolucion() != null ? </span>
+<span class="pc" id="L92">                com.esimedia.features.content.enums.Resolucion.valueOf(videoDTO.getResolucion()) : null)</span>
+<span class="fc" id="L93">            .build();</span>
+    }
+
+    /**
+     * Crea un ContenidosAudio con parámetros básicos
+     */
+    public static ContenidosAudio crearContenidoAudio(String titulo, String descripcion, int duracion, String idCreador) {
+<span class="nc" id="L100">        return ContenidosAudio.builder()</span>
+<span class="nc" id="L101">            .titulo(titulo)</span>
+<span class="nc" id="L102">            .descripcion(descripcion)</span>
+<span class="nc" id="L103">            .duracion(duracion)</span>
+<span class="nc" id="L104">            .idCreador(idCreador)</span>
+<span class="nc" id="L105">            .build();</span>
+    }
+
+    /**
+     * Crea un ContenidosVideo con parámetros básicos
+     */
+    public static ContenidosVideo crearContenidoVideo(String titulo, String descripcion, int duracion, String idCreador, String urlArchivo) {
+<span class="nc" id="L112">        return ContenidosVideo.builder()</span>
+<span class="nc" id="L113">            .titulo(titulo)</span>
+<span class="nc" id="L114">            .descripcion(descripcion)</span>
+<span class="nc" id="L115">            .duracion(duracion)</span>
+<span class="nc" id="L116">            .idCreador(idCreador)</span>
+<span class="nc" id="L117">            .urlArchivo(urlArchivo)</span>
+<span class="nc" id="L118">            .build();</span>
+    }
+    
+    /**
+     * Convierte un valor entero a RestriccionEdad
+     */
+    private static RestriccionEdad getRestriccionEdadFromValue(Integer valor) {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (valor == null) return null;</span>
+        
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        for (RestriccionEdad restriccion : RestriccionEdad.values()) {</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            if (restriccion.getValor() == valor) {</span>
+<span class="fc" id="L129">                return restriccion;</span>
+            }
+        }
+<span class="nc" id="L132">        throw new IllegalArgumentException(&quot;Valor de restricción de edad no válido: &quot; + valor);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

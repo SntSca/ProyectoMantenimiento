@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.config</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import java.util.List;
+import java.util.Map;
+
+@ControllerAdvice
+<span class="fc" id="L19">public class GlobalExceptionHandler {</span>
+    
+<span class="fc" id="L21">    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
+    
+    // Constantes para evitar duplicación de literales
+    private static final String ERROR_KEY = &quot;error&quot;;
+    private static final String MESSAGE_KEY = &quot;message&quot;;
+    private static final String STATUS_KEY = &quot;status&quot;;
+    private static final String DETAILS_KEY = &quot;details&quot;;
+
+    /**
+     * Maneja errores de validación de Bean Validation en DTOs (@Valid)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidationErrors(MethodArgumentNotValidException ex) {
+<span class="nc" id="L34">        List&lt;String&gt; errors = ex.getBindingResult()</span>
+<span class="nc" id="L35">                .getFieldErrors()</span>
+<span class="nc" id="L36">                .stream()</span>
+<span class="nc" id="L37">                .map(DefaultMessageSourceResolvable::getDefaultMessage)</span>
+<span class="nc" id="L38">                .toList();</span>
+        
+<span class="nc" id="L40">        logger.warn(&quot;Errores de validación en DTO: {}&quot;, errors);</span>
+        
+<span class="nc" id="L42">        Map&lt;String, Object&gt; errorResponse = Map.of(</span>
+            ERROR_KEY, &quot;Errores de validación&quot;,
+            MESSAGE_KEY, &quot;Los datos proporcionados no son válidos&quot;,
+            DETAILS_KEY, errors,
+<span class="nc" id="L46">            STATUS_KEY, HttpStatus.BAD_REQUEST.value()</span>
+        );
+        
+<span class="nc" id="L49">        return ResponseEntity.badRequest().body(errorResponse);</span>
+    }
+
+    /**
+     * Maneja violaciones de constraints (@NotNull, @Size, etc. en parámetros individuales)
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleConstraintViolation(ConstraintViolationException ex) {
+<span class="nc" id="L57">        List&lt;String&gt; errors = ex.getConstraintViolations()</span>
+<span class="nc" id="L58">                .stream()</span>
+<span class="nc" id="L59">                .map(ConstraintViolation::getMessage)</span>
+<span class="nc" id="L60">                .toList();</span>
+        
+<span class="nc" id="L62">        logger.warn(&quot;Violaciones de constraint: {}&quot;, errors);</span>
+        
+<span class="nc" id="L64">        Map&lt;String, Object&gt; errorResponse = Map.of(</span>
+            ERROR_KEY, &quot;Violación de restricciones&quot;,
+            MESSAGE_KEY, &quot;Los datos no cumplen las restricciones definidas&quot;,
+            DETAILS_KEY, errors,
+<span class="nc" id="L68">            STATUS_KEY, HttpStatus.BAD_REQUEST.value()</span>
+        );
+        
+<span class="nc" id="L71">        return ResponseEntity.badRequest().body(errorResponse);</span>
+    }
+
+    /**
+     * Maneja ResponseStatusException (errores del ValidationService y otros servicios)
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleResponseStatus(ResponseStatusException ex) {
+<span class="nc" id="L79">        logger.warn(&quot;ResponseStatusException: {} - {}&quot;, ex.getStatusCode(), ex.getReason());</span>
+        
+<span class="nc" id="L81">        Map&lt;String, Object&gt; errorResponse = Map.of(</span>
+            ERROR_KEY, &quot;Error de negocio&quot;,
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            MESSAGE_KEY, ex.getReason() != null ? ex.getReason() : &quot;Error en el procesamiento&quot;,</span>
+<span class="nc" id="L84">            STATUS_KEY, ex.getStatusCode().value()</span>
+        );
+        
+<span class="nc" id="L87">        return ResponseEntity.status(ex.getStatusCode()).body(errorResponse);</span>
+    }
+
+    /**
+     * Maneja errores generales no capturados específicamente
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleGenericException(Exception ex) {
+<span class="fc" id="L95">        logger.error(&quot;Error no manejado: {}&quot;, ex.getMessage(), ex);</span>
+        
+<span class="fc" id="L97">        Map&lt;String, Object&gt; errorResponse = Map.of(</span>
+            ERROR_KEY, &quot;Error interno del servidor&quot;,
+            MESSAGE_KEY, &quot;Ha ocurrido un error inesperado&quot;,
+<span class="fc" id="L100">            STATUS_KEY, HttpStatus.INTERNAL_SERVER_ERROR.value()</span>
+        );
+        
+<span class="fc" id="L103">        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

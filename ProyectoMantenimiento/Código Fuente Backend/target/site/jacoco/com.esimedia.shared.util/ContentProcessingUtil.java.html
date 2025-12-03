@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentProcessingUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.util</a> &gt; <span class="el_source">ContentProcessingUtil.java</span></div><h1>ContentProcessingUtil.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.util;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Utilidades comunes para el procesamiento de contenido multimedia.
+ */
+public class ContentProcessingUtil {
+
+<span class="fc" id="L15">    private static final Logger logger = LoggerFactory.getLogger(ContentProcessingUtil.class);</span>
+<span class="fc" id="L16">    private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMATTER = </span>
+<span class="fc" id="L17">        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(&quot;yyyy-MM-dd&quot;));</span>
+
+    // Private constructor to prevent instantiation
+    private ContentProcessingUtil() {}
+
+    /**
+     * Parsea una fecha de expiración desde una cadena en formato yyyy-MM-dd.
+     * @param fechaExpiracionStr La fecha como cadena.
+     * @return La fecha parseada o null si hay error o es nula/vacía.
+     */
+    public static Date parseFechaExpiracion(String fechaExpiracionStr) {
+<span class="pc bpc" id="L28" title="3 of 4 branches missed.">        if (fechaExpiracionStr != null &amp;&amp; !fechaExpiracionStr.trim().isEmpty()) {</span>
+            try {
+<span class="nc" id="L30">                SimpleDateFormat formatter = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="nc" id="L31">                return formatter.parse(fechaExpiracionStr);</span>
+            }
+<span class="nc" id="L33">            catch (ParseException e) {</span>
+<span class="nc" id="L34">                logger.warn(&quot;Error parseando fecha de expiración: {}&quot;, fechaExpiracionStr);</span>
+<span class="nc" id="L35">                return null;</span>
+            }
+        }
+<span class="fc" id="L38">        return null;</span>
+    }
+
+    /**
+     * Formatea una fecha en formato yyyy-MM-dd para las respuestas de la API.
+     * @param date La fecha a formatear.
+     * @return La fecha como cadena o null si la fecha es nula.
+     */
+    public static String formatDate(Date date) {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (date == null) {</span>
+<span class="nc" id="L48">            return null;</span>
+        }
+        try {
+<span class="fc" id="L51">            return DATE_FORMATTER.get().format(date);</span>
+        } finally {
+<span class="fc" id="L53">            DATE_FORMATTER.remove();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

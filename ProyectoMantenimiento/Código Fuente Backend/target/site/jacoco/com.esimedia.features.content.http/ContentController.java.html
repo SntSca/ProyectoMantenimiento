@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.http</a> &gt; <span class="el_source">ContentController.java</span></div><h1>ContentController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.http;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.content.dto.ContentAudioUploadDTO;
+import com.esimedia.features.content.dto.ContentUpdateDTO;
+import com.esimedia.features.content.dto.ContentVideoUploadDTO;
+import com.esimedia.features.content.services.AudioContentService;
+import com.esimedia.features.content.services.ValoracionService;
+import com.esimedia.features.content.services.VideoContentService;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+import jakarta.validation.Valid;
+
+import java.util.List;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping(&quot;/content&quot;)
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;, allowedHeaders = &quot;*&quot;, exposedHeaders = &quot;Authorization&quot;)
+public class ContentController {
+    
+<span class="nc" id="L38">    private static final Logger logger = LoggerFactory.getLogger(ContentController.class);</span>
+    private static final String ERROR_INTERNO = &quot;Error interno del servidor&quot;;
+    private static final String UNAUTHORIZED_MESSAGE = &quot;Usuario no autorizado para ver audios.&quot;;
+    
+    private final AudioContentService audioContentService;
+    private final VideoContentService videoContentService;
+    private final ValoracionService valoracionService;
+    private final JwtValidationUtil jwtValidationService;
+
+<span class="nc" id="L47">    public ContentController(AudioContentService audioContentService, VideoContentService videoContentService, ValoracionService valoracionService, JwtValidationUtil jwtValidationService) {</span>
+<span class="nc" id="L48">        this.audioContentService = audioContentService;</span>
+<span class="nc" id="L49">        this.videoContentService = videoContentService;</span>
+<span class="nc" id="L50">        this.valoracionService = valoracionService;</span>
+<span class="nc" id="L51">        this.jwtValidationService = jwtValidationService;</span>
+<span class="nc" id="L52">    }</span>
+
+    @PostMapping(&quot;/upload-audio&quot;)
+    public ResponseEntity&lt;String&gt; uploadAudioContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody ContentAudioUploadDTO audioDTO) {
+        try {
+<span class="nc" id="L59">            logger.info(&quot;Se ha registrado una petición de audio con estos datos: {}&quot;, audioDTO);</span>
+<span class="nc" id="L60">            String result = audioContentService.uploadAudioContent(authHeader, audioDTO);</span>
+<span class="nc" id="L61">            return processServiceResult(result);</span>
+        }
+<span class="nc" id="L63">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L64">            logger.warn(&quot;Error de validación o autorización en audio: {}&quot;, e.getReason());</span>
+<span class="nc" id="L65">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L67">        catch (Exception e) {</span>
+<span class="nc" id="L68">            logger.error(&quot;Error procesando contenido de audio: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L69">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @PostMapping(&quot;/upload-video&quot;)
+    public ResponseEntity&lt;String&gt; uploadVideoContent(@RequestHeader(&quot;Authorization&quot;) String authHeader, @Valid @RequestBody ContentVideoUploadDTO videoDTO) {
+        try {
+<span class="nc" id="L76">            logger.info(&quot;Se ha registrado una petición de video con estos datos: {}&quot;, videoDTO);</span>
+<span class="nc" id="L77">            String result = videoContentService.uploadVideoContent(authHeader, videoDTO);</span>
+<span class="nc" id="L78">            return processServiceResult(result);</span>
+        } 
+<span class="nc" id="L80">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L81">            logger.warn(&quot;Error de validación o autorización en video: {}&quot;, e.getReason());</span>
+<span class="nc" id="L82">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L84">        catch (Exception e) {</span>
+<span class="nc" id="L85">            logger.error(&quot;Error procesando contenido de video: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L86">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO);</span>
+        }
+    }
+
+
+    @GetMapping(&quot;/getAudio/{id}&quot;)
+    public ResponseEntity&lt;ContentAudioUploadDTO&gt; getAudio(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L96">            ContentAudioUploadDTO audioDTO = audioContentService.getAudioByIdAsDTO(authHeader, id);</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (audioDTO == null) {</span>
+<span class="nc" id="L98">                return ResponseEntity.notFound().build();</span>
+            }
+<span class="nc" id="L100">            return ResponseEntity.ok(audioDTO);</span>
+        }
+<span class="nc" id="L102">        catch (Exception e) {</span>
+<span class="nc" id="L103">            logger.error(&quot;Error obteniendo audio por ID {}: {}&quot;, id, e.getMessage());</span>
+<span class="nc" id="L104">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;No se ha encontrado nada.&quot;);</span>
+        }
+    }
+
+    @GetMapping(&quot;/getVideo/{id}&quot;)
+    public ResponseEntity&lt;ContentVideoUploadDTO&gt; getVideo(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L113">            ContentVideoUploadDTO videoDTO = videoContentService.getVideoByIdAsDTO(authHeader, id);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (videoDTO == null) {</span>
+<span class="nc" id="L115">                return ResponseEntity.notFound().build();</span>
+            }
+<span class="nc" id="L117">            return ResponseEntity.ok(videoDTO);</span>
+        }
+<span class="nc" id="L119">        catch (Exception e) {</span>
+<span class="nc" id="L120">            logger.error(&quot;Error obteniendo video por ID {}: {}&quot;, id, e.getMessage());</span>
+<span class="nc" id="L121">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;No se ha encontrado nada.&quot;);</span>
+        }
+    }
+
+    @GetMapping(&quot;/getAllContent&quot;)
+    public ResponseEntity&lt;List&lt;Object&gt;&gt; getAllContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader) {
+        try {
+<span class="nc" id="L129">            List&lt;Object&gt; allContent = new ArrayList&lt;&gt;();</span>
+            
+            // Agregar todos los audios (solo si el usuario tiene permisos)
+<span class="nc" id="L132">            List&lt;ContentAudioUploadDTO&gt; audios = audioContentService.getAllAudiosAsDTO(authHeader);</span>
+<span class="nc" id="L133">            allContent.addAll(audios);</span>
+<span class="nc" id="L134">            List&lt;ContentVideoUploadDTO&gt; videos = videoContentService.getAllVideosAsDTO(authHeader);</span>
+<span class="nc" id="L135">            allContent.addAll(videos);</span>
+<span class="nc" id="L136">            return ResponseEntity.ok(allContent);</span>
+        }
+<span class="nc" id="L138">        catch (ResponseStatusException e) {</span>
+        // Usuario no autorizado para ver audios, continuar sin agregar
+<span class="nc" id="L140">        logger.info(&quot;Usuario no autorizado para ver audios: {}&quot;, e.getReason());</span>
+<span class="nc" id="L141">        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, UNAUTHORIZED_MESSAGE);</span>
+        }
+<span class="nc" id="L143">        catch (Exception e) {</span>
+<span class="nc" id="L144">            logger.error(&quot;Error obteniendo todo el contenido: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L145">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO);</span>
+        }
+    }
+
+    @GetMapping(&quot;/getAllAudios&quot;)
+    public ResponseEntity&lt;List&lt;ContentAudioUploadDTO&gt;&gt; getAllAudios(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader) {
+        try {
+<span class="nc" id="L153">            List&lt;ContentAudioUploadDTO&gt; audios = audioContentService.getAllAudiosAsDTO(authHeader);</span>
+<span class="nc" id="L154">            return ResponseEntity.ok(audios);</span>
+        }
+<span class="nc" id="L156">        catch (Exception e) {</span>
+<span class="nc" id="L157">            logger.error(&quot;Error obteniendo todos los audios: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L158">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO);</span>
+        }
+    }
+
+    @GetMapping(&quot;/getAllVideos&quot;)
+    public ResponseEntity&lt;List&lt;ContentVideoUploadDTO&gt;&gt; getAllVideos(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader) {
+        try {
+<span class="nc" id="L166">            List&lt;ContentVideoUploadDTO&gt; videos = videoContentService.getAllVideosAsDTO(authHeader);</span>
+<span class="nc" id="L167">            return ResponseEntity.ok(videos);</span>
+        }
+<span class="nc" id="L169">        catch (Exception e) {</span>
+<span class="nc" id="L170">            logger.error(&quot;Error obteniendo todos los videos: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L171">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO);</span>
+        }
+    }
+
+    @PutMapping(&quot;/update-audio/{id}&quot;)
+    public ResponseEntity&lt;String&gt; updateAudioContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id,
+            @Valid @RequestBody ContentUpdateDTO updateDTO) {
+        try {
+<span class="nc" id="L181">            logger.info(&quot;Se ha registrado una petición de actualización de audio con ID: {}&quot;, id);</span>
+<span class="nc" id="L182">            String result = audioContentService.updateAudioContent(authHeader, id, updateDTO);</span>
+<span class="nc" id="L183">            return processServiceResult(result);</span>
+        }
+<span class="nc" id="L185">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L186">            logger.warn(&quot;Error de validación o autorización en actualización de audio: {}&quot;, e.getReason());</span>
+<span class="nc" id="L187">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L189">        catch (Exception e) {</span>
+<span class="nc" id="L190">            logger.error(&quot;Error procesando actualización de audio: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L191">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @PutMapping(&quot;/update-video/{id}&quot;)
+    public ResponseEntity&lt;String&gt; updateVideoContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id,
+            @Valid @RequestBody ContentUpdateDTO updateDTO) {
+        try {
+<span class="nc" id="L201">            logger.info(&quot;Se ha registrado una petición de actualización de video con ID: {}&quot;, id);</span>
+<span class="nc" id="L202">            String result = videoContentService.updateVideoContent(authHeader, id, updateDTO);</span>
+<span class="nc" id="L203">            return processServiceResult(result);</span>
+        }
+<span class="nc" id="L205">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L206">            logger.warn(&quot;Error de validación o autorización en actualización de video: {}&quot;, e.getReason());</span>
+<span class="nc" id="L207">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L209">        catch (Exception e) {</span>
+<span class="nc" id="L210">            logger.error(&quot;Error procesando actualización de video: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L211">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @PostMapping(&quot;/rate/{idContenido}&quot;)
+    public ResponseEntity&lt;String&gt; rateContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String idContenido,
+            @RequestBody int valoracion) {
+        try {
+            // Usar cualquiera, ya que es genérico
+<span class="nc" id="L222">            String username = jwtValidationService.validateContentAccess(authHeader, TipoContenido.AUDIO); </span>
+<span class="nc" id="L223">            valoracionService.valorarContenido(idContenido, username, valoracion);</span>
+<span class="nc" id="L224">            return ResponseEntity.ok(&quot;Valoración registrada exitosamente&quot;);</span>
+        }
+<span class="nc" id="L226">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L227">            logger.warn(&quot;Error en valoración: {}&quot;, e.getReason());</span>
+<span class="nc" id="L228">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        }
+<span class="nc" id="L230">        catch (Exception e) {</span>
+<span class="nc" id="L231">            logger.error(&quot;Error procesando valoración: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L232">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    /**
+     * Método común para procesar el resultado del servicio
+     */
+    private ResponseEntity&lt;String&gt; processServiceResult(String result) {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (result.startsWith(&quot;SUCCESS:&quot;)) {</span>
+<span class="nc" id="L241">            String successMessage = result.substring(8);</span>
+<span class="nc" id="L242">            return ResponseEntity.ok(successMessage);</span>
+        } 
+        else {
+<span class="nc" id="L245">            return ResponseEntity.badRequest().body(result);</span>
+        }
+    }
+
+    @PostMapping(&quot;/increment-views-audio/{id}&quot;)
+    public ResponseEntity&lt;String&gt; incrementAudioViews(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L254">            jwtValidationService.validateContentAccess(authHeader, TipoContenido.AUDIO);</span>
+<span class="nc" id="L255">            audioContentService.incrementarVisualizaciones(id);</span>
+<span class="nc" id="L256">            return ResponseEntity.ok(&quot;Visualizaciones incrementadas para audio&quot;);</span>
+        } 
+<span class="nc" id="L258">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L259">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L261">        catch (Exception e) {</span>
+<span class="nc" id="L262">            logger.error(&quot;Error incrementando visualizaciones para audio {}: {}&quot;, id, e.getMessage());</span>
+<span class="nc" id="L263">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @PostMapping(&quot;/increment-views-video/{id}&quot;)
+    public ResponseEntity&lt;String&gt; incrementVideoViews(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L272">            jwtValidationService.validateContentAccess(authHeader, TipoContenido.VIDEO);</span>
+<span class="nc" id="L273">            videoContentService.incrementarVisualizaciones(id);</span>
+<span class="nc" id="L274">            return ResponseEntity.ok(&quot;Visualizaciones incrementadas para video&quot;);</span>
+        } 
+<span class="nc" id="L276">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L277">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L279">        catch (Exception e) {</span>
+<span class="nc" id="L280">            logger.error(&quot;Error incrementando visualizaciones para video {}: {}&quot;, id, e.getMessage());</span>
+<span class="nc" id="L281">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @DeleteMapping(&quot;/delete-audio/{id}&quot;)
+    public ResponseEntity&lt;String&gt; deleteAudioContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L290">            logger.info(&quot;Se ha registrado una petición de eliminación de audio con ID: {}&quot;, id);</span>
+<span class="nc" id="L291">            audioContentService.deleteAudioContent(authHeader, id);</span>
+<span class="nc" id="L292">            return ResponseEntity.ok(&quot;Contenido de audio eliminado exitosamente&quot;);</span>
+        } 
+<span class="nc" id="L294">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L295">            logger.warn(&quot;Error de validación o autorización en eliminación de audio: {}&quot;, e.getReason());</span>
+<span class="nc" id="L296">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L298">        catch (Exception e) {</span>
+<span class="nc" id="L299">            logger.error(&quot;Error eliminando contenido de audio: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L300">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+
+    @DeleteMapping(&quot;/delete-video/{id}&quot;)
+    public ResponseEntity&lt;String&gt; deleteVideoContent(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @PathVariable String id) {
+        try {
+<span class="nc" id="L309">            logger.info(&quot;Se ha registrado una petición de eliminación de video con ID: {}&quot;, id);</span>
+<span class="nc" id="L310">            videoContentService.deleteVideoContent(authHeader, id);</span>
+<span class="nc" id="L311">            return ResponseEntity.ok(&quot;Contenido de video eliminado exitosamente&quot;);</span>
+        } 
+<span class="nc" id="L313">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L314">            logger.warn(&quot;Error de validación o autorización en eliminación de video: {}&quot;, e.getReason());</span>
+<span class="nc" id="L315">            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());</span>
+        } 
+<span class="nc" id="L317">        catch (Exception e) {</span>
+<span class="nc" id="L318">            logger.error(&quot;Error eliminando contenido de video: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L319">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ERROR_INTERNO);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

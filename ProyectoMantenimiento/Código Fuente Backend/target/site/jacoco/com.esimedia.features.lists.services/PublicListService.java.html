@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicListService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PublicListService.java</span></div><h1>PublicListService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.lists.dto.AgregarContenidoDTO;
+import com.esimedia.features.lists.dto.AgregarContenidoPublicoDTO;
+import com.esimedia.features.lists.dto.EliminarContenidoPublicoDTO;
+import com.esimedia.features.lists.dto.ListaContenidosResponseDTO;
+import com.esimedia.features.lists.dto.ListaPublicaReproduccionDTO;
+import com.esimedia.features.lists.dto.ListaResponseDTO;
+import com.esimedia.features.lists.dto.ListaUpdateFieldsPublicasDTO;
+
+import java.util.List;
+
+@Service
+public class PublicListService {
+
+    private final PublicListCreationService publicListCreationService;
+    private final PublicListContentService publicListContentService;
+    private final PublicListQueryService publicListQueryService;
+    private final PublicListUpdateService publicListUpdateService;
+
+    public PublicListService(
+            PublicListCreationService publicListCreationService,
+            PublicListContentService publicListContentService,
+            PublicListQueryService publicListQueryService,
+<span class="fc" id="L27">            PublicListUpdateService publicListUpdateService) {</span>
+<span class="fc" id="L28">        this.publicListCreationService = publicListCreationService;</span>
+<span class="fc" id="L29">        this.publicListContentService = publicListContentService;</span>
+<span class="fc" id="L30">        this.publicListQueryService = publicListQueryService;</span>
+<span class="fc" id="L31">        this.publicListUpdateService = publicListUpdateService;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Crear una lista de reproducción pública
+     */
+    public String crearListaPublica(ListaPublicaReproduccionDTO listaDTO) {
+<span class="fc" id="L38">        return publicListCreationService.crearListaPublica(listaDTO);</span>
+    }
+
+    /**
+     * Agregar contenido a una lista pública
+     */
+    public String agregarContenidoListaPublica(AgregarContenidoDTO agregarDTO) {
+<span class="fc" id="L45">        return publicListContentService.agregarContenidoListaPublica(agregarDTO);</span>
+    }
+    
+    /**
+     * Agregar contenido a una lista pública (versión simplificada sin idUsuario)
+     */
+    public String agregarContenidoListaPublica(AgregarContenidoPublicoDTO agregarDTO) {
+<span class="fc" id="L52">        return publicListContentService.agregarContenidoListaPublica(agregarDTO);</span>
+    }
+
+    /**
+     * Eliminar lista pública
+     */
+    public String eliminarListaPublica(String idLista, String idUsuario) {
+<span class="fc" id="L59">        return publicListUpdateService.eliminarListaPublica(idLista, idUsuario);</span>
+    }
+
+    /**
+     * Eliminar contenido de una lista pública
+     */
+    public String eliminarContenidoListaPublica(EliminarContenidoPublicoDTO eliminarDTO) {
+<span class="fc" id="L66">        return publicListContentService.eliminarContenidoListaPublica(eliminarDTO);</span>
+    }
+
+    /**
+     * Obtener todas las listas públicas
+     */
+    public List&lt;ListaResponseDTO&gt; obtenerListasPublicas() {
+<span class="fc" id="L73">        return publicListQueryService.obtenerListasPublicas();</span>
+    }
+
+    /**
+     * Obtener una lista pública por ID con contenidos completos
+     * @param idLista ID de la lista
+     * @return DTO con información de la lista y contenidos completos
+     */
+    public ListaContenidosResponseDTO obtenerListaPublicaConContenidos(String idLista) {
+<span class="fc" id="L82">        return publicListQueryService.obtenerListaPublicaConContenidos(idLista);</span>
+    }
+
+    /**
+     * Obtener todas las listas públicas con contenidos completos
+     * @return Lista de todas las listas públicas con sus contenidos
+     */
+    public List&lt;ListaResponseDTO&gt; obtenerTodasListasPublicasConContenidos() {
+<span class="fc" id="L90">        return publicListQueryService.obtenerTodasListasPublicasConContenidos();</span>
+    }
+
+    /**
+     * Actualizar campos principales de una lista pública (nombre, descripción, visibilidad)
+     * @param updateDTO DTO con los nuevos valores
+     * @param idUsuario ID del usuario (debe ser el propietario)
+     * @return Mensaje de confirmación
+     */
+    public String actualizarCamposListaPublica(ListaUpdateFieldsPublicasDTO updateDTO) {
+<span class="fc" id="L100">        return publicListUpdateService.actualizarCamposListaPublica(updateDTO);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

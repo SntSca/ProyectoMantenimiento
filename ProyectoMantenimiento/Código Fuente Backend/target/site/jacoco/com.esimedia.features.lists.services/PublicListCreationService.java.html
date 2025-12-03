@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicListCreationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PublicListCreationService.java</span></div><h1>PublicListCreationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.lists.dto.ListaPublicaReproduccionDTO;
+import com.esimedia.features.lists.entity.ListaContenidoPublica;
+import com.esimedia.features.lists.entity.ListaPublica;
+import com.esimedia.features.lists.repository.ListaContenidoPublicaRepository;
+import com.esimedia.features.lists.repository.ListaPublicaRepository;
+import com.esimedia.shared.util.ContentValidationUtil;
+
+@Service
+public class PublicListCreationService {
+
+<span class="fc" id="L19">    private static final Logger logger = LoggerFactory.getLogger(PublicListCreationService.class);</span>
+
+    private final ListaPublicaRepository listaPublicaRepository;
+    private final ListaContenidoPublicaRepository listaContenidoPublicaRepository;
+    private final ContentValidationUtil contentValidationUtil;
+
+    public PublicListCreationService(
+            ListaPublicaRepository listaPublicaRepository,
+            ListaContenidoPublicaRepository listaContenidoPublicaRepository,
+<span class="fc" id="L28">            ContentValidationUtil contentValidationUtil) {</span>
+<span class="fc" id="L29">        this.listaPublicaRepository = listaPublicaRepository;</span>
+<span class="fc" id="L30">        this.listaContenidoPublicaRepository = listaContenidoPublicaRepository;</span>
+<span class="fc" id="L31">        this.contentValidationUtil = contentValidationUtil;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Crear una lista de reproducción pública
+     */
+    public String crearListaPublica(ListaPublicaReproduccionDTO listaDTO) {
+<span class="fc" id="L38">        logger.info(&quot;Creando lista pública: {}&quot;, listaDTO.getNombre());</span>
+
+        // Validar que no existe una lista pública con el mismo nombre
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (listaPublicaRepository.existsByNombre(listaDTO.getNombre())) {</span>
+<span class="fc" id="L42">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="fc" id="L43">                &quot;Ya existe una lista pública con el nombre: &quot; + listaDTO.getNombre());</span>
+        }
+
+        // Validar que los contenidos existen
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (String idContenido : listaDTO.getContenidos()) {</span>
+<span class="fc" id="L48">            contentValidationUtil.validarContenidoExistente(idContenido);</span>
+<span class="fc" id="L49">        }</span>
+
+        // Crear la lista pública
+<span class="fc" id="L52">        ListaPublica lista = ListaPublica.builder()</span>
+<span class="fc" id="L53">            .nombre(listaDTO.getNombre())</span>
+<span class="fc" id="L54">            .descripcion(listaDTO.getDescripcion())</span>
+<span class="fc" id="L55">            .idCreadorUsuario(listaDTO.getIdCreadorUsuario())</span>
+<span class="fc" id="L56">            .visibilidad(listaDTO.getVisibilidad())</span>
+<span class="fc" id="L57">            .build();</span>
+
+<span class="fc" id="L59">        ListaPublica listaGuardada = listaPublicaRepository.save(lista);</span>
+
+        // Agregar contenidos a la lista
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (String idContenido : listaDTO.getContenidos()) {</span>
+<span class="fc" id="L63">            ListaContenidoPublica contenido = ListaContenidoPublica.builder()</span>
+<span class="fc" id="L64">                .idLista(listaGuardada.getIdLista())</span>
+<span class="fc" id="L65">                .idContenido(idContenido)</span>
+<span class="fc" id="L66">                .build();</span>
+<span class="fc" id="L67">            listaContenidoPublicaRepository.save(contenido);</span>
+<span class="fc" id="L68">        }</span>
+
+<span class="fc" id="L70">        logger.info(&quot;Lista pública creada exitosamente: {}&quot;, listaGuardada.getIdLista());</span>
+<span class="fc" id="L71">        return &quot;Lista pública creada exitosamente&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

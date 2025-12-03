@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrivateListContentService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PrivateListContentService.java</span></div><h1>PrivateListContentService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.lists.dto.AgregarContenidoDTO;
+import com.esimedia.features.lists.dto.EliminarContenidoDTO;
+import com.esimedia.features.lists.entity.ListaContenidoPrivada;
+import com.esimedia.features.lists.entity.ListaPrivada;
+import com.esimedia.features.lists.repository.ListaContenidoPrivadaRepository;
+import com.esimedia.features.lists.repository.ListaPrivadaRepository;
+import com.esimedia.shared.util.ContentValidationUtil;
+
+import java.util.Optional;
+
+@Service
+public class PrivateListContentService {
+
+<span class="fc" id="L22">    private static final Logger logger = LoggerFactory.getLogger(PrivateListContentService.class);</span>
+
+    private static final String LISTA_PRIVADA_NO_ENCONTRADA = &quot;Lista privada no encontrada&quot;;
+
+    private final ListaPrivadaRepository listaPrivadaRepository;
+    private final ListaContenidoPrivadaRepository listaContenidoPrivadaRepository;
+    private final ContentValidationUtil contentValidationUtil;
+
+    public PrivateListContentService(
+            ListaPrivadaRepository listaPrivadaRepository,
+            ListaContenidoPrivadaRepository listaContenidoPrivadaRepository,
+<span class="fc" id="L33">            ContentValidationUtil contentValidationUtil) {</span>
+<span class="fc" id="L34">        this.listaPrivadaRepository = listaPrivadaRepository;</span>
+<span class="fc" id="L35">        this.listaContenidoPrivadaRepository = listaContenidoPrivadaRepository;</span>
+<span class="fc" id="L36">        this.contentValidationUtil = contentValidationUtil;</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Agregar contenido a una lista privada
+     */
+    public String agregarContenidoListaPrivada(AgregarContenidoDTO agregarDTO) {
+<span class="nc" id="L43">        logger.info(&quot;Agregando contenidos a lista privada {}&quot;, agregarDTO.getIdLista());</span>
+
+        // Verificar que la lista existe
+<span class="nc" id="L46">        Optional&lt;ListaPrivada&gt; listaOpt = listaPrivadaRepository.findById(agregarDTO.getIdLista());</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (listaOpt.isEmpty()) {</span>
+<span class="nc" id="L48">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, LISTA_PRIVADA_NO_ENCONTRADA);</span>
+        }
+
+<span class="nc" id="L51">        ListaPrivada lista = listaOpt.get();</span>
+
+        // Verificar que el usuario es el propietario de la lista
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (!lista.getIdCreadorUsuario().equals(agregarDTO.getIdUsuario())) {</span>
+<span class="nc" id="L55">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permiso para modificar esta lista&quot;);
+        }
+
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (String idContenido : agregarDTO.getIdsContenido()) {</span>
+            // Verificar que el contenido no está ya en la lista
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (listaContenidoPrivadaRepository.existsByIdListaAndIdContenido(</span>
+<span class="nc" id="L62">                    agregarDTO.getIdLista(), idContenido)) {</span>
+<span class="nc" id="L63">                logger.warn(&quot;Contenido {} ya existe en la lista privada {}&quot;, idContenido, agregarDTO.getIdLista());</span>
+<span class="nc" id="L64">                continue;</span>
+            }
+
+            // Validar que el contenido existe (audio o video)
+<span class="nc" id="L68">            contentValidationUtil.validarContenidoExistente(idContenido);</span>
+
+            // Agregar el contenido
+<span class="nc" id="L71">            ListaContenidoPrivada contenido = ListaContenidoPrivada.builder()</span>
+<span class="nc" id="L72">                .idLista(agregarDTO.getIdLista())</span>
+<span class="nc" id="L73">                .idContenido(idContenido)</span>
+<span class="nc" id="L74">                .build();</span>
+<span class="nc" id="L75">            listaContenidoPrivadaRepository.save(contenido);</span>
+<span class="nc" id="L76">        }</span>
+
+<span class="nc" id="L78">        return &quot;Contenidos agregados a la lista privada exitosamente&quot;;</span>
+    }
+
+    /**
+     * Eliminar contenido de una lista privada
+     */
+    public String eliminarContenidoListaPrivada(EliminarContenidoDTO eliminarDTO) {
+<span class="fc" id="L85">        logger.info(&quot;Eliminando contenidos de lista privada {}&quot;, eliminarDTO.getIdLista());</span>
+
+        // Verificar que la lista existe
+<span class="fc" id="L88">        Optional&lt;ListaPrivada&gt; listaOpt = listaPrivadaRepository.findById(eliminarDTO.getIdLista());</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (listaOpt.isEmpty()) {</span>
+<span class="fc" id="L90">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, LISTA_PRIVADA_NO_ENCONTRADA);</span>
+        }
+
+<span class="fc" id="L93">        ListaPrivada lista = listaOpt.get();</span>
+
+        // Verificar que el usuario es el propietario de la lista
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (!lista.getIdCreadorUsuario().equals(eliminarDTO.getIdUsuario())) {</span>
+<span class="fc" id="L97">            throw new ResponseStatusException(HttpStatus.FORBIDDEN,</span>
+                &quot;No tienes permiso para modificar esta lista&quot;);
+        }
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (String idContenido : eliminarDTO.getIdsContenido()) {</span>
+            // Verificar que el contenido existe en la lista
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (!listaContenidoPrivadaRepository.existsByIdListaAndIdContenido(</span>
+<span class="fc" id="L104">                    eliminarDTO.getIdLista(), idContenido)) {</span>
+<span class="fc" id="L105">                logger.warn(&quot;Contenido {} no encontrado en la lista privada {}&quot;, idContenido, eliminarDTO.getIdLista());</span>
+<span class="fc" id="L106">                continue;</span>
+            }
+
+            // Eliminar el contenido
+<span class="fc" id="L110">            listaContenidoPrivadaRepository.deleteByIdListaAndIdContenido(</span>
+<span class="fc" id="L111">                eliminarDTO.getIdLista(), idContenido);</span>
+<span class="fc" id="L112">        }</span>
+
+<span class="fc" id="L114">        return &quot;Contenidos eliminados de la lista privada exitosamente&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

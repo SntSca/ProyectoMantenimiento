@@ -1,0 +1,84 @@
+<div class="inicio-container comun-variant">
+  <div class="inicio-card">
+    
+    <header class="app-header comun-variant">
+      <div class="login-logo">
+        <div class="logo-icon">🎬</div>
+        <h1 class="brand-name">esiMedia</h1>
+      </div>
+
+      <div class="header-content">
+        <h2 class="header-title">Verificar Email</h2>
+        <p class="header-subtitle">
+          Hemos enviado un código de verificación de 6 dígitos a tu correo electrónico. 
+          Ingresa el código para continuar con el proceso de autenticación.
+        </p>
+      </div>
+    </header>
+
+    <!-- Formulario de verificación -->
+    <form class="login-form" [formGroup]="verifyEmailForm" (ngSubmit)="onVerifyEmail()" *ngIf="!codeVerified">
+      <div class="form-group">
+        <label for="verificationCode" class="form-label">Código de Verificación</label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="verificationCode"
+            class="form-input verification-code"
+            [class.invalid]="isFieldInvalid('verificationCode')"
+            placeholder="000000"
+            formControlName="verificationCode"
+            maxlength="6"
+            pattern="[0-9]{6}"
+          >
+        </div>
+        <div class="field-helper">
+          <span class="helper-text">Ingresa el código de 6 dígitos enviado a tu email</span>
+        </div>
+        <div class="error-message" *ngIf="isFieldInvalid('verificationCode')">
+          {{ getFieldError('verificationCode') }}
+        </div>
+        <div class="error-message" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="login-btn"
+        [disabled]="verifyEmailForm.invalid || isLoading"
+      >
+        <span class="btn-content" *ngIf="!isLoading">
+          <span class="btn-icon"></span>
+          <span class="btn-text">Verificar Código</span>
+        </span>
+        <span class="loading-spinner" *ngIf="isLoading">
+          <span class="spinner"></span>
+          <span class="loading-text">Verificando código...</span>
+        </span>
+      </button>
+    </form>
+
+    <!-- Mensaje de éxito -->
+    <div class="success-message" *ngIf="codeVerified">
+      <header class="app-header compact minimal comun-variant">
+        <div class="header-content">
+          <h3 class="header-title">¡Código verificado!</h3>
+          <p class="header-subtitle" *ngIf="thirdFactorEnabled">
+            Tu email ha sido verificado exitosamente. 
+            Redirigiendo al siguiente paso...
+          </p>
+          <p class="header-subtitle" *ngIf="!thirdFactorEnabled">
+            Tu email ha sido verificado exitosamente. 
+            Redirigiendo al inicio...
+          </p>
+        </div>
+      </header>
+    </div>
+
+    <!-- Separador -->
+    <div class="separator" *ngIf="!codeVerified">
+        <div class="separator-text">El código expira en 10 minutos por seguridad.</div>
+    </div>
+  </div>
+</div>

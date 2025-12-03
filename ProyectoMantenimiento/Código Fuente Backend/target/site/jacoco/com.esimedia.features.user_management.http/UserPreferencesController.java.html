@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserPreferencesController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.http</a> &gt; <span class="el_source">UserPreferencesController.java</span></div><h1>UserPreferencesController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.http;
+
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.shared.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/users/me&quot;)
+<span class="nc" id="L16">@RequiredArgsConstructor</span>
+public class UserPreferencesController {
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final JwtUtil jwtUtil;
+
+    // Constante para evitar duplicación de literal
+    private static final String GUSTOS_TAGS_KEY = &quot;gustosTags&quot;;
+    
+    private String getCurrentUserId(HttpServletRequest request) {
+<span class="nc" id="L26">        String authHeader = request.getHeader(&quot;Authorization&quot;);</span>
+<span class="nc bnc" id="L27" title="All 4 branches missed.">        if (authHeader == null || !authHeader.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L28">            throw new RuntimeException(&quot;Missing or invalid Authorization header&quot;);</span>
+        }
+<span class="nc" id="L30">        return jwtUtil.getUserIdFromToken(authHeader);</span>
+    }
+
+    /**
+     * Obtener los gustos (tags) del usuario logado.
+     */
+    @GetMapping(&quot;/gustos&quot;)
+    public ResponseEntity&lt;Map&lt;String, List&lt;String&gt;&gt;&gt; getGustos(HttpServletRequest request) {
+<span class="nc" id="L38">        String userId = getCurrentUserId(request);</span>
+
+<span class="nc" id="L40">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L41">                .orElseThrow(() -&gt; new RuntimeException(&quot;Usuario no encontrado&quot;));</span>
+
+<span class="nc" id="L43">        List&lt;String&gt; gustos = usuario.getGustosTags();</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (gustos == null) {</span>
+<span class="nc" id="L45">            gustos = List.of();</span>
+        }
+
+<span class="nc" id="L48">        return ResponseEntity.ok(Map.of(GUSTOS_TAGS_KEY, gustos));</span>
+    }
+
+    /**
+     * Actualizar los gustos (tags) del usuario logado.
+     * Body esperado:
+     * { &quot;gustosTags&quot;: [&quot;Acción&quot;, &quot;Comedia&quot;, &quot;Drama&quot;] }
+     */
+    @PutMapping(&quot;/gustos&quot;)
+    public ResponseEntity&lt;Map&lt;String, List&lt;String&gt;&gt;&gt; updateGustos(
+            HttpServletRequest request,
+            @RequestBody Map&lt;String, List&lt;String&gt;&gt; body) {
+
+<span class="nc" id="L61">        String userId = getCurrentUserId(request);</span>
+<span class="nc" id="L62">        List&lt;String&gt; gustosTags = body.getOrDefault(GUSTOS_TAGS_KEY, List.of());</span>
+
+<span class="nc" id="L64">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L65">                .orElseThrow(() -&gt; new RuntimeException(&quot;Usuario no encontrado&quot;));</span>
+
+<span class="nc" id="L67">        usuario.setGustosTags(gustosTags);</span>
+<span class="nc" id="L68">        usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L70">        return ResponseEntity.ok(Map.of(GUSTOS_TAGS_KEY, gustosTags));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

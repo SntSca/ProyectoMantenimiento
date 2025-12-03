@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentAuthorizationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">ContentAuthorizationService.java</span></div><h1>ContentAuthorizationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.features.content.entity.ContenidosVideo;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.ContenidosVideoRepository;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+
+/**
+ * Servicio para autorizar la subida de contenido por parte de creadores.
+ * Verifica que el usuario autenticado sea un creador de contenido válido
+ * y del tipo correcto para el contenido que está subiendo.
+ */
+@Service
+public class ContentAuthorizationService {
+    
+<span class="fc" id="L31">    private static final Logger logger = LoggerFactory.getLogger(ContentAuthorizationService.class);</span>
+    
+    private final JwtValidationUtil jwtValidationService;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final ContenidosAudioRepository audioRepository;
+    private final ContenidosVideoRepository videoRepository;
+    
+    public ContentAuthorizationService(JwtValidationUtil jwtValidationService, 
+                                     CreadorContenidoRepository creadorContenidoRepository,
+                                     ContenidosAudioRepository audioRepository,
+<span class="fc" id="L41">                                     ContenidosVideoRepository videoRepository) {</span>
+<span class="fc" id="L42">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L43">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L44">        this.audioRepository = audioRepository;</span>
+<span class="fc" id="L45">        this.videoRepository = videoRepository;</span>
+<span class="fc" id="L46">    }</span>
+
+    
+    /**
+     * Verifica que el creador esté validado y no bloqueado
+     */
+    private void validateCreatorStatus(CreadorContenido creador) throws ResponseStatusException {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (!creador.isValidado()) {</span>
+<span class="fc" id="L54">            logger.warn(&quot;Creador {} no está validado por un administrador&quot;, creador.getAliasCreador());</span>
+<span class="fc" id="L55">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, </span>
+                &quot;El creador de contenido debe ser validado por un administrador antes de subir contenido&quot;);
+        }
+        
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (creador.isBloqueado()) {</span>
+<span class="fc" id="L60">            logger.warn(&quot;Creador {} está bloqueado&quot;, creador.getAliasCreador());</span>
+<span class="fc" id="L61">            throw new ResponseStatusException(HttpStatus.FORBIDDEN, </span>
+                &quot;El creador de contenido está bloqueado y no puede subir contenido&quot;);
+        }
+<span class="fc" id="L64">    }</span>
+    
+    /**
+     * Método auxiliar para validar solo el JWT sin verificar el tipo de contenido
+     * Útil para endpoints que no requieren validación de tipo específico
+     */
+    public CreadorContenido validateCreator(String authHeader) throws ResponseStatusException {
+        // Validar que es un creador usando servicio centralizado
+<span class="fc" id="L72">        String creadorId = jwtValidationService.validateJwtWithBusinessRules(</span>
+            authHeader, 
+<span class="fc" id="L74">            Arrays.asList(Rol.CREADOR), </span>
+            null
+        );
+<span class="fc" id="L77">        CreadorContenido creador = findCreadorById(creadorId);</span>
+<span class="fc" id="L78">        validateCreatorStatus(creador);</span>
+<span class="fc" id="L79">        return creador;</span>
+    }
+    
+    /**
+     * Busca el creador por ID (obtenido del JWT como creadorId)
+     */
+    private CreadorContenido findCreadorById(String creadorId) throws ResponseStatusException {
+        // Buscar por ID del creador
+<span class="fc" id="L87">        Optional&lt;CreadorContenido&gt; creadorOpt = creadorContenidoRepository.findById(creadorId);</span>
+            
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (creadorOpt.isEmpty()) {</span>
+<span class="fc" id="L90">            logger.error(&quot;Creador de contenido no encontrado con ID: {}&quot;, creadorId);</span>
+<span class="fc" id="L91">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, </span>
+                &quot;Creador de contenido no encontrado&quot;);
+        }
+<span class="fc" id="L94">        return creadorOpt.get();</span>
+    }
+
+    /**
+     * Valida que un usuario pueda acceder a contenido específico
+     * @param authHeader Header de autorización con JWT
+     * @param contenidoId ID del contenido (audio o video)
+     * @param tipoContenido Tipo de contenido (AUDIO o VIDEO)
+     * @throws ResponseStatusException si no está autorizado
+     */
+    public void validateContentAccess(String authHeader, String contenidoId, TipoContenido tipoContenido) {
+        // Usar servicio centralizado para validación JWT con reglas de negocio
+<span class="fc" id="L106">        String username = jwtValidationService.validateContentAccess(authHeader, tipoContenido);</span>
+<span class="fc" id="L107">        logger.info(&quot;Acceso validado para usuario {} al contenido {} de tipo {}&quot;, </span>
+                   username, contenidoId, tipoContenido);
+<span class="fc" id="L109">    }</span>
+
+    /**
+     * Obtiene el tipo de contenido basado en el ID (busca en ambas colecciones)
+     * @param contenidoId ID del contenido
+     * @return TipoContenido (AUDIO o VIDEO)
+     * @throws ResponseStatusException si el contenido no existe
+     */
+    public TipoContenido getTipoContenidoById(String contenidoId) {
+        // Primero buscar en audios
+<span class="fc" id="L119">        Optional&lt;ContenidosAudio&gt; audio = audioRepository.findById(contenidoId);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (audio.isPresent()) {</span>
+<span class="fc" id="L121">            return TipoContenido.AUDIO;</span>
+        }
+
+        // Luego buscar en videos
+<span class="fc" id="L125">        Optional&lt;ContenidosVideo&gt; video = videoRepository.findById(contenidoId);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (video.isPresent()) {</span>
+<span class="fc" id="L127">            return TipoContenido.VIDEO;</span>
+        }
+
+        // No encontrado
+<span class="fc" id="L131">        throw new ResponseStatusException(HttpStatus.NOT_FOUND, </span>
+            &quot;Contenido no encontrado con ID: &quot; + contenidoId);
+    }
+
+    /**
+     * Valida autorización y obtiene tipo de contenido automáticamente
+     * @param authHeader Header de autorización con JWT
+     * @param contenidoId ID del contenido
+     * @throws ResponseStatusException si no está autorizado o el contenido no existe
+     */
+    public void validateContentAccessById(String authHeader, String contenidoId) {
+<span class="fc" id="L142">        TipoContenido tipoContenido = getTipoContenidoById(contenidoId);</span>
+<span class="fc" id="L143">        validateContentAccess(authHeader, contenidoId, tipoContenido);</span>
+<span class="fc" id="L144">    }</span>
+
+    /**
+     * Valida que el usuario sea un creador para poder eliminar contenido
+     * Cualquier creador puede eliminar cualquier contenido
+     * @param authHeader Header de autorización con JWT
+     * @param contenidoId ID del contenido
+     * @throws ResponseStatusException si no está autorizado o el contenido no existe
+     */
+    public void validateContentDeletion(String authHeader, String contenidoId) {
+        // Validar JWT y obtener creadorId (solo creadores)
+<span class="nc" id="L155">        String creadorId = jwtValidationService.validateJwtWithBusinessRules(</span>
+            authHeader, 
+<span class="nc" id="L157">            Arrays.asList(Rol.CREADOR), </span>
+            null
+        );
+        
+<span class="nc" id="L161">        CreadorContenido creador = findCreadorById(creadorId);</span>
+<span class="nc" id="L162">        validateCreatorStatus(creador);</span>
+        
+        // Verificar que el contenido existe
+<span class="nc" id="L165">        getTipoContenidoById(contenidoId);</span>
+        
+<span class="nc" id="L167">        logger.info(&quot;Creador {} autorizado para eliminar contenido {}&quot;, creadorId, contenidoId);</span>
+<span class="nc" id="L168">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserRegistrationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_registration.services</a> &gt; <span class="el_source">UserRegistrationService.java</span></div><h1>UserRegistrationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_registration.services;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Base64;
+import java.util.Date;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.auth.enums.EstadoToken;
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.enums.TipoToken;
+import com.esimedia.features.auth.dto.AdministradorDTO;
+import com.esimedia.features.auth.dto.CreadorContenidoDTO;
+import com.esimedia.features.auth.dto.UsuarioNormalDTO;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Token;
+import com.esimedia.features.auth.entity.UsuarioFactory;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.services.EmailService;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.TokenRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+@Service
+public class UserRegistrationService {
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final TokenRepository tokenRepository;
+    private final EmailService emailService;
+    private final ValidationService validationService;
+    private final UsuarioFactory usuarioFactory;
+    private final Logger logger;
+
+    public UserRegistrationService(UsuarioNormalRepository usuarioNormalRepository,
+                                   CreadorContenidoRepository creadorContenidoRepository,
+                                   AdminRepository adminRepository,
+                                   TokenRepository tokenRepository,
+                                   EmailService emailService,
+                                   ValidationService validationService,
+<span class="fc" id="L52">                                   UsuarioFactory usuarioFactory) {</span>
+<span class="fc" id="L53">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L54">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L55">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L56">        this.tokenRepository = tokenRepository;</span>
+<span class="fc" id="L57">        this.emailService = emailService;</span>
+<span class="fc" id="L58">        this.validationService = validationService;</span>
+<span class="fc" id="L59">        this.usuarioFactory = usuarioFactory;</span>
+<span class="fc" id="L60">        this.logger = LoggerFactory.getLogger(UserRegistrationService.class);</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Registra un nuevo usuario en el sistema.
+     */
+    public String registerNormalUser(UsuarioNormalDTO usuarioDTO) throws ResponseStatusException {
+<span class="fc" id="L67">        logger.info(&quot;[REGISTER] Iniciando registro de usuario normal: {}&quot;, usuarioDTO.getEmail());</span>
+<span class="fc" id="L68">        UsuarioNormal usuario = null;</span>
+<span class="fc" id="L69">        String result = null;</span>
+        try {
+
+<span class="fc" id="L72">            logger.info(&quot;[REGISTER] Iniciando validaciones para: {}&quot;, usuarioDTO.getEmail());</span>
+<span class="fc" id="L73">            validateNormalUserInput(</span>
+<span class="fc" id="L74">                usuarioDTO.getEmail(),</span>
+<span class="fc" id="L75">                usuarioDTO.getAlias(),</span>
+<span class="fc" id="L76">                usuarioDTO.getPassword(),</span>
+<span class="fc" id="L77">                usuarioDTO.getFechaNacimiento()</span>
+            );
+<span class="fc" id="L79">            logger.info(&quot;[REGISTER] Creando usuario con UsuarioFactory&quot;);</span>
+<span class="fc" id="L80">            usuario = (UsuarioNormal) usuarioFactory.crearUsuario(usuarioDTO, validationService);</span>
+<span class="fc" id="L81">            logger.info(&quot;[REGISTER] Usuario creado: {}&quot;, usuario.getEmail());</span>
+<span class="fc" id="L82">            usuario.setConfirmado(false);</span>
+<span class="fc" id="L83">            logger.info(&quot;[REGISTER] Usuario marcado como no confirmado&quot;);</span>
+<span class="fc" id="L84">            logger.info(&quot;[REGISTER] Guardando usuario en base de datos&quot;);</span>
+<span class="nc" id="L85">            usuarioNormalRepository.save(usuario);</span>
+<span class="nc" id="L86">            logger.info(&quot;[REGISTER] Usuario guardado exitosamente con ID: {}&quot;, usuario.getIdUsuario());</span>
+<span class="nc" id="L87">            String confirmationToken = generateConfirmationToken();</span>
+<span class="nc" id="L88">            Token token = Token.builder()</span>
+<span class="nc" id="L89">                .id(usuario.getIdUsuario())</span>
+<span class="nc" id="L90">                .tokenCreado(confirmationToken)</span>
+<span class="nc" id="L91">                .tipoToken(TipoToken.CONFIRMACION_CUENTA)</span>
+<span class="nc" id="L92">                .fechaInicio(LocalDateTime.now())</span>
+<span class="nc" id="L93">                .fechaUltimaActividad(LocalDateTime.now().plusDays(1))</span>
+<span class="nc" id="L94">                .estado(EstadoToken.SIN_CONFIRMAR)</span>
+<span class="nc" id="L95">                .usuarioEmail(usuario.getEmail())</span>
+<span class="nc" id="L96">                .build();</span>
+<span class="nc" id="L97">            logger.info(&quot;[REGISTER] Token objeto creado, guardando en BD&quot;);</span>
+<span class="nc" id="L98">            tokenRepository.save(token);</span>
+<span class="nc" id="L99">            logger.info(&quot;[REGISTER] Token guardado exitosamente&quot;);</span>
+<span class="nc" id="L100">            logger.info(&quot;[REGISTER] Enviando email de confirmación&quot;);</span>
+<span class="nc" id="L101">            String expirationTime = token.getFechaInicio().plusHours(24).format(DateTimeFormatter.ofPattern(&quot;dd/MM/yyyy 'a las' HH:mm&quot;));</span>
+<span class="nc" id="L102">            emailService.sendConfirmationEmail(usuario, confirmationToken, expirationTime);</span>
+<span class="nc" id="L103">            logger.info(&quot;[REGISTER] Email enviado exitosamente&quot;);</span>
+<span class="nc" id="L104">            logger.info(&quot;[REGISTER] Registro completado exitosamente para: {}&quot;, usuarioDTO.getEmail());</span>
+<span class="nc" id="L105">            result = &quot;Usuario registrado exitosamente. Revisa tu email para validar la cuenta&quot;;</span>
+        } 
+<span class="nc" id="L107">        catch (ResponseStatusException e) {</span>
+<span class="nc" id="L108">            tryCleanupUsuario(usuario);</span>
+<span class="nc" id="L109">            throw new ResponseStatusException(</span>
+<span class="nc" id="L110">                e.getStatusCode(),</span>
+<span class="nc" id="L111">                &quot;Error durante el registro del usuario: &quot; + e.getReason(),</span>
+                e
+            );
+        }
+<span class="fc" id="L115">        catch (IllegalStateException e) {</span>
+<span class="fc" id="L116">            logger.error(&quot;[REGISTER] Error al enviar el correo de confirmación para {}: {}&quot;, usuarioDTO.getEmail(), e.getMessage(), e);</span>
+<span class="fc" id="L117">            tryCleanupUsuario(usuario);</span>
+<span class="fc" id="L118">            throw new ResponseStatusException(</span>
+                HttpStatus.BAD_REQUEST,
+<span class="fc" id="L120">                &quot;Error durante el registro del usuario: &quot; + e.getMessage(),</span>
+                e
+            );
+        } 
+<span class="fc" id="L124">        catch (Exception e) {</span>
+<span class="fc" id="L125">            logger.error(&quot;[REGISTER] Error interno durante el registro de {}: {}&quot;, usuarioDTO.getEmail(), e.getMessage(), e);</span>
+<span class="fc" id="L126">            tryCleanupUsuario(usuario);</span>
+<span class="fc" id="L127">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
+<span class="nc" id="L128">        }</span>
+<span class="nc" id="L129">        return result;</span>
+    }
+
+    private void tryCleanupUsuario(UsuarioNormal usuario) {
+<span class="fc bfc" id="L133" title="All 4 branches covered.">        if (usuario != null &amp;&amp; usuario.getIdUsuario() != null) {</span>
+            try {
+<span class="fc" id="L135">                usuarioNormalRepository.deleteById(usuario.getIdUsuario());</span>
+<span class="fc" id="L136">                logger.info(&quot;[REGISTER] Usuario limpiado después de error interno&quot;);</span>
+            } 
+<span class="fc" id="L138">            catch (Exception cleanupException) {</span>
+<span class="fc" id="L139">                logger.error(&quot;[REGISTER] Error limpiando usuario después de fallo: {}&quot;, cleanupException.getMessage());</span>
+<span class="fc" id="L140">            }</span>
+        }
+<span class="fc" id="L142">    }</span>
+
+    /**
+     * Registra un nuevo creador de contenido.
+     */
+    public String registerCreator(CreadorContenidoDTO creadorDTO) throws ResponseStatusException {
+        try {
+<span class="fc" id="L149">            validationService.validateCreatorSpecific(creadorDTO.getEmail(), creadorDTO.getAliasCreador());</span>
+<span class="fc" id="L150">            CreadorContenido creador = (CreadorContenido) usuarioFactory.crearUsuario(creadorDTO, validationService);</span>
+<span class="fc" id="L151">            creador.setRol(Rol.CREADOR);</span>
+<span class="fc" id="L152">            creador.setTwoFactorEnabled(true);</span>
+<span class="fc" id="L153">            creadorContenidoRepository.save(creador);</span>
+            
+<span class="fc" id="L155">            return &quot;¡Registro enviado! Un administrador tiene que validar tu solicitud de creador de contenido.&quot;;</span>
+        } 
+<span class="fc" id="L157">        catch (ResponseStatusException | IllegalArgumentException e) {</span>
+<span class="fc" id="L158">            logger.info(&quot;La solicitud de registro de creador de contenido es inválida.&quot;);</span>
+<span class="fc" id="L159">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;El formato de la solicitud es incorrecto&quot;, e);</span>
+        }
+<span class="fc" id="L161">        catch (Exception e) {</span>
+<span class="fc" id="L162">            logger.error(&quot;Error interno durante el registro del creador:&quot;, e);</span>
+<span class="fc" id="L163">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno durante el registro del creador&quot;);</span>
+        }
+    }
+
+    /**
+     * Registra un nuevo administrador en el sistema.
+     */
+    public String registerAdmin(AdministradorDTO adminDTO) throws ResponseStatusException {
+        try {
+<span class="fc" id="L172">            logger.info(&quot;[REGISTER-ADMIN] Iniciando registro de administrador: {}&quot;, adminDTO.getEmail());</span>
+<span class="fc" id="L173">            validationService.validateAdminUniqueness(adminDTO.getEmail(), adminDTO.getAlias());</span>
+
+<span class="fc" id="L175">            Administrador admin = (Administrador) usuarioFactory.crearUsuario(adminDTO, validationService);</span>
+<span class="fc" id="L176">            admin.setDepartamento(adminDTO.getDepartamento());</span>
+<span class="fc" id="L177">            admin.setFechaRegistro(new Date());</span>
+<span class="fc" id="L178">            admin.setRol(Rol.ADMINISTRADOR);</span>
+<span class="fc" id="L179">            admin.setTwoFactorEnabled(true);</span>
+<span class="fc" id="L180">            adminRepository.save(admin);</span>
+<span class="fc" id="L181">            logger.info(&quot;[REGISTER-ADMIN] Administrador registrado exitosamente: {} - Departamento: {}&quot;, </span>
+<span class="fc" id="L182">                adminDTO.getEmail(), adminDTO.getDepartamento());</span>
+<span class="fc" id="L183">            return &quot;Administrador registrado exitosamente.&quot;;</span>
+        } 
+<span class="fc" id="L185">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L186">            throw new ResponseStatusException(e.getStatusCode(), </span>
+<span class="fc" id="L187">                &quot;Error en registro de administrador: &quot; + e.getReason(), e);</span>
+        }
+<span class="fc" id="L189">        catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L190">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, </span>
+<span class="fc" id="L191">                &quot;Datos de administrador inválidos: &quot; + e.getMessage(), e);</span>
+        }
+<span class="fc" id="L193">        catch (Exception e) {</span>
+<span class="fc" id="L194">            logger.error(&quot;[REGISTER-ADMIN] Error interno durante el registro del administrador {}: {}&quot;, </span>
+<span class="fc" id="L195">                adminDTO.getEmail(), e.getMessage(), e);</span>
+<span class="fc" id="L196">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, </span>
+                &quot;Error interno durante el registro del administrador&quot;);
+        }
+    }
+
+    /**
+     * Valida un token de confirmación y confirma la cuenta
+     */
+    public String confirmUserAccount(String tokenValue) throws ResponseStatusException {
+        try {
+<span class="fc" id="L206">            Optional&lt;Token&gt; optionalToken = tokenRepository.findAll().stream()</span>
+<span class="pc bpc" id="L207" title="2 of 6 branches missed.">                .filter(t -&gt; t.getTokenCreado() != null &amp;&amp; t.getTokenCreado().equals(tokenValue) &amp;&amp; t.getTipoToken() == TipoToken.CONFIRMACION_CUENTA)</span>
+<span class="fc" id="L208">                .findFirst();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if (optionalToken.isEmpty()) {</span>
+<span class="fc" id="L210">                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Token de confirmación inválido&quot;);</span>
+            }
+<span class="fc" id="L212">            Token token = optionalToken.get();</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (!token.isValido()) {</span>
+<span class="fc" id="L214">                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Token inválido&quot;);</span>
+            }
+<span class="fc" id="L216">            UsuarioNormal usuario = usuarioNormalRepository.findById(token.getId())</span>
+<span class="fc" id="L217">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            if (usuario.isConfirmado()) {</span>
+<span class="fc" id="L219">                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;La cuenta ya está validada&quot;);</span>
+            }
+<span class="fc" id="L221">            usuario.setConfirmado(true);</span>
+<span class="fc" id="L222">            usuarioNormalRepository.save(usuario);</span>
+<span class="fc" id="L223">            token.setEstado(EstadoToken.UTILIZADA);</span>
+<span class="fc" id="L224">            tokenRepository.save(token);</span>
+<span class="fc" id="L225">            return &quot;Cuenta validada exitosamente&quot;;</span>
+        } 
+<span class="fc" id="L227">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L228">            throw e;</span>
+        } 
+<span class="fc" id="L230">        catch (Exception e) {</span>
+<span class="fc" id="L231">            logger.error(&quot;Error interno durante la confirmación:&quot;, e);</span>
+<span class="fc" id="L232">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno durante la confirmación&quot;);</span>
+        }
+    }
+
+    private void validateNormalUserInput(String email, String alias, String password, Date fechaNacimiento) {
+<span class="fc" id="L237">        validationService.validateUsuarioNormalData(email, alias, password, fechaNacimiento);</span>
+<span class="fc" id="L238">    }</span>
+
+    private String generateConfirmationToken() {
+<span class="nc" id="L241">        SecureRandom random = new SecureRandom();</span>
+<span class="nc" id="L242">        byte[] tokenBytes = new byte[32];</span>
+<span class="nc" id="L243">        random.nextBytes(tokenBytes);</span>
+<span class="nc" id="L244">        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

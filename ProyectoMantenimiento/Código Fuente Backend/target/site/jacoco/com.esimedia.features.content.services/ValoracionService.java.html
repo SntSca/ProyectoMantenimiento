@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValoracionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.services</a> &gt; <span class="el_source">ValoracionService.java</span></div><h1>ValoracionService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.services;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import com.esimedia.features.content.entity.Contenido;
+import com.esimedia.features.content.entity.ValoracionContenido;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.ContenidosVideoRepository;
+import com.esimedia.features.content.repository.ValoracionContenidoRepository;
+
+import java.util.List;
+
+@Service
+public class ValoracionService {
+    
+    private final ValoracionContenidoRepository valoracionRepository;
+    private final ContenidosAudioRepository audioRepository;
+    private final ContenidosVideoRepository videoRepository;
+    
+    public ValoracionService(ValoracionContenidoRepository valoracionRepository,
+                           ContenidosAudioRepository audioRepository,
+<span class="fc" id="L24">                           ContenidosVideoRepository videoRepository) {</span>
+<span class="fc" id="L25">        this.valoracionRepository = valoracionRepository;</span>
+<span class="fc" id="L26">        this.audioRepository = audioRepository;</span>
+<span class="fc" id="L27">        this.videoRepository = videoRepository;</span>
+<span class="fc" id="L28">    }</span>
+    
+    public void valorarContenido(String idContenido, String idUsuario, double valoracion) {
+<span class="pc bpc" id="L31" title="1 of 4 branches missed.">        if (valoracion &lt; 0 || valoracion &gt; 5) {</span>
+<span class="fc" id="L32">            throw new ResponseStatusException(</span>
+                HttpStatus.BAD_REQUEST,
+                &quot;La valoración debe estar entre 0 y 5&quot;
+            );
+        }
+<span class="fc" id="L37">        double resto = valoracion * 10 % 5;</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (resto != 0) {</span>
+<span class="nc" id="L39">            throw new ResponseStatusException(</span>
+                HttpStatus.BAD_REQUEST,
+                &quot;La valoración solo puede tener pasos de 0.5 (0, 0.5, 1, 1.5, ..., 5)&quot;
+            );
+        }
+
+<span class="fc" id="L45">        Contenido contenido = audioRepository.findById(idContenido).orElse(null);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (contenido == null) {</span>
+<span class="fc" id="L47">            contenido = videoRepository.findById(idContenido).orElse(null);</span>
+        }
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (contenido == null) {</span>
+<span class="fc" id="L50">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Contenido no encontrado&quot;);</span>
+        }
+
+
+<span class="fc" id="L54">        ValoracionContenido existingValoracion =</span>
+<span class="fc" id="L55">            valoracionRepository.findByIdContenidoAndIdUsuario(idContenido, idUsuario);</span>
+
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (existingValoracion != null) {</span>
+            
+<span class="fc" id="L59">            existingValoracion.setValoracion(valoracion);</span>
+<span class="fc" id="L60">            existingValoracion.setFechaValoracion(new java.util.Date());</span>
+<span class="fc" id="L61">            valoracionRepository.save(existingValoracion);</span>
+        } else {
+            
+<span class="fc" id="L64">            ValoracionContenido nuevaValoracion =</span>
+<span class="fc" id="L65">                new ValoracionContenido(idContenido, idUsuario, valoracion);</span>
+<span class="fc" id="L66">            valoracionRepository.save(nuevaValoracion);</span>
+        }
+
+<span class="fc" id="L69">        actualizarValoracionMedia(idContenido);</span>
+<span class="fc" id="L70">    }</span>
+
+    
+    private void actualizarValoracionMedia(String idContenido) {
+<span class="fc" id="L74">        List&lt;ValoracionContenido&gt; valoraciones = valoracionRepository.findByIdContenido(idContenido);</span>
+
+<span class="fc" id="L76">        double media = valoraciones.stream()</span>
+<span class="fc" id="L77">            .mapToDouble(ValoracionContenido::getValoracion)  </span>
+<span class="fc" id="L78">            .average()</span>
+<span class="fc" id="L79">            .orElse(0.0);</span>
+
+        
+<span class="fc" id="L82">        Contenido contenido = audioRepository.findById(idContenido).orElse(null);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (contenido != null) {</span>
+<span class="fc" id="L84">            contenido.setValoracionMedia(media);</span>
+<span class="fc" id="L85">            audioRepository.save((com.esimedia.features.content.entity.ContenidosAudio) contenido);</span>
+        } else {
+<span class="fc" id="L87">            contenido = videoRepository.findById(idContenido).orElse(null);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (contenido != null) {</span>
+<span class="fc" id="L89">                contenido.setValoracionMedia(media);</span>
+<span class="fc" id="L90">                videoRepository.save((com.esimedia.features.content.entity.ContenidosVideo) contenido);</span>
+            }
+        }
+<span class="fc" id="L93">    }</span>
+
+    
+    public double getValoracionMedia(String idContenido) {
+<span class="fc" id="L97">        Contenido contenido = audioRepository.findById(idContenido).orElse(null);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (contenido == null) {</span>
+<span class="fc" id="L99">            contenido = videoRepository.findById(idContenido).orElse(null);</span>
+        }
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        return contenido != null ? contenido.getValoracionMedia() : 0.0;</span>
+    }
+
+    
+    /**
+     * Elimina todas las valoraciones de un usuario y actualiza las valoraciones medias
+     * de todos los contenidos afectados.
+     * @param idUsuario ID del usuario cuyas valoraciones se eliminarán
+     */
+    public void eliminarValoracionesDeUsuario(String idUsuario) {
+        // Obtener todas las valoraciones del usuario antes de eliminarlas
+<span class="fc" id="L112">        List&lt;ValoracionContenido&gt; valoracionesUsuario = valoracionRepository.findByIdUsuario(idUsuario);</span>
+        
+        // Obtener los IDs de contenidos únicos que tienen valoraciones de este usuario
+<span class="fc" id="L115">        List&lt;String&gt; contenidosAfectados = valoracionesUsuario.stream()</span>
+<span class="fc" id="L116">            .map(ValoracionContenido::getIdContenido)</span>
+<span class="fc" id="L117">            .distinct()</span>
+<span class="fc" id="L118">            .toList();</span>
+        
+        // Eliminar todas las valoraciones del usuario
+<span class="fc" id="L121">        valoracionRepository.deleteByIdUsuario(idUsuario);</span>
+        
+        // Actualizar la valoración media de cada contenido afectado
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (String idContenido : contenidosAfectados) {</span>
+<span class="fc" id="L125">            actualizarValoracionMedia(idContenido);</span>
+<span class="fc" id="L126">        }</span>
+<span class="fc" id="L127">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

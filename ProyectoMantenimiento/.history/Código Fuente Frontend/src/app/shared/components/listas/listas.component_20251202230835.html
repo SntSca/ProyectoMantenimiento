@@ -1,0 +1,443 @@
+<div class="dashboard-container"
+     [class.usuario-variant]="!esGestor && !esAdministrador"
+     [class.gestor-variant]="esGestor || esAdministrador">
+
+  <!-- Botón menú móvil SOLO para usuarios -->
+  <button
+    *ngIf="esUsuario"
+    type="button"
+    class="mobile-menu-toggle"
+    (click)="toggleSidebar()"
+    aria-label="Abrir menú de navegación">
+    ☰
+  </button>
+
+  <!-- Overlay SOLO para usuarios -->
+  <div
+    *ngIf="esUsuario && isSidebarOpen"
+    class="mobile-menu-overlay"
+    (click)="toggleSidebar()"
+    (keydown.enter)="toggleSidebar()"
+    (keydown.space)="toggleSidebar()"
+    tabindex="0"
+    role="button">
+  </div>
+
+  <!-- Menu Lateral -->
+  <aside
+    class="sidebar-menu"
+    [class.sidebar-open]="!esUsuario || isSidebarOpen">
+
+    <button
+      type="button"
+      class="user-profile"
+      [routerLink]="ROUTES.perfil"
+      (click)="closeSidebarIfMobile()">
+      <div class="avatar-container">
+        <img
+          [src]="actualUser.fotoPerfil || 'assets/porDefecto.jpg'"
+          [alt]="'Avatar de ' + (actualUser.nombre || actualUser.alias)"
+          class="user-avatar">
+      </div>
+      <div class="user-info">
+        <!-- Usuario: nombre completo -->
+        <h3 class="user-name" *ngIf="!esGestor && !esAdministrador">
+          {{ actualUser.nombre || actualUser.alias }} {{ actualUser.primerApellido || '' }}
+        </h3>
+        <!-- Gestor y Administrador: solo alias -->
+        <h3 class="user-name" *ngIf="esGestor || esAdministrador">
+          {{ actualUser.alias }}
+        </h3>
+        <p class="profile-hint">👤 Ver perfil</p>
+      </div>
+    </button>
+    
+    <nav class="menu-navigation">
+      <ul class="menu-list">
+        <!-- Inicio solo para usuario y gestor -->
+        <li class="menu-item" *ngIf="!esAdministrador">
+          <button
+            type="button"
+            class="menu-button"
+            [routerLink]="ROUTES.inicio"
+            (click)="closeSidebarIfMobile()">
+            <div class="menu-text">
+              <span class="menu-icon">🏠</span>
+              <span>Inicio</span>
+            </div>
+          </button>
+        </li>
+        
+        <!-- Opciones específicas de usuario -->
+        <ng-container *ngIf="esUsuario">
+          <li class="menu-item" [class.active]="tipoLista === 'publicas'">
+            <button
+              type="button"
+              class="menu-button"
+              (click)="cambiarModoListas('publicas'); closeSidebarIfMobile()">
+              <div class="menu-text">
+                <span class="menu-icon">🌐</span>
+                <span>Listas Públicas</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item" [class.active]="tipoLista === 'privadas'">
+            <button
+              type="button"
+              class="menu-button"
+              (click)="cambiarModoListas('privadas'); closeSidebarIfMobile()">
+              <div class="menu-text">
+                <span class="menu-icon">📋</span>
+                <span>Mis Listas</span>
+              </div>
+            </button>
+          </li>
+          
+          <li class="menu-item">
+            <button
+              type="button"
+              class="menu-button"
+              [routerLink]="ROUTES.crearListaPrivada"
+              (click)="closeSidebarIfMobile()">
+              <div class="menu-text">
+                <span class="menu-icon">➕</span>
+                <span>Crear Lista Privada</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button
+              type="button"
+              class="menu-button"
+              (click)="loadFavorites(); closeSidebarIfMobile()">
+              <div class="menu-text">
+                <span class="menu-icon">⭐</span>
+                <span>Favoritos</span>
+              </div>
+            </button>
+          </li>
+        </ng-container>
+        
+        <!-- Opciones específicas de gestor -->
+        <ng-container *ngIf="esGestor && !esAdministrador">
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.subirContenido">
+              <div class="menu-text">
+                <span class="menu-icon">📤</span>
+                <span>Subir Contenido</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.crearListaPublica">
+              <div class="menu-text">
+                <span class="menu-icon">➕</span>
+                <span>Crear Lista Pública</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item active">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">📋</span>
+                <span>Listas de Reproducción</span>
+              </div>
+            </button>
+          </li>
+        </ng-container>
+        
+        <!-- Opciones específicas de administrador -->
+        <ng-container *ngIf="esAdministrador">
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'inicio'}">
+              <div class="menu-text">
+                <span class="menu-icon">🏠</span>
+                <span>Panel de Administración</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'usuarios'}">
+              <div class="menu-text">
+                <span class="menu-icon">👤</span>
+                <span>Usuarios</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'gestores'}">
+              <div class="menu-text">
+                <span class="menu-icon">📝</span>
+                <span>Gestores de Contenido</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'administradores'}">
+              <div class="menu-text">
+                <span class="menu-icon">⚙️</span>
+                <span>Administradores</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'contenidos'}">
+              <div class="menu-text">
+                <span class="menu-icon">🎬</span>
+                <span>Contenidos</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item active">
+            <button type="button" class="menu-button">
+              <div class="menu-text">
+                <span class="menu-icon">📋</span>
+                <span>Listas de Reproducción</span>
+              </div>
+            </button>
+          </li>
+          <li class="menu-item">
+            <button type="button" class="menu-button" [routerLink]="ROUTES.inicio" [queryParams]="{seccion: 'estadisticas'}">
+              <div class="menu-text">
+                <span class="menu-icon">📊</span>
+                <span>Estadísticas</span>
+              </div>
+            </button>
+          </li>
+        </ng-container>
+      </ul>
+      
+      <div class="menu-divider"></div>
+      
+      <ul class="menu-list">
+        <li class="menu-item logout">
+          <button (click)="logout()" class="logout-button">
+            <div class="menu-text">
+              <span class="menu-icon">🚪</span>
+              <span>Cerrar Sesión</span>
+            </div>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="app-header">
+      <h1 class="header-title">
+        <ng-container *ngIf="esUsuario">
+          {{ tipoLista === 'publicas' ? 'Listas Públicas' : 'Mis Listas Privadas' }}
+        </ng-container>
+        <ng-container *ngIf="!esUsuario">
+          {{ tituloSeccion }}
+        </ng-container>
+      </h1>
+      <p class="header-subtitle">
+        <ng-container *ngIf="esUsuario">
+          {{ tipoLista === 'publicas' ? 'Explora listas de reproducción compartidas por la plataforma' : 'Gestiona tus listas de reproducción personalizadas' }}
+        </ng-container>
+        <ng-container *ngIf="!esUsuario">
+          {{ subtituloSeccion }}
+        </ng-container>
+      </p>
+    </header>
+
+    <!-- Barra de búsqueda -->
+    <header class="search-header">
+      <div class="search-container">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            placeholder="Buscar listas..." 
+            [(ngModel)]="searchTermValue"
+            class="search-input">
+          <button class="search-button">
+            <span class="search-icon">🔍</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Grid de Listas -->
+    <div class="listas-container">
+      <div *ngFor="let lista of listasFiltradas" 
+           class="lista-card" 
+           [class.expanded]="isListaExpanded(lista.idLista)"
+           [class.content-hidden]="isListaHidden(lista)">
+        <!-- Header de la lista (siempre visible) -->
+        <div class="lista-header">
+          <div class="lista-info">
+            <!-- Modo vista normal -->
+            <div *ngIf="!isEditing(lista.idLista)">
+              <h3 class="lista-title">{{ lista.nombre }}</h3>
+              <p class="lista-description">{{ lista.descripcion }}</p>
+            </div>
+            
+            <!-- Modo edición -->
+            <div *ngIf="isEditing(lista.idLista)" class="edit-mode">
+              <form [formGroup]="editForm" *ngIf="editForm">
+                <div class="form-group">
+                  <label for="edit-titulo-{{ lista.idLista }}" class="form-label">Título</label>
+                  <input
+                    type="text"
+                    [id]="'edit-titulo-' + lista.idLista"
+                    formControlName="nombre"
+                    class="form-input"
+                    [class.error]="isFieldInvalid('nombre')"
+                    placeholder="Título de la lista">
+                  <div 
+                    class="error-message" 
+                    *ngIf="isFieldInvalid('nombre')"
+                  >
+                    {{ getFieldError('nombre') }}
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="edit-descripcion-{{ lista.idLista }}" class="form-label">Descripción </label>
+                  <textarea
+                    [id]="'edit-descripcion-' + lista.idLista"
+                    formControlName="descripcion"
+                    class="form-textarea"
+                    [class.error]="isFieldInvalid('descripcion')"
+                    placeholder="Descripción de la lista"
+                    rows="3"
+                    maxlength="500"></textarea>
+                  <div 
+                    class="error-message" 
+                    *ngIf="isFieldInvalid('descripcion')"
+                  >
+                    {{ getFieldError('descripcion') }}
+                  </div>
+                </div>
+                
+                <!-- Campo de visibilidad solo para listas públicas -->
+                <div class="form-group checkbox-group" *ngIf="tipoLista === 'publicas'">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      [id]="'edit-visibilidad-' + lista.idLista"
+                      [checked]="editingVisibilidad"
+                      (change)="editingVisibilidad = $event.target.checked"
+                      class="form-checkbox">
+                    <span class="checkbox-text">Lista pública visible</span>
+                  </label>
+                  <span class="field-helper">Si está marcada, la lista será visible para todos los usuarios</span>
+                </div>
+              </form>
+            </div>
+            
+            <div class="lista-meta">
+              <span class="meta-item">
+                <span class="meta-icon">🎬</span>
+                <span>{{ lista.contenidos?.length }} elementos</span>
+              </span>
+            </div>
+          </div>
+          
+          <button type="button" class="expand-button" *ngIf="!isEditing(lista.idLista)" (click)="toggleLista(lista.idLista)" [attr.aria-label]="isListaExpanded(lista.idLista) ? 'Colapsar lista' : 'Expandir lista'">
+              <span class="expand-icon">{{ isListaExpanded(lista.idLista) ? '▼' : '▶' }}</span>
+          </button>
+
+          <div class="lista-actions" *ngIf="esGestor || (esUsuario && tipoLista === 'privadas')">
+            <!-- Botones modo vista normal -->
+            <ng-container *ngIf="!isEditing(lista.idLista)">
+              <button type="button" class="action-button" title="Editar lista" (click)="iniciarEdicion(lista)">
+                ✏️ Editar
+              </button>
+              <button type="button" class="action-button" title="Modificar contenidos" (click)="modificarContenidos(lista)">
+                🎬 Modificar contenidos
+              </button>
+              <button type="button" class="action-button danger" title="Eliminar lista" (click)="eliminarLista(lista)">
+                🗑️ Eliminar
+              </button>
+            </ng-container>
+            
+            <!-- Botones modo edición -->
+            <ng-container *ngIf="isEditing(lista.idLista)">
+              <button 
+                type="button"
+                [class.usuario-btn]="!esGestor"
+                [class.gestor-btn]="esGestor"
+                title="Confirmar cambios" 
+                (click)="confirmarCambios()"
+                [disabled]="editForm?.invalid">
+                Confirmar cambios
+              </button>
+              <button 
+                type="button"
+                [class.usuario-btn]="!esGestor"
+                [class.gestor-btn]="esGestor"
+                title="Cancelar edición"
+                class="secondary"
+                (click)="cancelarEdicion()">
+                Cancelar
+              </button>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Contenido de la lista (visible cuando está expandida) -->
+        <div class="lista-content" [class.show]="isListaExpanded(lista.idLista)">
+          <div class="contenido-grid">
+            <div *ngFor="let contenido of lista.contenidos" 
+                 class="contenido-item"
+                 [class.content-hidden]="isContenidoHidden(contenido)"
+                 (click)="esUsuario ? visualizarContenido(contenido) : null" 
+                 (keydown)="onContenidoKeydown($event, contenido)"
+                 [attr.tabindex]="esUsuario ? '0' : null"
+                 [attr.role]="esUsuario ? 'button' : null"
+                 [attr.aria-label]="esUsuario ? 'Ver ' + contenido.titulo : null"
+                 [style.cursor]="esUsuario ? 'pointer' : 'default'">
+              <div class="contenido-thumbnail">
+                <img [src]="contenido.miniatura" [alt]="contenido.titulo" class="contenido-image">
+                <span class="video-duration">{{ contenido.duracionFormateada }}</span>
+                <div class="content-badges">
+                  <span class="badge vip" *ngIf="contenido.esVIP">👑 VIP</span>
+                  <span class="badge type">{{ contenido.tipo === 'VIDEO' ? '🎥' : '🎧' }}</span>
+                  <span class="badge age age-{{ contenido.restriccionEdad }}">+{{ contenido.restriccionEdad }}</span>
+                </div>
+              </div>
+              
+              <div class="contenido-info">
+                <h4 class="contenido-title">{{ contenido.titulo }}</h4>
+                <div class="contenido-category-rating">
+                  <div class="contenido-category">{{ contenido.especialidad }}</div>
+                  <div class="stars">
+                    <span *ngFor="let star of getStarsArray(contenido.valoracionMedia || 0)" class="star">
+                      {{ star === 1 ? '★' : star === 0.5 ? '⯪' : '☆' }}
+                    </span>
+                    <span class="rating-number">({{ (contenido.valoracionMedia || 0) | number:'1.1-1' }})</span>
+                  </div>
+                </div>
+                <div class="contenido-tags">{{ contenido.tags.join(', ') }}</div>
+                
+                <!-- Estadísticas para usuarios -->
+                <div class="contenido-stats" *ngIf="!esGestor && !esAdministrador">
+                  <span class="stat-item">⏰ {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+                </div>
+                
+                <!-- Estadísticas completas para gestor y administrador -->
+                <div class="contenido-stats" *ngIf="esGestor || esAdministrador">
+                  <span class="stat-item">👁️ {{ contenido.visualizaciones || 0 }} visitas</span>
+                  <span class="stat-item" *ngIf="contenido.tipo === 'VIDEO'">📺 {{ getResolucion(contenido) }}</span>
+                  <span class="stat-item" *ngIf="contenido.fechaSubida">📅 {{ contenido.fechaSubida | date:'dd/MM/yyyy' }}</span>
+                  <span class="stat-item">⏰ {{ contenido.fechaExpiracion ? (contenido.fechaExpiracion | date:'dd/MM/yyyy') : 'Sin expiración' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div *ngIf="listasFiltradas.length === 0" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3 class="empty-title">No se encontraron listas</h3>
+      <p class="empty-message">{{ searchTerm ? 'Intenta cambiar los criterios de búsqueda.' : 'Aún no hay listas creadas.' }}</p>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentTagProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.util</a> &gt; <span class="el_source">ContentTagProcessor.java</span></div><h1>ContentTagProcessor.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.util;
+
+import java.util.List;
+import java.util.function.BiFunction;
+
+import com.esimedia.features.content.entity.Tags;
+import com.esimedia.features.content.repository.TagsRepository;
+
+/**
+ * Procesador genérico para tags de contenido multimedia.
+ * Permite reutilizar la lógica de procesamiento de tags para diferentes tipos de contenido.
+ */
+public class ContentTagProcessor {
+
+    private final TagsRepository tagRepository;
+    private final BiFunction&lt;String, String, Object&gt; tagRelationFactory;
+
+    /**
+     * Constructor que recibe el repositorio de tags y una fábrica para crear relaciones contenido-tag.
+     * @param tagRepository Repositorio para buscar/crear tags.
+     * @param tagRelationFactory Función que crea la relación (contenidoId, tagId) -&gt; relación entity.
+     */
+<span class="fc" id="L23">    public ContentTagProcessor(TagsRepository tagRepository, BiFunction&lt;String, String, Object&gt; tagRelationFactory) {</span>
+<span class="fc" id="L24">        this.tagRepository = tagRepository;</span>
+<span class="fc" id="L25">        this.tagRelationFactory = tagRelationFactory;</span>
+<span class="fc" id="L26">    }</span>
+
+    /**
+     * Procesa una lista de nombres de tags para un contenido específico.
+     * Busca o crea cada tag y crea la relación correspondiente.
+     * @param contenidoId ID del contenido.
+     * @param tagNames Lista de nombres de tags.
+     * @param relationSaver Función para guardar la relación (debe manejar el tipo específico).
+     */
+    public void processContentTags(String contenidoId, List&lt;String&gt; tagNames, java.util.function.Consumer&lt;Object&gt; relationSaver) {
+
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        for (String tagName : tagNames) {</span>
+            // Buscar o crear tag
+<span class="fc" id="L39">            Tags tag = tagRepository.findByNombre(tagName.trim())</span>
+<span class="fc" id="L40">                    .orElseGet(() -&gt; {</span>
+<span class="fc" id="L41">                        Tags newTag = new Tags(tagName.trim());</span>
+<span class="fc" id="L42">                        return tagRepository.save(newTag);</span>
+                    });
+
+            // Crear relación contenido-tag
+<span class="nc" id="L46">            Object relation = tagRelationFactory.apply(contenidoId, tag.getIdTag());</span>
+<span class="nc" id="L47">            relationSaver.accept(relation);</span>
+<span class="nc" id="L48">        }</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Actualiza las tags de un contenido específico.
+     * Elimina relaciones para tags que ya no están, añade nuevas relaciones para tags nuevos.
+     * @param contenidoId ID del contenido.
+     * @param newTagNames Lista de nombres de tags nuevos.
+     * @param currentTagIdsGetter Función que devuelve la lista de tagIds actuales.
+     * @param relationDeleter Función que elimina la relación para un tagId dado.
+     * @param relationSaver Función para guardar nuevas relaciones.
+     */
+    public void updateContentTags(String contenidoId, List&lt;String&gt; newTagNames, 
+                                  java.util.function.Supplier&lt;List&lt;String&gt;&gt; currentTagIdsGetter,
+                                  java.util.function.Consumer&lt;String&gt; relationDeleter,
+                                  java.util.function.Consumer&lt;Object&gt; relationSaver) {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (newTagNames == null) {</span>
+<span class="fc" id="L65">            newTagNames = List.of();</span>
+        } 
+
+        // Obtener tagIds actuales
+<span class="fc" id="L69">        List&lt;String&gt; currentTagIds = currentTagIdsGetter.get();</span>
+
+        // Mapear nuevos tagNames a tagIds, creando tags si no existen
+<span class="fc" id="L72">        List&lt;String&gt; newTagIds = newTagNames.stream()</span>
+<span class="pc" id="L73">            .map(tagName -&gt; tagRepository.findByNombre(tagName.trim())</span>
+<span class="nc" id="L74">                    .orElseGet(() -&gt; {</span>
+<span class="nc" id="L75">                        Tags newTag = new Tags(tagName.trim());</span>
+<span class="nc" id="L76">                        return tagRepository.save(newTag);</span>
+                    }))
+<span class="fc" id="L78">            .map(Tags::getIdTag)</span>
+<span class="fc" id="L79">            .toList();</span>
+
+        // Tags a eliminar: actuales que no están en nuevos
+<span class="fc" id="L82">        List&lt;String&gt; tagsToRemove = currentTagIds.stream()</span>
+<span class="pc bnc" id="L83" title="All 2 branches missed.">            .filter(tagId -&gt; !newTagIds.contains(tagId))</span>
+<span class="fc" id="L84">            .toList();</span>
+
+        // Tags a añadir: nuevos que no están en actuales
+<span class="fc" id="L87">        List&lt;String&gt; tagsToAdd = newTagIds.stream()</span>
+<span class="pc bnc" id="L88" title="All 2 branches missed.">            .filter(tagId -&gt; !currentTagIds.contains(tagId))</span>
+<span class="fc" id="L89">            .toList();</span>
+
+        // Eliminar relaciones obsoletas
+<span class="fc" id="L92">        tagsToRemove.forEach(relationDeleter);</span>
+
+        // Añadir nuevas relaciones
+<span class="fc" id="L95">        tagsToAdd.forEach(tagId -&gt; {</span>
+<span class="nc" id="L96">            Object relation = tagRelationFactory.apply(contenidoId, tagId);</span>
+<span class="nc" id="L97">            relationSaver.accept(relation);</span>
+<span class="nc" id="L98">        });</span>
+<span class="fc" id="L99">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

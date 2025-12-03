@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FavoritoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.favoritos.http</a> &gt; <span class="el_source">FavoritoController.java</span></div><h1>FavoritoController.java</h1><pre class="source lang-java linenums">package com.esimedia.features.favoritos.http;
+
+import com.esimedia.features.favoritos.dto.FavoritoDTO;
+import com.esimedia.features.favoritos.services.FavoritoService;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/favoritos&quot;)
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;, allowedHeaders = &quot;*&quot;, exposedHeaders = &quot;Authorization&quot;)
+public class FavoritoController {
+
+<span class="fc" id="L22">    private static final Logger logger = LoggerFactory.getLogger(FavoritoController.class);</span>
+
+    private final FavoritoService favoritoService;
+    private final JwtValidationUtil jwtValidationService;
+
+<span class="fc" id="L27">    public FavoritoController(FavoritoService favoritoService, JwtValidationUtil jwtValidationService) {</span>
+<span class="fc" id="L28">        this.favoritoService = favoritoService;</span>
+<span class="fc" id="L29">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L30">    }</span>
+
+    @PostMapping(&quot;/add&quot;)
+    public ResponseEntity&lt;String&gt; agregarFavorito(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody FavoritoDTO favoritoDTO) {
+        try {
+<span class="fc" id="L37">            String idUsuario = jwtValidationService.validarGetUsuario(authHeader);</span>
+
+<span class="fc" id="L39">            logger.info(&quot;Solicitud para agregar favorito: usuario={}, contenido={}&quot;, idUsuario, favoritoDTO.getIdContenido());</span>
+
+<span class="fc" id="L41">            String resultado = favoritoService.agregarFavorito(idUsuario, favoritoDTO);</span>
+<span class="fc" id="L42">            return ResponseEntity.ok(resultado);</span>
+        } 
+<span class="fc" id="L44">        catch (Exception e) {</span>
+<span class="fc" id="L45">            logger.error(&quot;Error en agregarFavorito: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L46">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="fc" id="L47">                    .body(&quot;Error interno del servidor&quot;);</span>
+        }
+    }
+
+    @DeleteMapping(&quot;/remove&quot;)
+    public ResponseEntity&lt;String&gt; eliminarFavorito(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader,
+            @Valid @RequestBody FavoritoDTO favoritoDTO) {
+        try {
+<span class="fc" id="L56">            String idUsuario = jwtValidationService.validarGetUsuario(authHeader);</span>
+
+<span class="fc" id="L58">            logger.info(&quot;Solicitud para eliminar favorito: usuario={}, contenido={}&quot;, idUsuario, favoritoDTO.getIdContenido());</span>
+
+<span class="fc" id="L60">            String resultado = favoritoService.eliminarFavorito(idUsuario, favoritoDTO);</span>
+<span class="fc" id="L61">            return ResponseEntity.ok(resultado);</span>
+        } 
+<span class="fc" id="L63">        catch (Exception e) {</span>
+<span class="fc" id="L64">            logger.error(&quot;Error en eliminarFavorito: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L65">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)</span>
+<span class="fc" id="L66">                    .body(&quot;Error interno del servidor&quot;);</span>
+        }
+    }
+
+    @GetMapping(&quot;/mis-favoritos&quot;)
+    public ResponseEntity&lt;List&lt;String&gt;&gt; obtenerFavoritos(
+            @RequestHeader(&quot;Authorization&quot;) String authHeader) {
+        try {
+<span class="fc" id="L74">            String idUsuario = jwtValidationService.validarGetUsuario(authHeader);</span>
+<span class="fc" id="L75">            logger.info(&quot;Obteniendo favoritos del usuario {}&quot;, idUsuario);</span>
+
+<span class="fc" id="L77">            List&lt;String&gt; favoritos = favoritoService.obtenerFavoritosPorUsuario(idUsuario);</span>
+<span class="fc" id="L78">            return ResponseEntity.ok(favoritos);</span>
+        } 
+<span class="fc" id="L80">        catch (Exception e) {</span>
+<span class="fc" id="L81">            logger.error(&quot;Error en obtenerFavoritos: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L82">            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TwoFactorAuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">TwoFactorAuthService.java</span></div><h1>TwoFactorAuthService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import com.esimedia.features.auth.dto.*;
+import com.esimedia.features.auth.entity.*;
+import com.esimedia.features.auth.repository.*;
+import com.esimedia.shared.util.*;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.*;
+
+@Service
+public class TwoFactorAuthService {
+
+    private static final String USER_NOT_FOUND = &quot;Usuario no encontrado&quot;;
+
+    private final EmailTwoFactorService emailTwoFactorService;
+    private final TotpTwoFactorService totpTwoFactorService;
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final AdminRepository adminRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;    
+    private final JwtValidationUtil jwtValidationService;
+
+    public TwoFactorAuthService(EmailTwoFactorService emailTwoFactorService,
+                                TotpTwoFactorService totpTwoFactorService,
+                                UsuarioNormalRepository usuarioNormalRepository,
+                                AdminRepository adminRepository,
+                                CreadorContenidoRepository creadorContenidoRepository,
+<span class="fc" id="L28">                                JwtValidationUtil jwtValidationService) {</span>
+<span class="fc" id="L29">        this.emailTwoFactorService = emailTwoFactorService;</span>
+<span class="fc" id="L30">        this.totpTwoFactorService = totpTwoFactorService;</span>
+<span class="fc" id="L31">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L32">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L33">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L34">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * Genera y envía un código de verificación por email (soporta los 3 tipos de usuario)
+     */
+    public String sendEmailVerificationCode(String userId) {
+<span class="nc" id="L41">        return emailTwoFactorService.sendEmailVerificationCode(userId);</span>
+    }
+    
+    /**
+     * Verifica un código enviado por email
+     */
+    public boolean verifyEmailCode(String userId, String codigo) {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (emailTwoFactorService.verifyEmailCode(userId, codigo)) {</span>
+<span class="nc" id="L49">            UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L50">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));</span>
+
+<span class="nc" id="L52">            usuario.setTwoFactorEnabled(true);</span>
+<span class="nc" id="L53">            usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L55">            return true;</span>
+        }
+<span class="nc" id="L57">        return false;</span>
+    }
+
+    /**
+     * Verifica un código enviado por email para administrador
+     */
+    public boolean verifyEmailCodeAdmin(String userId, String codigo) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (emailTwoFactorService.verifyEmailCode(userId, codigo)) {</span>
+<span class="nc" id="L65">            Administrador usuario = adminRepository.findById(userId)</span>
+<span class="nc" id="L66">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));</span>
+
+<span class="nc" id="L68">            usuario.setTwoFactorEnabled(true);</span>
+<span class="nc" id="L69">            adminRepository.save(usuario);</span>
+
+<span class="nc" id="L71">            return true;</span>
+        }
+<span class="nc" id="L73">        return false;</span>
+    }
+
+    public boolean verifyEmailCodeCreador(String userId, String codigo) {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (emailTwoFactorService.verifyEmailCode(userId, codigo)) {</span>
+<span class="nc" id="L78">            CreadorContenido usuario = creadorContenidoRepository.findById(userId)</span>
+<span class="nc" id="L79">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));</span>
+<span class="nc" id="L80">            usuario.setTwoFactorEnabled(true);</span>
+<span class="nc" id="L81">            creadorContenidoRepository.save(usuario);</span>
+<span class="nc" id="L82">            return true;</span>
+        }
+<span class="nc" id="L84">        return false;</span>
+    }
+
+    // ===== FACTOR 3: TOTP (CÓDIGOS QR) =====
+
+    /**
+     * Configura TOTP para un usuario normal - Paso 1: Genera secret y QR
+     */
+    public TotpSetupResponse setupTotp(String userId) {
+<span class="nc" id="L93">        return totpTwoFactorService.setupTotp(userId);</span>
+    }
+    
+    /**
+     * Configura TOTP para un administrador - Paso 1: Genera secret y QR
+     */
+    public TotpSetupResponse setupTotpAdmin(String userId) {
+<span class="nc" id="L100">        return totpTwoFactorService.setupTotpAdmin(userId);</span>
+    }
+    
+    /**
+     * Configura TOTP para un creador de contenido - Paso 1: Genera secret y QR
+     */
+    public TotpSetupResponse setupTotpCreador(String userId) {
+<span class="nc" id="L107">        return totpTwoFactorService.setupTotpCreador(userId);</span>
+    }
+
+    /**
+     * Confirma la configuración TOTP para usuario normal - Paso 2: Verifica código inicial
+     */
+    public String confirmTotpSetup(String userId, String verificationCode) {
+<span class="nc" id="L114">        return totpTwoFactorService.confirmTotpSetup(userId, verificationCode);</span>
+    }
+    
+    /**
+     * Confirma la configuración TOTP para administrador - Paso 2: Verifica código inicial
+     */
+    public String confirmTotpSetupAdmin(String userId, String verificationCode) {
+<span class="nc" id="L121">        return totpTwoFactorService.confirmTotpSetupAdmin(userId, verificationCode);</span>
+    }
+    
+    /**
+     * Confirma la configuración TOTP para creador de contenido - Paso 2: Verifica código inicial
+     */
+    public String confirmTotpSetupCreador(String userId, String verificationCode) {
+<span class="nc" id="L128">        return totpTwoFactorService.confirmTotpSetupCreador(userId, verificationCode);</span>
+    }
+
+    public boolean verifyTotpCode(String userId, String code) {
+<span class="fc" id="L132">        return totpTwoFactorService.verifyTotpCode(userId, code);</span>
+    }
+
+    /**
+     * Verifica un código TOTP durante el login para administrador
+     */
+    public boolean verifyTotpCodeAdmin(String userId, String code) {
+<span class="fc" id="L139">        return totpTwoFactorService.verifyTotpCodeAdmin(userId, code);</span>
+    }
+
+    /**
+     * Verifica un código TOTP durante el login para creador de contenido
+     */
+    public boolean verifyTotpCodeCreador(String userId, String code) {
+<span class="fc" id="L146">        return totpTwoFactorService.verifyTotpCodeCreador(userId, code);</span>
+    }
+
+    /**
+     * Desactiva 2FA para un usuario
+     */
+    public String disableTwoFactor(String userId) {
+<span class="nc" id="L153">        return totpTwoFactorService.disableTwoFactor(userId);</span>
+    }
+
+    public String disableThirdFactor(String userId) {
+<span class="nc" id="L157">        return totpTwoFactorService.disableThirdFactor(userId);</span>
+    }
+
+    // ===== MÉTODOS DE UTILIDAD =====
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public String validarEntradaPara2O3FA(String authHeader) {
+<span class="fc" id="L175">        return jwtValidationService.validarGenerico(authHeader);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

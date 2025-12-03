@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Sesion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.entity</a> &gt; <span class="el_source">Sesion.java</span></div><h1>Sesion.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.entity;
+
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import com.esimedia.features.auth.enums.EstadoSesion;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+
+@Document(collection = &quot;sesiones&quot;)
+<span class="pc bpc" id="L16" title="54 of 78 branches missed.">@Data</span>
+public class Sesion {
+    @Id
+<span class="fc" id="L19">    private String idSesion;</span>
+
+    @Field(&quot;idUsuario&quot;)
+    @Indexed
+    @NotBlank(message = &quot;El ID del usuario no puede estar vacío&quot;)
+<span class="fc" id="L24">    private String idUsuario;</span>
+
+    @Field(&quot;ipCliente&quot;)
+    @Pattern(regexp = &quot;^(\\d{1,3}\\.){3}\\d{1,3}$&quot;, message = &quot;La IP del cliente debe tener un formato válido&quot;)
+<span class="fc" id="L28">    private String ipCliente;</span>
+
+    @Field(&quot;jwtTokenId&quot;)
+    @Indexed(unique = true)
+    @NotBlank(message = &quot;El ID del JWT no puede estar vacío&quot;)
+<span class="fc" id="L33">    private String jwtTokenId;</span>
+
+<span class="fc" id="L35">    @Field(&quot;fechaInicio&quot;)</span>
+    @NotNull(message = &quot;La fecha de inicio no puede ser nula&quot;)
+    @PastOrPresent(message = &quot;La fecha de inicio no puede ser futura&quot;)
+<span class="fc" id="L38">    private LocalDateTime fechaInicio = LocalDateTime.now();</span>
+
+<span class="fc" id="L40">    @Field(&quot;fechaUltimaActividad&quot;)</span>
+    @NotNull(message = &quot;La fecha de última actividad no puede ser nula&quot;)
+    @PastOrPresent(message = &quot;La fecha de última actividad no puede ser futura&quot;)
+<span class="fc" id="L43">    private LocalDateTime fechaUltimaActividad = LocalDateTime.now();</span>
+
+    @Field(&quot;estado&quot;)
+    @NotNull(message = &quot;El estado de la sesión no puede ser nulo&quot;)
+<span class="fc" id="L47">    private EstadoSesion estado;</span>
+    
+    @Field(&quot;resetToken&quot;)
+<span class="fc" id="L50">    private String resetToken;</span>
+    
+    @Field(&quot;resetTokenExpiry&quot;)
+    @Future(message = &quot;La fecha de expiración del token de reset debe ser futura&quot;)
+<span class="fc" id="L54">    private LocalDateTime resetTokenExpiry;</span>
+    
+
+
+    // Constructores
+<span class="fc" id="L59">    public Sesion() {</span>
+<span class="fc" id="L60">        this.fechaInicio = LocalDateTime.now();</span>
+<span class="fc" id="L61">        this.fechaUltimaActividad = LocalDateTime.now();</span>
+<span class="fc" id="L62">        this.estado = EstadoSesion.ACTIVA;</span>
+<span class="fc" id="L63">    }</span>
+
+    // Métodos de utilidad
+    public void actualizarUltimaActividad() {
+<span class="fc" id="L67">        this.fechaUltimaActividad = LocalDateTime.now();</span>
+<span class="fc" id="L68">    }</span>
+
+    public void expirarSesion() {
+<span class="fc" id="L71">        this.estado = EstadoSesion.EXPIRADA;</span>
+<span class="fc" id="L72">    }</span>
+
+    public void bloquearSesion() {
+<span class="fc" id="L75">        this.estado = EstadoSesion.BLOQUEADA;</span>
+<span class="fc" id="L76">    }</span>
+
+    public boolean isActiva() {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        return this.estado == EstadoSesion.ACTIVA;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

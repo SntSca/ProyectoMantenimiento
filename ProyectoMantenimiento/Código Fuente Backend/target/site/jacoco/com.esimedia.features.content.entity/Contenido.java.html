@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Contenido.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.entity</a> &gt; <span class="el_source">Contenido.java</span></div><h1>Contenido.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.entity;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import com.esimedia.features.content.enums.RestriccionEdad;
+
+import jakarta.validation.constraints.*;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import lombok.AccessLevel;
+
+import java.util.Date;
+import java.util.List;
+import java.util.ArrayList;
+
+<span class="pc bpc" id="L21" title="66 of 110 branches missed.">@Data</span>
+<span class="fc" id="L22">@NoArgsConstructor(access = AccessLevel.PROTECTED)</span>
+<span class="nc" id="L23">@AllArgsConstructor</span>
+<span class="pc bfc" id="L24" title="All 8 branches covered.">@SuperBuilder</span>
+@Document(collection = &quot;contenidos&quot;)
+public class Contenido {
+    
+    @Id
+<span class="fc" id="L29">    private String id;</span>
+    
+    @Field(&quot;titulo&quot;)
+    @NotBlank(message = &quot;El título no puede estar vacío&quot;)
+    @Size(min = 3, max = 100, message = &quot;El título debe tener entre 3 y 100 caracteres&quot;)
+<span class="fc" id="L34">    private String titulo;</span>
+    
+    @Field(&quot;descripcion&quot;)
+    @Size(max = 500, message = &quot;La descripción no puede exceder 500 caracteres&quot;)
+<span class="fc" id="L38">    private String descripcion;</span>
+    
+    // Duración en segundos
+    @Field(&quot;duracion&quot;)
+    @Positive(message = &quot;La duración debe ser un número positivo&quot;)
+    @Max(value = 86400, message = &quot;La duración no puede exceder 24 horas (86400 segundos)&quot;)
+<span class="fc" id="L44">    private int duracion; </span>
+    
+    @Field(&quot;esVIP&quot;)
+<span class="fc" id="L47">    private boolean esVIP;</span>
+    
+    @Field(&quot;fechaEstado&quot;)
+    @PastOrPresent(message = &quot;La fecha de estado no puede ser futura&quot;)
+<span class="fc" id="L51">    private Date fechaEstado;</span>
+    
+    @Field(&quot;fechaDisponibleHasta&quot;)
+    @Future(message = &quot;La fecha de disponibilidad debe ser futura&quot;)
+<span class="fc" id="L55">    private Date fechaDisponibleHasta;</span>
+    
+    @Field(&quot;restriccionEdad&quot;)
+<span class="fc" id="L58">    private RestriccionEdad restriccionEdad;</span>
+    
+    @Field(&quot;idCreador&quot;)
+    @NotBlank(message = &quot;El ID del creador no puede estar vacío&quot;)
+<span class="fc" id="L62">    private String idCreador;</span>
+    
+    @Field(&quot;imagen&quot;)
+<span class="fc" id="L65">    private byte[] miniatura;</span>
+
+    @Field(&quot;formatoImagen&quot;)
+    @Pattern(regexp = &quot;^image/(jpeg|jpg|png|gif|webp)$&quot;, message = &quot;El formato de imagen no es válido&quot;)
+<span class="fc" id="L69">    private String formatoMiniatura;</span>
+    
+    @Field(&quot;fechaSubida&quot;)
+    @NotNull(message = &quot;La fecha de subida no puede ser nula&quot;)
+    @PastOrPresent(message = &quot;La fecha de subida no puede ser futura&quot;)
+<span class="fc" id="L74">    private Date fechaSubida;</span>
+
+    @Field(&quot;especialidad&quot;)
+    @NotBlank(message = &quot;La especialidad no puede estar vacía&quot;)
+    @Size(min = 2, max = 100, message = &quot;La especialidad debe tener entre 2 y 100 caracteres&quot;)
+<span class="fc" id="L79">    private String especialidad;</span>
+
+    @Field(&quot;visibilidad&quot;)
+    @Builder.Default
+<span class="fc" id="L83">    private boolean visibilidad = false;</span>
+
+    @Field(&quot;valoracionMedia&quot;)
+    @Builder.Default
+<span class="fc" id="L87">    private double valoracionMedia = 0.0;</span>
+
+    @Field(&quot;tags&quot;)
+    @Builder.Default
+<span class="fc" id="L91">    private List&lt;String&gt; tags = new ArrayList&lt;&gt;();</span>
+
+    // Factory method para crear nuevos contenidos con valores por defecto
+    @Field(&quot;visualizaciones&quot;)
+    @Builder.Default
+<span class="fc" id="L96">    private int visualizaciones = 0;</span>
+    public static Contenido createContenido(String titulo, String descripcion, int duracionSecs, String idCreador) {
+<span class="fc" id="L98">        Contenido contenido = new Contenido();</span>
+<span class="fc" id="L99">        contenido.titulo = titulo;</span>
+<span class="fc" id="L100">        contenido.descripcion = descripcion;</span>
+<span class="fc" id="L101">        contenido.duracion = duracionSecs;</span>
+<span class="fc" id="L102">        contenido.idCreador = idCreador;</span>
+<span class="fc" id="L103">        contenido.fechaSubida = new Date();</span>
+<span class="fc" id="L104">        contenido.esVIP = false;</span>
+<span class="fc" id="L105">        contenido.visibilidad = true;</span>
+<span class="fc" id="L106">        contenido.valoracionMedia = 0.0;</span>
+<span class="fc" id="L107">        contenido.visualizaciones = 0;</span>
+<span class="fc" id="L108">        return contenido;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

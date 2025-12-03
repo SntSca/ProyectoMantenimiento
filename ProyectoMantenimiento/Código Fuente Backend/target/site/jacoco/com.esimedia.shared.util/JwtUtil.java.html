@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.shared.util</a> &gt; <span class="el_source">JwtUtil.java</span></div><h1>JwtUtil.java</h1><pre class="source lang-java linenums">package com.esimedia.shared.util;
+
+import java.security.Key;
+import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.enums.TipoContenido;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
+@Component
+public class JwtUtil {
+
+    public static final String USERNAME_CLAIM = &quot;username&quot;;
+    public static final String CREDENTIALS_VERSION_CLAIM = &quot;credentialsVersion&quot;;
+    public static final String ROL_CLAIM = &quot;rol&quot;;
+    public static final String TIPO_CONTENIDO_CLAIM = &quot;tipoContenido&quot;;
+
+
+    private final Key key;
+
+<span class="nc" id="L29">    public JwtUtil(@Value(&quot;${token.secret}&quot;) String secret) {</span>
+<span class="nc" id="L30">        this.key = Keys.hmacShaKeyFor(secret.getBytes());</span>
+<span class="nc" id="L31">    }</span>
+
+    // Overload: generar token usando el id de usuario como String (por ejemplo idUsuario de Mongo)
+    public String generateToken(String userId, String username, long credentialsVersion, String rol, String tipoContenido) {
+<span class="nc" id="L35">        long expirationMs = 24L * 60 * 60 * 1000;</span>
+<span class="nc" id="L36">        return Jwts.builder()</span>
+<span class="nc" id="L37">                .setSubject(userId)</span>
+<span class="nc" id="L38">                .claim(USERNAME_CLAIM, username)</span>
+<span class="nc" id="L39">                .claim(CREDENTIALS_VERSION_CLAIM, credentialsVersion)</span>
+<span class="nc" id="L40">                .claim(ROL_CLAIM, rol)</span>
+<span class="nc" id="L41">                .claim(TIPO_CONTENIDO_CLAIM, tipoContenido)</span>
+<span class="nc" id="L42">                .setIssuedAt(new Date())</span>
+<span class="nc" id="L43">                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))</span>
+<span class="nc" id="L44">                .signWith(key, SignatureAlgorithm.HS256)</span>
+<span class="nc" id="L45">                .compact();</span>
+    }
+
+    private String extractTokenFromHeaderInstance(String authHeader) {
+<span class="nc bnc" id="L49" title="All 4 branches missed.">        if (authHeader == null || !authHeader.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L50">            throw new IllegalArgumentException(&quot;Header de autorización inválido&quot;);</span>
+        }
+<span class="nc" id="L52">        return authHeader.substring(7);</span>
+    }
+
+    public String generateToken(String userId, String username, long credentialsVersion, Rol role) {
+<span class="nc" id="L56">        return generateToken(userId, username, credentialsVersion, role.getValor(), null);</span>
+    }
+
+    //Overload
+    public String generateToken(String userId, String username, long credentialsVersion, Rol role, TipoContenido tipoContenido) {
+<span class="nc" id="L61">        return generateToken(userId, username, credentialsVersion, role.getValor(), tipoContenido.getValor());</span>
+    }
+
+    public Claims validateToken(String token) throws JwtException {
+<span class="nc" id="L65">        return Jwts.parserBuilder()</span>
+<span class="nc" id="L66">                .setSigningKey(key)</span>
+<span class="nc" id="L67">                .build()</span>
+<span class="nc" id="L68">                .parseClaimsJws(token)</span>
+<span class="nc" id="L69">                .getBody();</span>
+    }
+
+    public String getUserIdFromToken(String token) {
+<span class="nc" id="L73">        String extractedToken = extractTokenFromHeaderInstance(token);</span>
+<span class="nc" id="L74">        Claims claims = validateToken(extractedToken);</span>
+<span class="nc" id="L75">        return claims.getSubject();</span>
+    }
+
+    public String getUsernameFromToken(String token) {
+<span class="nc" id="L79">        String extractedToken = extractTokenFromHeaderInstance(token);</span>
+<span class="nc" id="L80">        Claims claims = validateToken(extractedToken);</span>
+<span class="nc" id="L81">        return claims.get(USERNAME_CLAIM, String.class);</span>
+    }
+
+    public long getCredentialsVersionFromToken(String token) {
+<span class="nc" id="L85">        String extractedToken = extractTokenFromHeaderInstance(token);</span>
+<span class="nc" id="L86">        Claims claims = validateToken(extractedToken);</span>
+<span class="nc" id="L87">        return claims.get(CREDENTIALS_VERSION_CLAIM, Long.class);</span>
+    }
+
+    public String getRolFromToken(String token) {
+<span class="nc" id="L91">        String extractedToken = extractTokenFromHeaderInstance(token);</span>
+<span class="nc" id="L92">        Claims claims = validateToken(extractedToken);</span>
+<span class="nc" id="L93">        return claims.get(ROL_CLAIM, String.class);</span>
+    }
+
+    public String getTipoContenidoFromToken(String token) {
+<span class="nc" id="L97">        String extractedToken = extractTokenFromHeaderInstance(token);</span>
+<span class="nc" id="L98">        Claims claims = validateToken(extractedToken);</span>
+<span class="nc" id="L99">        return claims.get(TIPO_CONTENIDO_CLAIM, String.class);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

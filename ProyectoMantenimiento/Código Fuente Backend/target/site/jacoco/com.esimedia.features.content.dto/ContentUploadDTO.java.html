@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContentUploadDTO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.dto</a> &gt; <span class="el_source">ContentUploadDTO.java</span></div><h1>ContentUploadDTO.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+<span class="pc bpc" id="L10" title="66 of 126 branches missed.">@Data</span>
+<span class="fc" id="L11">@NoArgsConstructor</span>
+<span class="nc" id="L12">@AllArgsConstructor</span>
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ContentUploadDTO {
+    
+<span class="fc" id="L16">    private String id;</span>
+    
+    @NotBlank(message = &quot;El título no puede estar vacío&quot;)
+    @Size(min = 3, max = 100, message = &quot;El título debe tener entre 3 y 100 caracteres&quot;)
+<span class="fc" id="L20">    private String titulo;</span>
+    
+    @Size(max = 500, message = &quot;La descripción no puede exceder 500 caracteres&quot;)
+<span class="fc" id="L23">    private String descripcion;</span>
+    
+<span class="fc" id="L25">    private List&lt;String&gt; tags;</span>
+    
+    @Positive(message = &quot;La duración debe ser un número positivo&quot;)
+<span class="fc" id="L28">    private Integer duracion;</span>
+    
+<span class="fc" id="L30">    private String fechaSubida;</span>
+<span class="fc" id="L31">    private String fechaExpiracion;</span>
+    
+    @NotNull(message = &quot;Debe especificar si el contenido es VIP o no&quot;)
+<span class="fc" id="L34">    private Boolean esVIP;</span>
+    
+<span class="fc" id="L36">    private String especialidad;</span>
+    
+<span class="fc" id="L38">    private Boolean visibilidad;</span>
+    
+<span class="fc" id="L40">    private Double valoracionMedia;</span>
+    
+<span class="fc" id="L42">    private Integer visualizaciones;</span>
+    
+<span class="fc" id="L44">    private Double valoracionUsuario;</span>
+    
+<span class="fc" id="L46">    private String miniatura;</span>
+<span class="fc" id="L47">    private String formatoMiniatura;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

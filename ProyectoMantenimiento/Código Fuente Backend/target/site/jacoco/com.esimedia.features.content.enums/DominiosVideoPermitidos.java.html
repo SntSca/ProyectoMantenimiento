@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DominiosVideoPermitidos.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.enums</a> &gt; <span class="el_source">DominiosVideoPermitidos.java</span></div><h1>DominiosVideoPermitidos.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.enums;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Set;
+
+
+public class DominiosVideoPermitidos {
+    
+    // Plataformas de video principales
+    public static final String YOUTUBE = &quot;youtube.com&quot;;
+    public static final String YOUTUBE_WWW = &quot;www.youtube.com&quot;;
+    public static final String YOUTUBE_SHORT = &quot;youtu.be&quot;;
+    public static final String YOUTUBE_EMBED = &quot;youtube-nocookie.com&quot;;
+    
+    // Vimeo
+    public static final String VIMEO = &quot;vimeo.com&quot;;
+    public static final String VIMEO_WWW = &quot;www.vimeo.com&quot;;
+    public static final String VIMEO_PLAYER = &quot;player.vimeo.com&quot;;
+    
+<span class="fc" id="L21">    private static final Set&lt;String&gt; DOMINIOS_VIDEO_PERMITIDOS = Set.of(</span>
+        // YouTube
+        YOUTUBE, YOUTUBE_WWW, YOUTUBE_SHORT, YOUTUBE_EMBED,
+        // Vimeo
+        VIMEO, VIMEO_WWW, VIMEO_PLAYER
+    );
+    
+    private DominiosVideoPermitidos() {}
+
+
+    /**
+     * Verifica si un dominio está permitido para videos
+     * @param domain El dominio de la URL del video a verificar
+     * @return true si el dominio está permitido, false en caso contrario
+     */
+    public static boolean isDominioVideoPermitido(String domain) {
+<span class="pc bpc" id="L37" title="1 of 4 branches missed.">        return domain != null &amp;&amp; DOMINIOS_VIDEO_PERMITIDOS.contains(domain.toLowerCase());</span>
+    }
+    
+    /**
+     * Extrae el dominio de una URL
+     * @param url La URL de la cual extraer el dominio
+     * @return El dominio de la URL, o cadena vacía si no es válido
+     */
+    public static String extractDomainFromUrl(String url) {
+<span class="fc" id="L46">        String response = &quot;&quot;;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L48">            return response;</span>
+        }
+        try {
+            // Normalizar la URL agregando protocolo si no lo tiene
+<span class="fc" id="L52">            String normalizedUrl = url.trim();</span>
+<span class="pc bpc" id="L53" title="2 of 4 branches missed.">            if (!normalizedUrl.startsWith(&quot;http://&quot;) &amp;&amp; !normalizedUrl.startsWith(&quot;https://&quot;)) {</span>
+<span class="nc" id="L54">                normalizedUrl = &quot;https://&quot; + normalizedUrl;</span>
+            }
+            
+<span class="fc" id="L57">            URI parsedUri = new URI(normalizedUrl);</span>
+<span class="fc" id="L58">            String host = parsedUri.getHost();</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">            response = host != null ? host.toLowerCase() : &quot;&quot;;</span>
+        } 
+<span class="nc" id="L61">        catch (URISyntaxException e) {</span>
+<span class="nc" id="L62">            response = &quot;&quot;;</span>
+<span class="fc" id="L63">        }</span>
+<span class="fc" id="L64">        return response;</span>
+    }
+    
+    /**
+     * Valida si una URL de video es válida y de un dominio permitido
+     * @param url La URL del video a validar
+     * @return true si la URL es válida y el dominio está permitido, false en caso contrario
+     */
+    public static boolean isUrlVideoValida(String url) {
+<span class="fc" id="L73">        String domain = extractDomainFromUrl(url);</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">        return !domain.isEmpty() &amp;&amp; isDominioVideoPermitido(domain);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

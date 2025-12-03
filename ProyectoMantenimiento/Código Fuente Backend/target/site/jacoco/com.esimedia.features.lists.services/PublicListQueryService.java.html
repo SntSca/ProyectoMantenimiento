@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PublicListQueryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.services</a> &gt; <span class="el_source">PublicListQueryService.java</span></div><h1>PublicListQueryService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.lists.dto.ContenidoListaResponseDTO;
+import com.esimedia.features.lists.dto.ListaContenidosResponseDTO;
+import com.esimedia.features.lists.dto.ListaResponseDTO;
+import com.esimedia.features.lists.entity.ListaContenidoPublica;
+import com.esimedia.features.lists.entity.ListaPublica;
+import com.esimedia.features.lists.repository.ListaContenidoPublicaRepository;
+import com.esimedia.features.lists.repository.ListaPublicaRepository;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class PublicListQueryService {
+
+<span class="fc" id="L23">    private static final Logger logger = LoggerFactory.getLogger(PublicListQueryService.class);</span>
+
+
+    private final ListaPublicaRepository listaPublicaRepository;
+    private final ListaContenidoPublicaRepository listaContenidoPublicaRepository;
+    private final PublicListHelper publicListHelper;
+
+    public PublicListQueryService(
+            ListaPublicaRepository listaPublicaRepository,
+            ListaContenidoPublicaRepository listaContenidoPublicaRepository,
+<span class="fc" id="L33">            PublicListHelper publicListHelper) {</span>
+<span class="fc" id="L34">        this.listaPublicaRepository = listaPublicaRepository;</span>
+<span class="fc" id="L35">        this.listaContenidoPublicaRepository = listaContenidoPublicaRepository;</span>
+<span class="fc" id="L36">        this.publicListHelper = publicListHelper;</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Obtener todas las listas públicas
+     */
+    public List&lt;ListaResponseDTO&gt; obtenerListasPublicas() {
+<span class="fc" id="L43">        logger.info(&quot;Obteniendo todas las listas públicas&quot;);</span>
+
+<span class="fc" id="L45">        List&lt;ListaPublica&gt; listas = listaPublicaRepository.findAll();</span>
+<span class="fc" id="L46">        return listas.stream()</span>
+<span class="fc" id="L47">            .map(this::convertirListaPublicaAResponseDTO)</span>
+<span class="fc" id="L48">            .toList();</span>
+    }
+
+    /**
+     * Obtener una lista pública por ID con contenidos completos
+     * @param idLista ID de la lista
+     * @return DTO con información de la lista y contenidos completos
+     */
+    public ListaContenidosResponseDTO obtenerListaPublicaConContenidos(String idLista) {
+<span class="fc" id="L57">        ListaPublica lista = listaPublicaRepository.findById(idLista)</span>
+<span class="fc" id="L58">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Lista no encontrada&quot;));</span>
+        
+        // Obtener IDs de contenidos de la lista
+<span class="fc" id="L61">        List&lt;String&gt; idsContenidos = listaContenidoPublicaRepository</span>
+<span class="fc" id="L62">            .findByIdLista(lista.getIdLista())</span>
+<span class="fc" id="L63">            .stream()</span>
+<span class="fc" id="L64">            .map(ListaContenidoPublica::getIdContenido)</span>
+<span class="fc" id="L65">            .toList();</span>
+        
+        // Obtener contenidos completos
+<span class="fc" id="L68">        List&lt;ContenidoListaResponseDTO&gt; contenidosCompletos = publicListHelper.obtenerContenidosCompletos(idsContenidos);</span>
+        
+<span class="fc" id="L70">        return ListaContenidosResponseDTO.builder()</span>
+<span class="fc" id="L71">            .idLista(lista.getIdLista())</span>
+<span class="fc" id="L72">            .nombre(lista.getNombre())</span>
+<span class="fc" id="L73">            .descripcion(lista.getDescripcion())</span>
+<span class="fc" id="L74">            .idCreadorUsuario(lista.getIdCreadorUsuario())</span>
+<span class="fc" id="L75">            .visibilidad(lista.getVisibilidad())</span>
+<span class="fc" id="L76">            .contenidos(contenidosCompletos)</span>
+<span class="fc" id="L77">            .build();</span>
+    }
+
+    /**
+     * Obtener todas las listas públicas con contenidos completos
+     * @return Lista de todas las listas públicas con sus contenidos
+     */
+    public List&lt;ListaResponseDTO&gt; obtenerTodasListasPublicasConContenidos() {
+<span class="nc" id="L85">        logger.info(&quot;Obteniendo todas las listas públicas con contenidos&quot;);</span>
+<span class="nc" id="L86">        List&lt;ListaPublica&gt; listas = listaPublicaRepository.findAll();</span>
+<span class="nc" id="L87">        List&lt;ListaResponseDTO&gt; listasDTO = new ArrayList&lt;&gt;();</span>
+        
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        for (ListaPublica lista : listas) {</span>
+<span class="nc" id="L90">            List&lt;ListaContenidoPublica&gt; contenidos = listaContenidoPublicaRepository.findByIdLista(lista.getIdLista());</span>
+            // Obtener IDs de contenidos
+<span class="nc" id="L92">            List&lt;String&gt; idsContenidos = contenidos.stream()</span>
+<span class="nc" id="L93">                .map(ListaContenidoPublica::getIdContenido)</span>
+<span class="nc" id="L94">                .toList();</span>
+
+            // Obtener contenidos completos
+<span class="nc" id="L97">            List&lt;ContenidoListaResponseDTO&gt; contenidosCompletos = publicListHelper.obtenerContenidosCompletos(idsContenidos);</span>
+            
+            // Construir el DTO de respuesta
+<span class="nc" id="L100">            ListaResponseDTO listaDTO = ListaResponseDTO.builder()</span>
+<span class="nc" id="L101">                .idLista(lista.getIdLista())</span>
+<span class="nc" id="L102">                .nombre(lista.getNombre())</span>
+<span class="nc" id="L103">                .descripcion(lista.getDescripcion())</span>
+<span class="nc" id="L104">                .idCreadorUsuario(lista.getIdCreadorUsuario())</span>
+<span class="nc" id="L105">                .visibilidad(lista.getVisibilidad())</span>
+<span class="nc" id="L106">                .contenidos(contenidosCompletos)</span>
+<span class="nc" id="L107">                .build();</span>
+<span class="nc" id="L108">            listasDTO.add(listaDTO);</span>
+<span class="nc" id="L109">        }</span>
+        
+<span class="nc" id="L111">        logger.info(&quot;Encontradas {} listas públicas con contenidos&quot;, listasDTO.size());</span>
+<span class="nc" id="L112">        return listasDTO;</span>
+    }
+
+    /**
+     * Convertir ListaPublica a ListaResponseDTO
+     */
+    private ListaResponseDTO convertirListaPublicaAResponseDTO(ListaPublica lista) {
+<span class="fc" id="L119">        List&lt;String&gt; idsContenidos = listaContenidoPublicaRepository</span>
+<span class="fc" id="L120">            .findByIdLista(lista.getIdLista())</span>
+<span class="fc" id="L121">            .stream()</span>
+<span class="fc" id="L122">            .map(ListaContenidoPublica::getIdContenido)</span>
+<span class="fc" id="L123">            .toList();</span>
+
+<span class="fc" id="L125">        List&lt;ContenidoListaResponseDTO&gt; contenidosCompletos = publicListHelper.obtenerContenidosCompletos(idsContenidos);</span>
+
+<span class="fc" id="L127">        return ListaResponseDTO.builder()</span>
+<span class="fc" id="L128">            .idLista(lista.getIdLista())</span>
+<span class="fc" id="L129">            .nombre(lista.getNombre())</span>
+<span class="fc" id="L130">            .descripcion(lista.getDescripcion())</span>
+<span class="fc" id="L131">            .idCreadorUsuario(lista.getIdCreadorUsuario())</span>
+<span class="fc" id="L132">            .visibilidad(lista.getVisibilidad())</span>
+<span class="fc" id="L133">            .contenidos(contenidosCompletos)</span>
+<span class="fc" id="L134">            .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

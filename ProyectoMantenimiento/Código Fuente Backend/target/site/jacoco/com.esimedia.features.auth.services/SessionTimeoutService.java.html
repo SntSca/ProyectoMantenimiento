@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SessionTimeoutService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">SessionTimeoutService.java</span></div><h1>SessionTimeoutService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.auth.enums.Rol;
+
+/**
+ * Servicio para gestionar el timeout absoluto de sesiones de usuario.
+ * Controla el tiempo máximo de sesión desde el login, independientemente de la actividad.
+ */
+@Service
+<span class="fc" id="L19">public class SessionTimeoutService {</span>
+    
+<span class="fc" id="L21">    private static final Logger logger = LoggerFactory.getLogger(SessionTimeoutService.class);</span>
+    
+    // Tiempos de absolute timeout en milisegundos
+    // 8 horas para usuarios normales
+    private static final long ABSOLUTE_TIMEOUT_NORMAL = 8L * 60 * 60 * 1000; 
+    // 6 horas para creadores
+    private static final long ABSOLUTE_TIMEOUT_CREADOR = 6L * 60 * 60 * 1000; 
+    // 6 horas para administradores
+    private static final long ABSOLUTE_TIMEOUT_ADMIN = 6L * 60 * 60 * 1000; 
+    
+    // Almacena las sesiones activas: userId -&gt; SessionInfo
+<span class="fc" id="L32">    private final Map&lt;String, SessionInfo&gt; activeSessions = new ConcurrentHashMap&lt;&gt;();</span>
+    
+    /**
+     * Registra una nueva sesión cuando el usuario hace login
+     * @param userId ID del usuario
+     * @param rol Rol del usuario
+     */
+    public void registerSession(String userId, Rol rol) {
+<span class="fc" id="L40">        long loginTime = System.currentTimeMillis();</span>
+<span class="fc" id="L41">        long absoluteExpirationTime = loginTime + getAbsoluteTimeoutByRole(rol);</span>
+        
+<span class="fc" id="L43">        SessionInfo sessionInfo = new SessionInfo(userId, rol, loginTime, absoluteExpirationTime);</span>
+<span class="fc" id="L44">        activeSessions.put(userId, sessionInfo);</span>
+        
+<span class="fc" id="L46">        logger.info(&quot;Sesión registrada para usuario {} con rol {}. Expira en {} horas.&quot;, </span>
+<span class="fc" id="L47">                   userId, rol, getAbsoluteTimeoutByRole(rol) / (60 * 60 * 1000));</span>
+<span class="fc" id="L48">    }</span>
+    
+    /**
+     * Valida si la sesión del usuario sigue siendo válida (no ha expirado el tiempo absoluto)
+     * @param userId ID del usuario
+     * @return true si la sesión es válida, false si ha expirado
+     */
+    public boolean isSessionValid(String userId) {
+<span class="fc" id="L56">        SessionInfo sessionInfo = activeSessions.get(userId);</span>
+        
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (sessionInfo == null) {</span>
+<span class="fc" id="L59">            logger.warn(&quot;No se encontró sesión activa para el usuario {}&quot;, userId);</span>
+<span class="fc" id="L60">            return false;</span>
+        }
+        
+<span class="fc" id="L63">        long currentTime = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (currentTime &gt; sessionInfo.absoluteExpirationTime) {</span>
+<span class="fc" id="L65">            logger.info(&quot;Sesión expirada para usuario {}. Tiempo límite alcanzado.&quot;, userId);</span>
+<span class="fc" id="L66">            invalidateSession(userId);</span>
+<span class="fc" id="L67">            return false;</span>
+        }
+        
+<span class="fc" id="L70">        return true;</span>
+    }
+    
+    /**
+     * Invalida/elimina la sesión de un usuario (logout)
+     * @param userId ID del usuario
+     */
+    public void invalidateSession(String userId) {
+<span class="fc" id="L78">        SessionInfo removed = activeSessions.remove(userId);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (removed != null) {</span>
+<span class="fc" id="L80">            logger.info(&quot;Sesión invalidada para usuario {} con rol {}&quot;, userId, removed.rol);</span>
+        }
+<span class="fc" id="L82">    }</span>
+    
+    /**
+     * Obtiene el tiempo restante de sesión en milisegundos
+     * @param userId ID del usuario
+     * @return Tiempo restante en ms, o -1 si no hay sesión o está expirada
+     */
+    public long getRemainingSessionTime(String userId) {
+<span class="fc" id="L90">        SessionInfo sessionInfo = activeSessions.get(userId);</span>
+        
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (sessionInfo == null) {</span>
+<span class="fc" id="L93">            return -1;</span>
+        }
+        
+<span class="fc" id="L96">        long currentTime = System.currentTimeMillis();</span>
+<span class="fc" id="L97">        long remaining = sessionInfo.absoluteExpirationTime - currentTime;</span>
+        
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        return remaining &gt; 0 ? remaining : -1;</span>
+    }
+    
+    /**
+     * Obtiene información de la sesión del usuario
+     * @param userId ID del usuario
+     * @return SessionInfo o null si no existe
+     */
+    public SessionInfo getSessionInfo(String userId) {
+<span class="fc" id="L108">        return activeSessions.get(userId);</span>
+    }
+    
+    /**
+     * Limpieza periódica de sesiones expiradas (cada 15 minutos)
+     */
+    // 15 minutos
+    @Scheduled(fixedRate = 15 * 60 * 1000) 
+    public void cleanupExpiredSessions() {
+<span class="fc" id="L117">        long currentTime = System.currentTimeMillis();</span>
+<span class="fc" id="L118">        int expiredCount = 0;</span>
+        
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (Map.Entry&lt;String, SessionInfo&gt; entry : activeSessions.entrySet()) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (currentTime &gt; entry.getValue().absoluteExpirationTime) {</span>
+<span class="fc" id="L122">                activeSessions.remove(entry.getKey());</span>
+<span class="fc" id="L123">                expiredCount++;</span>
+<span class="fc" id="L124">                logger.debug(&quot;Sesión expirada eliminada para usuario {}&quot;, entry.getKey());</span>
+            }
+<span class="fc" id="L126">        }</span>
+        
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (expiredCount &gt; 0) {</span>
+<span class="fc" id="L129">            logger.info(&quot;Limpieza de sesiones: {} sesiones expiradas eliminadas&quot;, expiredCount);</span>
+        }
+<span class="fc" id="L131">    }</span>
+    
+    /**
+     * Obtiene el tiempo de absolute timeout según el rol del usuario
+     * @param rol Rol del usuario
+     * @return Tiempo de absolute timeout en milisegundos
+     */
+    private long getAbsoluteTimeoutByRole(Rol rol) {
+<span class="fc bfc" id="L139" title="All 3 branches covered.">        switch (rol) {</span>
+            case CREADOR:
+                // 6 horas
+<span class="fc" id="L142">                return ABSOLUTE_TIMEOUT_CREADOR; </span>
+            case ADMINISTRADOR:
+                // 6 horas
+<span class="fc" id="L145">                return ABSOLUTE_TIMEOUT_ADMIN; </span>
+            case NORMAL:
+            default:
+                // 8 horas
+<span class="fc" id="L149">                return ABSOLUTE_TIMEOUT_NORMAL; </span>
+        }
+    }
+    
+    /**
+     * Obtiene el número de sesiones activas
+     * @return Número de sesiones activas
+     */
+    public int getActiveSessionsCount() {
+<span class="fc" id="L158">        return activeSessions.size();</span>
+    }
+    
+    /**
+     * Clase interna para almacenar información de la sesión
+     */
+    public static class SessionInfo {
+        private final String userId;
+        private final Rol rol;
+        private final long loginTime;
+        private final long absoluteExpirationTime;
+        
+<span class="fc" id="L170">        public SessionInfo(String userId, Rol rol, long loginTime, long absoluteExpirationTime) {</span>
+<span class="fc" id="L171">            this.userId = userId;</span>
+<span class="fc" id="L172">            this.rol = rol;</span>
+<span class="fc" id="L173">            this.loginTime = loginTime;</span>
+<span class="fc" id="L174">            this.absoluteExpirationTime = absoluteExpirationTime;</span>
+<span class="fc" id="L175">        }</span>
+        
+        public String getUserId() {
+<span class="fc" id="L178">            return userId;</span>
+        }
+        
+        public Rol getRol() {
+<span class="fc" id="L182">            return rol;</span>
+        }
+        
+        public long getLoginTime() {
+<span class="fc" id="L186">            return loginTime;</span>
+        }
+        
+        public long getAbsoluteExpirationTime() {
+<span class="fc" id="L190">            return absoluteExpirationTime;</span>
+        }
+        
+        public Instant getLoginInstant() {
+<span class="nc" id="L194">            return Instant.ofEpochMilli(loginTime);</span>
+        }
+        
+        public Instant getExpirationInstant() {
+<span class="nc" id="L198">            return Instant.ofEpochMilli(absoluteExpirationTime);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

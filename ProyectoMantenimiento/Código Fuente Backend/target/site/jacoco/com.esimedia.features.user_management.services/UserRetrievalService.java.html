@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserRetrievalService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.user_management.services</a> &gt; <span class="el_source">UserRetrievalService.java</span></div><h1>UserRetrievalService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.user_management.services;
+
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.shared.util.JwtUtil;
+
+import io.jsonwebtoken.JwtException;
+
+/**
+ * Servicio especializado para operaciones de búsqueda y recuperación de usuarios.
+ * Se encarga de buscar usuarios por diferentes criterios (ID, email, alias) 
+ * y extraer información de usuarios desde tokens JWT.
+ */
+@Service
+public class UserRetrievalService {
+
+    private static final String MESSAGE_USER_NOT_FOUND = &quot;El usuario no ha podido ser encontrado&quot;;
+    
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final AdminRepository adminRepository;
+    private final JwtUtil jwtUtil;
+    private final Logger logger;
+
+    public UserRetrievalService(UsuarioNormalRepository usuarioNormalRepository,
+                               CreadorContenidoRepository creadorContenidoRepository,
+                               AdminRepository adminRepository,
+<span class="fc" id="L41">                               JwtUtil jwtUtil) {</span>
+<span class="fc" id="L42">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L43">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L44">        this.adminRepository = adminRepository;</span>
+<span class="fc" id="L45">        this.jwtUtil = jwtUtil;</span>
+<span class="fc" id="L46">        this.logger = LoggerFactory.getLogger(UserRetrievalService.class);</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Busca un usuario normal por email
+     */
+    public Optional&lt;UsuarioNormal&gt; findByEmail(String email) {
+<span class="fc" id="L53">        logger.debug(&quot;[FIND_BY_EMAIL] Buscando usuario normal por email: {}&quot;, email);</span>
+<span class="fc" id="L54">        return usuarioNormalRepository.findByemail(email);</span>
+    }
+
+    /**
+     * Busca un usuario normal por alias
+     */
+    public Optional&lt;UsuarioNormal&gt; findByAlias(String alias) {
+<span class="fc" id="L61">        logger.debug(&quot;[FIND_BY_ALIAS] Buscando usuario normal por alias: {}&quot;, alias);</span>
+<span class="fc" id="L62">        return usuarioNormalRepository.findByalias(alias);</span>
+    }
+
+    /**
+     * Busca un usuario normal por ID
+     */
+    public Optional&lt;UsuarioNormal&gt; findById(String id) {
+<span class="fc" id="L69">        logger.debug(&quot;[FIND_BY_ID] Buscando usuario normal por ID: {}&quot;, id);</span>
+<span class="fc" id="L70">        return usuarioNormalRepository.findById(id);</span>
+    }
+
+    /**
+     * Busca cualquier tipo de usuario por ID
+     */
+    public Optional&lt;Usuario&gt; findAnyUserById(String id) {
+<span class="fc" id="L77">        logger.debug(&quot;[FIND_ANY_USER_BY_ID] Buscando cualquier usuario por ID: {}&quot;, id);</span>
+<span class="fc" id="L78">        Optional&lt;Usuario&gt; usuarioOpt = Optional.empty();</span>
+        // Buscar en usuarios normales
+<span class="fc" id="L80">        Optional&lt;UsuarioNormal&gt; usuarioNormal = usuarioNormalRepository.findById(id);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (usuarioNormal.isPresent()) {</span>
+<span class="fc" id="L82">            usuarioOpt = Optional.of(usuarioNormal.get());</span>
+        }
+
+        // Buscar en creadores de contenido
+<span class="fc" id="L86">        Optional&lt;CreadorContenido&gt; creador = creadorContenidoRepository.findById(id);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (creador.isPresent()) {</span>
+<span class="fc" id="L88">            usuarioOpt = Optional.of(creador.get());</span>
+        }
+
+        // Buscar en administradores
+<span class="fc" id="L92">        Optional&lt;Administrador&gt; admin = adminRepository.findById(id);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (admin.isPresent()) {</span>
+<span class="fc" id="L94">            usuarioOpt = Optional.of(admin.get());</span>
+        }
+
+<span class="fc" id="L97">        return usuarioOpt;</span>
+    }
+
+    /**
+     * Busca cualquier tipo de usuario por alias
+     */
+    public Optional&lt;Usuario&gt; findAnyUserByAlias(String alias) {
+<span class="fc" id="L104">        logger.debug(&quot;[FIND_ANY_USER_BY_ALIAS] Buscando cualquier usuario por alias: {}&quot;, alias);</span>
+<span class="fc" id="L105">        Optional&lt;Usuario&gt; usuarioOpt = Optional.empty();</span>
+        
+        // Buscar en usuarios normales
+<span class="fc" id="L108">        Optional&lt;UsuarioNormal&gt; usuarioNormal = usuarioNormalRepository.findByalias(alias);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (usuarioNormal.isPresent()) {</span>
+<span class="fc" id="L110">            usuarioOpt = Optional.of(usuarioNormal.get());</span>
+        }
+
+        // Buscar en creadores de contenido
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (usuarioOpt.isEmpty()) {</span>
+<span class="fc" id="L115">            Optional&lt;CreadorContenido&gt; creador = creadorContenidoRepository.findByAlias(alias);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (creador.isPresent()) {</span>
+<span class="fc" id="L117">                usuarioOpt = Optional.of(creador.get());</span>
+            }
+        }
+
+        // Buscar en administradores
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (usuarioOpt.isEmpty()) {</span>
+<span class="fc" id="L123">            Optional&lt;Administrador&gt; admin = adminRepository.findByalias(alias);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (admin.isPresent()) {</span>
+<span class="fc" id="L125">                usuarioOpt = Optional.of(admin.get());</span>
+            }
+        }
+
+<span class="fc" id="L129">        return usuarioOpt;</span>
+    }
+
+    /**
+     * Busca cualquier tipo de usuario por email
+     */
+    public Optional&lt;Usuario&gt; findAnyUserByEmail(String email) {
+<span class="fc" id="L136">        logger.debug(&quot;[FIND_ANY_USER_BY_EMAIL] Buscando cualquier usuario por email: {}&quot;, email);</span>
+<span class="fc" id="L137">        Optional&lt;Usuario&gt; usuarioOpt = Optional.empty();</span>
+        
+        // Buscar en usuarios normales
+<span class="fc" id="L140">        Optional&lt;UsuarioNormal&gt; usuarioNormal = usuarioNormalRepository.findByemail(email);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        if (usuarioNormal.isPresent()) {</span>
+<span class="fc" id="L142">            usuarioOpt = Optional.of(usuarioNormal.get());</span>
+        }
+
+        // Buscar en creadores de contenido
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (usuarioOpt.isEmpty()) {</span>
+<span class="fc" id="L147">            Optional&lt;CreadorContenido&gt; creador = creadorContenidoRepository.findByemail(email);</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (creador.isPresent()) {</span>
+<span class="fc" id="L149">                usuarioOpt = Optional.of(creador.get());</span>
+            }
+        }
+
+        // Buscar en administradores
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (usuarioOpt.isEmpty()) {</span>
+<span class="fc" id="L155">            Optional&lt;Administrador&gt; admin = adminRepository.findByemail(email);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            if (admin.isPresent()) {</span>
+<span class="fc" id="L157">                usuarioOpt = Optional.of(admin.get());</span>
+            }
+        }
+
+<span class="fc" id="L161">        return usuarioOpt;</span>
+    }
+
+    /**
+     * Extrae el token del header Authorization, obtiene el subject (userId) y devuelve
+     * el objeto Usuario correspondiente buscando por id en las distintas colecciones.
+     * Lanza ResponseStatusException con 401 si el header/token no son válidos o 404 si no se encuentra el usuario.
+     */
+    public Usuario getUserFromAuthHeader(String authHeader) {
+<span class="fc" id="L170">        logger.debug(&quot;[GET_USER_FROM_AUTH_HEADER] Extrayendo usuario desde header de autorización&quot;);</span>
+        
+        try {
+<span class="fc" id="L173">            String token = authHeader.substring(7);</span>
+<span class="fc" id="L174">            String userId = jwtUtil.getUserIdFromToken(token);</span>
+
+            // Intentar usuario normal
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            if (usuarioNormalRepository.existsById(userId)) {</span>
+<span class="fc" id="L178">                return usuarioNormalRepository.findById(userId)</span>
+<span class="fc" id="L179">                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, MESSAGE_USER_NOT_FOUND));</span>
+            }
+
+            // Intentar creador de contenido
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            if (creadorContenidoRepository.existsById(userId)) {</span>
+<span class="fc" id="L184">                return creadorContenidoRepository.findById(userId)</span>
+<span class="pc" id="L185">                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, MESSAGE_USER_NOT_FOUND));</span>
+            }
+
+            // Intentar administrador
+<span class="fc bfc" id="L189" title="All 2 branches covered.">            if (adminRepository.existsById(userId)) {</span>
+<span class="fc" id="L190">                return adminRepository.findById(userId)</span>
+<span class="pc" id="L191">                    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, MESSAGE_USER_NOT_FOUND));</span>
+            }
+
+<span class="fc" id="L194">            throw new ResponseStatusException(HttpStatus.NOT_FOUND, MESSAGE_USER_NOT_FOUND);</span>
+        }
+<span class="fc" id="L196">        catch (IllegalArgumentException | JwtException e) {</span>
+<span class="fc" id="L197">            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;Token de autorización inválido&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.notifications.services</a> &gt; <span class="el_source">NotificationService.java</span></div><h1>NotificationService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.notifications.services;
+
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.content.entity.Contenido;
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.notifications.dto.NotificationDTO;
+import com.esimedia.features.notifications.entity.Notification;
+import com.esimedia.features.notifications.enums.NotificationSubtype;
+import com.esimedia.features.notifications.enums.NotificationType;
+import com.esimedia.features.notifications.repository.NotificationRepository;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L27">@RequiredArgsConstructor</span>
+public class NotificationService {
+
+<span class="fc" id="L30">    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);</span>
+
+    private final NotificationRepository notificationRepository;
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final ValidationService validationService;
+    private static final String CONTENT_ID = &quot;{\&quot;contentId\&quot;:\&quot;&quot;;
+
+<span class="fc" id="L37">    private static final DateTimeFormatter DATE_FORMATTER =</span>
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+    // ===== Buzón =====
+
+    @Transactional(readOnly = true)
+    public List&lt;NotificationDTO&gt; getInbox(String userId) {
+<span class="fc" id="L44">        logger.debug(&quot;Obteniendo buzón de notificaciones para usuario {}&quot;, userId);</span>
+<span class="fc" id="L45">        List&lt;NotificationDTO&gt; result = notificationRepository</span>
+<span class="fc" id="L46">                .findByUserIdAndDeletedFalseOrderByCreatedAtDesc(userId)</span>
+<span class="fc" id="L47">                .stream()</span>
+<span class="fc" id="L48">                .map(this::toDto)</span>
+<span class="fc" id="L49">                .toList();</span>
+<span class="fc" id="L50">        logger.debug(&quot;Usuario {} tiene {} notificaciones en el buzón&quot;, userId, result.size());</span>
+<span class="fc" id="L51">        return result;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public long getUnreadCount(String userId) {
+<span class="fc" id="L56">        long count = notificationRepository.countByUserIdAndReadFalseAndDeletedFalse(userId);</span>
+<span class="fc" id="L57">        logger.debug(&quot;Usuario {} tiene {} notificaciones no leídas&quot;, userId, count);</span>
+<span class="fc" id="L58">        return count;</span>
+    }
+
+    @Transactional
+    public void markAsRead(String notificationId, String userId) {
+<span class="fc" id="L63">        logger.debug(&quot;Marcando notificación {} como leída para usuario {}&quot;, notificationId, userId);</span>
+<span class="fc" id="L64">        notificationRepository.findByIdAndUserIdAndDeletedFalse(notificationId, userId)</span>
+<span class="fc" id="L65">                .ifPresentOrElse(notification -&gt; {</span>
+<span class="fc" id="L66">                    notification.markAsRead();</span>
+<span class="fc" id="L67">                    notificationRepository.save(notification);</span>
+<span class="fc" id="L68">                    logger.info(&quot;Notificación {} marcada como leída para usuario {}&quot;, notificationId, userId);</span>
+<span class="fc" id="L69">                }, () -&gt; logger.warn(&quot;No se encontró notificación {} para usuario {}&quot;, notificationId, userId));</span>
+<span class="fc" id="L70">    }</span>
+
+    @Transactional
+    public void deleteNotification(String notificationId, String userId) {
+<span class="fc" id="L74">        logger.debug(&quot;Marcando notificación {} como eliminada para usuario {}&quot;, notificationId, userId);</span>
+<span class="fc" id="L75">        notificationRepository.findByIdAndUserIdAndDeletedFalse(notificationId, userId)</span>
+<span class="fc" id="L76">                .ifPresentOrElse(notification -&gt; {</span>
+<span class="fc" id="L77">                    notification.markAsDeleted();</span>
+<span class="fc" id="L78">                    notificationRepository.save(notification);</span>
+<span class="fc" id="L79">                    logger.info(&quot;Notificación {} marcada como eliminada para usuario {}&quot;, notificationId, userId);</span>
+<span class="pc" id="L80">                }, () -&gt; logger.warn(&quot;No se encontró notificación {} para usuario {}&quot;, notificationId, userId));</span>
+<span class="fc" id="L81">    }</span>
+
+    // ===== Notificaciones por NUEVO CONTENIDO =====
+
+    @Transactional
+    public void createNotificationsForNewContent(Contenido contenido) {
+<span class="fc" id="L87">        logger.info(&quot;Generando notificaciones para contenido {} (ID: {}, VIP: {}, restricciónEdad: {}, visibilidad: {})&quot;,</span>
+<span class="fc" id="L88">                contenido.getTitulo(),</span>
+<span class="fc" id="L89">                contenido.getId(),</span>
+<span class="fc" id="L90">                contenido.isEsVIP(),</span>
+<span class="fc" id="L91">                contenido.getRestriccionEdad(),</span>
+<span class="fc" id="L92">                contenido.isVisibilidad()</span>
+        );
+
+<span class="fc" id="L95">        List&lt;UsuarioNormal&gt; usuarios = usuarioNormalRepository.findAll();</span>
+<span class="fc" id="L96">        logger.debug(&quot;Se han cargado {} usuarios para evaluar notificaciones&quot;, usuarios.size());</span>
+
+<span class="fc" id="L98">        int totalRecomendados = 0;</span>
+<span class="fc" id="L99">        int totalGenerales = 0;</span>
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (UsuarioNormal usuario : usuarios) {</span>
+
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">            if (!userCanAccessContent(usuario, contenido)) continue;</span>
+
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">            boolean tieneGustos = usuario.getGustosTags() != null &amp;&amp; !usuario.getGustosTags().isEmpty();</span>
+<span class="fc" id="L106">            boolean matchGustos = matchesUserTastes(usuario, contenido);</span>
+
+            Notification notification;
+
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">            if (tieneGustos &amp;&amp; matchGustos) {</span>
+<span class="fc" id="L111">                notification = Notification.builder()</span>
+<span class="fc" id="L112">                        .userId(usuario.getIdUsuario())</span>
+<span class="fc" id="L113">                        .type(NotificationType.NOTIFICATION)</span>
+<span class="fc" id="L114">                        .subtype(NotificationSubtype.NEW_CONTENT_RECOMMENDED)</span>
+<span class="fc" id="L115">                        .title(&quot;Lo más recomendado para ti&quot;)</span>
+<span class="fc" id="L116">                        .body(&quot;Nuevo contenido que coincide con tus gustos: &quot; + contenido.getTitulo())</span>
+<span class="fc" id="L117">                        .payload(CONTENT_ID + contenido.getId() + &quot;\&quot;}&quot;)</span>
+<span class="fc" id="L118">                        .build();</span>
+<span class="fc" id="L119">                totalRecomendados++;</span>
+            } else {
+<span class="nc" id="L121">                notification = Notification.builder()</span>
+<span class="nc" id="L122">                        .userId(usuario.getIdUsuario())</span>
+<span class="nc" id="L123">                        .type(NotificationType.NOTIFICATION)</span>
+<span class="nc" id="L124">                        .subtype(NotificationSubtype.NEW_CONTENT)</span>
+<span class="nc" id="L125">                        .title(&quot;Esto te podría interesar&quot;)</span>
+<span class="nc" id="L126">                        .body(&quot;Se ha publicado: &quot; + contenido.getTitulo())</span>
+<span class="nc" id="L127">                        .payload(CONTENT_ID + contenido.getId() + &quot;\&quot;}&quot;)</span>
+<span class="nc" id="L128">                        .build();</span>
+<span class="nc" id="L129">                totalGenerales++;</span>
+            }
+
+<span class="fc" id="L132">            notificationRepository.save(notification);</span>
+<span class="fc" id="L133">        }</span>
+
+<span class="fc" id="L135">        logger.info(&quot;Notificaciones generadas: recomendadas={}, generales={}&quot;, totalRecomendados, totalGenerales);</span>
+<span class="fc" id="L136">    }</span>
+
+    // ===== Reglas de filtrado =====
+    private boolean userCanAccessContent(UsuarioNormal usuario, Contenido contenido) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (usuario.getRol() != Rol.NORMAL) {</span>
+<span class="fc" id="L141">            logger.trace(&quot;Usuario {} descartado: rol {} != NORMAL&quot;, usuario.getIdUsuario(), usuario.getRol());</span>
+<span class="fc" id="L142">            return false;</span>
+        }
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (!contenido.isVisibilidad()) {</span>
+<span class="fc" id="L146">            logger.trace(&quot;Usuario {} descartado: contenido {} no es visible&quot;, usuario.getIdUsuario(), contenido.getId());</span>
+<span class="fc" id="L147">            return false;</span>
+        }
+
+<span class="fc" id="L150">        boolean contenidoVip = contenido.isEsVIP();</span>
+<span class="fc" id="L151">        boolean usuarioVip = false;</span>
+        try {
+<span class="fc" id="L153">            usuarioVip = usuario.isFlagVIP();</span>
+<span class="nc" id="L154">        } catch (NoSuchMethodError e) {</span>
+<span class="nc" id="L155">            logger.warn(&quot;UsuarioNormal no tiene campo VIP implementado aún, se asumirá NO VIP para usuario {}&quot;,</span>
+<span class="nc" id="L156">                    usuario.getIdUsuario());</span>
+<span class="nc" id="L157">        } catch (Exception e) {</span>
+<span class="nc" id="L158">            logger.error(&quot;Error evaluando VIP para usuario {}: {}&quot;, usuario.getIdUsuario(), e.getMessage());</span>
+<span class="pc" id="L159">        }</span>
+
+<span class="fc bfc" id="L161" title="All 4 branches covered.">        if (contenidoVip &amp;&amp; !usuarioVip) {</span>
+<span class="fc" id="L162">            logger.trace(&quot;Usuario {} descartado: contenido VIP y usuario NO VIP&quot;, usuario.getIdUsuario());</span>
+<span class="fc" id="L163">            return false;</span>
+        }
+
+<span class="fc" id="L166">        RestriccionEdad restriccion = contenido.getRestriccionEdad();</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">        if (restriccion != null &amp;&amp; usuario.getFechaNacimiento() != null) {</span>
+<span class="fc" id="L168">            int edadUsuario = validationService.calculateAge(usuario.getFechaNacimiento());</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            if (edadUsuario &lt; restriccion.getValor()) {</span>
+<span class="fc" id="L170">                logger.trace(&quot;Usuario {} descartado: edad {} &lt; mínima {}&quot;, usuario.getIdUsuario(), edadUsuario, restriccion.getValor());</span>
+<span class="fc" id="L171">                return false;</span>
+            }
+        }
+
+<span class="fc" id="L175">        return true;</span>
+    }
+
+    private boolean matchesUserTastes(UsuarioNormal usuario, Contenido contenido) {
+<span class="fc" id="L179">        List&lt;String&gt; gustos = usuario.getGustosTags();</span>
+<span class="fc" id="L180">        List&lt;String&gt; tagsContenido = contenido.getTags();</span>
+
+<span class="pc bpc" id="L182" title="2 of 8 branches missed.">        if (gustos == null || gustos.isEmpty() || tagsContenido == null || tagsContenido.isEmpty()) {</span>
+<span class="fc" id="L183">            return false;</span>
+        }
+
+<span class="fc" id="L186">        Set&lt;String&gt; gustosSet = gustos.stream().map(String::toLowerCase).collect(Collectors.toSet());</span>
+
+<span class="fc" id="L188">        return tagsContenido.stream()</span>
+<span class="fc" id="L189">                .map(String::toLowerCase)</span>
+<span class="fc" id="L190">                .anyMatch(gustosSet::contains);</span>
+    }
+
+    // ===== Mapping a DTO =====
+
+    private NotificationDTO toDto(Notification n) {
+<span class="fc" id="L196">        Map&lt;String, Object&gt; payloadMap = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L197" title="3 of 4 branches missed.">        if (n.getPayload() != null &amp;&amp; !n.getPayload().isBlank()) {</span>
+<span class="nc" id="L198">            payloadMap.put(&quot;raw&quot;, n.getPayload());</span>
+        }
+<span class="fc" id="L200">        return new NotificationDTO(</span>
+<span class="fc" id="L201">                n.getId(),</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">                n.getType() != null ? n.getType().name() : null,</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                n.getSubtype() != null ? n.getSubtype().name() : null,</span>
+<span class="fc" id="L204">                n.getTitle(),</span>
+<span class="fc" id="L205">                n.getBody(),</span>
+                payloadMap,
+<span class="fc" id="L207">                n.isRead(),</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">                n.getCreatedAt() != null ? n.getCreatedAt().format(DATE_FORMATTER) : null</span>
+        );
+    }
+
+    // ===== Alerts por contenido por caducar =====
+
+    @Transactional
+    public void createAlertsForExpiringContent(Contenido contenido) {
+<span class="nc" id="L216">        List&lt;UsuarioNormal&gt; usuarios = usuarioNormalRepository.findAll();</span>
+
+<span class="nc" id="L218">        int totalRecomendados = 0;</span>
+<span class="nc" id="L219">        int totalGenerales = 0;</span>
+<span class="nc" id="L220">        int totalAlertas = 0;</span>
+
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        for (UsuarioNormal usuario : usuarios) {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (!userCanAccessContent(usuario, contenido)) continue;</span>
+
+<span class="nc" id="L225">            totalRecomendados += handleRecommendedNotification(usuario, contenido);</span>
+<span class="nc" id="L226">            totalGenerales += handleGenericNotification(usuario, contenido);</span>
+<span class="nc" id="L227">            totalAlertas += handleExpiringAlert(usuario, contenido);</span>
+<span class="nc" id="L228">        }</span>
+
+<span class="nc" id="L230">        logger.debug(&quot;Contenido {} expira en menos de 7 días: {}&quot;, contenido.getId(), isExpiringWithinAWeek(contenido));</span>
+<span class="nc" id="L231">        logger.info(&quot;Personalizadas enviadas: {}&quot;, totalRecomendados);</span>
+<span class="nc" id="L232">        logger.info(&quot;Generales enviadas: {}&quot;, totalGenerales);</span>
+<span class="nc" id="L233">        logger.info(&quot;Alertas de caducidad enviadas: {}&quot;, totalAlertas);</span>
+<span class="nc" id="L234">    }</span>
+
+    private int handleRecommendedNotification(UsuarioNormal usuario, Contenido contenido) {
+<span class="nc bnc" id="L237" title="All 4 branches missed.">        if (matchesUserTastes(usuario, contenido) &amp;&amp; !alreadyHasRecommendedNotification(usuario.getIdUsuario(), contenido.getId())) {</span>
+<span class="nc" id="L238">            Notification noti = Notification.builder()</span>
+<span class="nc" id="L239">                    .userId(usuario.getIdUsuario())</span>
+<span class="nc" id="L240">                    .type(NotificationType.NOTIFICATION)</span>
+<span class="nc" id="L241">                    .subtype(NotificationSubtype.NEW_CONTENT_RECOMMENDED)</span>
+<span class="nc" id="L242">                    .title(&quot;✨ Recomendado para ti&quot;)</span>
+<span class="nc" id="L243">                    .body(&quot;Creemos que podría gustarte: \&quot;&quot; + contenido.getTitulo() + &quot;\&quot;&quot;)</span>
+<span class="nc" id="L244">                    .payload(CONTENT_ID + contenido.getId() + &quot;\&quot;}&quot;)</span>
+<span class="nc" id="L245">                    .build();</span>
+<span class="nc" id="L246">            notificationRepository.save(noti);</span>
+<span class="nc" id="L247">            return 1;</span>
+        }
+<span class="nc" id="L249">        return 0;</span>
+    }
+
+    private int handleGenericNotification(UsuarioNormal usuario, Contenido contenido) {
+<span class="nc bnc" id="L253" title="All 4 branches missed.">        if (!matchesUserTastes(usuario, contenido) &amp;&amp; !alreadyHasGenericNotification(usuario.getIdUsuario(), contenido.getId())) {</span>
+<span class="nc" id="L254">            Notification noti = Notification.builder()</span>
+<span class="nc" id="L255">                    .userId(usuario.getIdUsuario())</span>
+<span class="nc" id="L256">                    .type(NotificationType.NOTIFICATION)</span>
+<span class="nc" id="L257">                    .subtype(NotificationSubtype.NEW_CONTENT)</span>
+<span class="nc" id="L258">                    .title(&quot;🆕 Esto te podría interesar&quot;)</span>
+<span class="nc" id="L259">                    .body(&quot;Nuevo contenido disponible: \&quot;&quot; + contenido.getTitulo() + &quot;\&quot;&quot;)</span>
+<span class="nc" id="L260">                    .payload(CONTENT_ID + contenido.getId() + &quot;\&quot;}&quot;)</span>
+<span class="nc" id="L261">                    .build();</span>
+<span class="nc" id="L262">            notificationRepository.save(noti);</span>
+<span class="nc" id="L263">            return 1;</span>
+        }
+<span class="nc" id="L265">        return 0;</span>
+    }
+
+    private int handleExpiringAlert(UsuarioNormal usuario, Contenido contenido) {
+<span class="nc bnc" id="L269" title="All 4 branches missed.">        if (isExpiringWithinAWeek(contenido) &amp;&amp; !alreadyHasExpiringAlert(usuario.getIdUsuario(), contenido.getId())) {</span>
+<span class="nc" id="L270">            Notification alerta = Notification.builder()</span>
+<span class="nc" id="L271">                    .userId(usuario.getIdUsuario())</span>
+<span class="nc" id="L272">                    .type(NotificationType.ALERT)</span>
+<span class="nc" id="L273">                    .subtype(NotificationSubtype.EXPIRING_SOON)</span>
+<span class="nc" id="L274">                    .title(&quot;⚠ Contenido por caducar&quot;)</span>
+<span class="nc" id="L275">                    .body(&quot;El contenido \&quot;&quot; + contenido.getTitulo() + &quot;\&quot; dejará de estar disponible pronto.&quot;)</span>
+<span class="nc" id="L276">                    .payload(CONTENT_ID + contenido.getId() + &quot;\&quot;}&quot;)</span>
+<span class="nc" id="L277">                    .build();</span>
+<span class="nc" id="L278">            notificationRepository.save(alerta);</span>
+<span class="nc" id="L279">            return 1;</span>
+        }
+<span class="nc" id="L281">        return 0;</span>
+    }
+
+    private boolean alreadyHasRecommendedNotification(String userId, String contentId) {
+<span class="fc" id="L285">        return notificationRepository.existsByUserIdAndSubtypeAndPayloadContaining(</span>
+                userId,
+                NotificationSubtype.NEW_CONTENT_RECOMMENDED,
+                contentId
+        );
+    }
+
+    private boolean alreadyHasGenericNotification(String userId, String contentId) {
+<span class="nc" id="L293">        return notificationRepository.existsByUserIdAndSubtypeAndPayloadContaining(</span>
+                userId,
+                NotificationSubtype.NEW_CONTENT,
+                contentId
+        );
+    }
+
+    private boolean alreadyHasExpiringAlert(String userId, String contentId) {
+<span class="nc" id="L301">        return notificationRepository.existsByUserIdAndSubtypeAndPayloadContaining(</span>
+                userId,
+                NotificationSubtype.EXPIRING_SOON,
+                contentId
+        );
+    }
+
+    public boolean isExpiringWithinAWeek(Contenido contenido) {
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">        if (contenido.getFechaDisponibleHasta() == null) return false;</span>
+
+<span class="fc" id="L311">        LocalDateTime fechaDisponible = contenido.getFechaDisponibleHasta().toInstant()</span>
+<span class="fc" id="L312">                .atZone(ZoneId.systemDefault())</span>
+<span class="fc" id="L313">                .toLocalDateTime();</span>
+
+<span class="fc" id="L315">        LocalDateTime now = LocalDateTime.now();</span>
+<span class="fc" id="L316">        LocalDateTime limit = now.plusDays(7);</span>
+
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">        return fechaDisponible.isBefore(limit) &amp;&amp; fechaDisponible.isAfter(now);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.esimedia.features.auth.dto.UsuarioNormalDTOTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.489 s -- in com.esimedia.features.auth.dto.UsuarioNormalDTOTest

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AudioContentUploadService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.services</a> &gt; <span class="el_source">AudioContentUploadService.java</span></div><h1>AudioContentUploadService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.services;
+
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.content.dto.ContentAudioUploadDTO;
+import com.esimedia.features.content.entity.ContenidoAudioTag;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.features.content.repository.ContenidoAudioTagRepository;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.TagsRepository;
+import com.esimedia.shared.util.ContentProcessingUtil;
+import com.esimedia.shared.util.ContentTagProcessor;
+import com.esimedia.shared.util.ContentUtil;
+import com.esimedia.shared.security.ClamAVService;
+import com.esimedia.features.notifications.services.NotificationService;
+
+
+import java.util.Date;
+
+@Service
+public class AudioContentUploadService {
+
+<span class="fc" id="L30">    private static final Logger logger = LoggerFactory.getLogger(AudioContentUploadService.class);</span>
+
+    private final ValidationService validationService;
+    private final ClamAVService clamavService;
+    private final ContenidosAudioRepository contenidoAudioRepository;
+    private final ContenidoAudioTagRepository contenidoAudioTagRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final ContentTagProcessor tagProcessor;
+    private final NotificationService notificationService;
+
+
+    public AudioContentUploadService(
+        ValidationService validationService,
+        ClamAVService clamavService,
+        ContenidosAudioRepository contenidoAudioRepository,
+        ContenidoAudioTagRepository contenidoAudioTagRepository,
+        TagsRepository tagsRepository,
+        CreadorContenidoRepository creadorContenidoRepository,
+        NotificationService notificationService
+<span class="fc" id="L49">    ) {</span>
+<span class="fc" id="L50">        this.validationService = validationService;</span>
+<span class="fc" id="L51">        this.clamavService = clamavService;</span>
+<span class="fc" id="L52">        this.contenidoAudioRepository = contenidoAudioRepository;</span>
+<span class="fc" id="L53">        this.contenidoAudioTagRepository = contenidoAudioTagRepository;</span>
+<span class="fc" id="L54">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L55">        this.notificationService = notificationService;</span>
+<span class="fc" id="L56">        this.tagProcessor = new ContentTagProcessor(tagsRepository, ContenidoAudioTag::new);</span>
+<span class="fc" id="L57">    }</span>
+
+    public String uploadAudioContent(String username, ContentAudioUploadDTO audioDTO) {
+<span class="fc" id="L60">        String validationResult = validationService.validateAudioContent(audioDTO);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (validationResult != null) {</span>
+<span class="fc" id="L62">            return validationResult;</span>
+        }
+<span class="fc" id="L64">        return processAudioContent(username, audioDTO);</span>
+    }
+
+    private String processAudioContent(String userId, ContentAudioUploadDTO audioDTO) {
+        try {
+            // Procesar para el fichero de audio (base64 puro)
+<span class="fc" id="L70">            byte[] audioBytes = ContentUtil.decodeAudio(audioDTO.getFichero());</span>
+<span class="fc" id="L71">            String ficheroExtension = audioDTO.getFicheroExtension();</span>
+
+            // Procesar para la imagen (si existe)
+<span class="fc" id="L74">            byte[] imagenBytes = null;</span>
+<span class="fc" id="L75">            String imagenExtension = null;</span>
+<span class="pc bpc" id="L76" title="3 of 4 branches missed.">            if (audioDTO.getMiniatura() != null &amp;&amp; !audioDTO.getMiniatura().trim().isEmpty()) {</span>
+<span class="nc" id="L77">                imagenBytes = ContentUtil.decodeImage(audioDTO.getMiniatura());</span>
+<span class="nc" id="L78">                imagenExtension = audioDTO.getFormatoMiniatura();</span>
+            }
+
+            // Obtener especialidad del creador
+<span class="fc" id="L82">            CreadorContenido creador = creadorContenidoRepository.findById(userId).orElseThrow(() -&gt;</span>
+<span class="fc" id="L83">                new RuntimeException(&quot;Creador no encontrado&quot;));</span>
+<span class="fc" id="L84">            String especialidad = creador.getEspecialidad();</span>
+
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            boolean visible = audioDTO.getVisibilidad() != null ? audioDTO.getVisibilidad() : false;</span>
+
+
+            // Crear contenido de audio
+<span class="fc" id="L90">            ContenidosAudio contenidoAudio = ContenidosAudio.builder()</span>
+<span class="fc" id="L91">                .titulo(audioDTO.getTitulo())</span>
+<span class="fc" id="L92">                .descripcion(audioDTO.getDescripcion())</span>
+<span class="fc" id="L93">                .duracion(audioDTO.getDuracion())</span>
+<span class="fc" id="L94">                .idCreador(userId)</span>
+<span class="fc" id="L95">                .especialidad(especialidad)</span>
+<span class="fc" id="L96">                .fichero(audioBytes)</span>
+<span class="fc" id="L97">                .ficheroExtension(ficheroExtension)</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">                .esVIP(audioDTO.getEsVIP() != null ? audioDTO.getEsVIP() : false)</span>
+<span class="fc" id="L99">                .fechaSubida(Date.from(Instant.now()))</span>
+<span class="fc" id="L100">                .fechaDisponibleHasta(ContentProcessingUtil.parseFechaExpiracion(audioDTO.getFechaExpiracion()))</span>
+<span class="fc" id="L101">                .miniatura(imagenBytes)</span>
+<span class="fc" id="L102">                .formatoMiniatura(imagenExtension)</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">                .restriccionEdad(audioDTO.getRestriccionEdad() != null ?</span>
+<span class="nc" id="L104">                    getRestriccionEdadFromValue(audioDTO.getRestriccionEdad()) : null)</span>
+<span class="nc" id="L105">                .visibilidad(visible)</span>
+<span class="nc" id="L106">                .build();</span>
+
+            // Guardar contenido
+<span class="nc" id="L109">            ContenidosAudio savedContent = contenidoAudioRepository.save(contenidoAudio);</span>
+            // Crear notificaciones para nuevos contenidos
+<span class="nc" id="L111">            notificationService.createNotificationsForNewContent(savedContent);</span>
+            // Procesar tags
+<span class="nc" id="L113">            tagProcessor.processContentTags(savedContent.getId(), audioDTO.getTags(),</span>
+<span class="nc" id="L114">                relation -&gt; contenidoAudioTagRepository.save((ContenidoAudioTag) relation));</span>
+
+<span class="nc" id="L116">            logger.info(&quot;Contenido de audio creado exitosamente con ID: {}&quot;, savedContent.getId());</span>
+<span class="nc" id="L117">            return &quot;SUCCESS:Contenido de audio subido exitosamente&quot;;</span>
+
+        } 
+<span class="fc" id="L120">        catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L121">            logger.error(&quot;Error en los datos proporcionados: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L122">            return &quot;Error en los datos proporcionados: &quot; + e.getMessage();</span>
+        } 
+<span class="fc" id="L124">        catch (Exception e) {</span>
+<span class="fc" id="L125">            logger.error(&quot;Error procesando contenido de audio: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L126">            return &quot;Error interno del servidor&quot;;</span>
+        }
+    }
+
+    private RestriccionEdad getRestriccionEdadFromValue(Integer valor) {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (valor == null) return null;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (RestriccionEdad restriccion : RestriccionEdad.values()) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">            if (restriccion.getValor() == valor) {</span>
+<span class="nc" id="L134">                return restriccion;</span>
+            }
+        }
+<span class="fc" id="L137">        throw new IllegalArgumentException(&quot;Valor de restricción de edad no válido: &quot; + valor);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,119 @@
+// ===========================
+// ARCHIVO PRINCIPAL SCSS
+// ===========================
+
+// 1. Abstracts (variables, mixins, funciones)
+@use 'abstracts/variables' as *;
+@use 'abstracts/mixins' as *;
+
+// 2. Base (reset, tipografía, base)
+@use 'base/reset';
+@use 'base/animations';
+
+// 3. Layout (contenedores, header, footer, etc.)
+@use 'layout/containers';
+
+// 4. Componentes (botones, formularios, tarjetas, etc.)
+@use 'components/cards';
+@use 'components/headers';
+@use 'components/separators';
+@use 'components/option-cards';
+@use 'components/footer';
+@use 'components/forms';
+@use 'components/buttons';
+@use 'components/photo';
+@use 'components/tips';
+@use 'components/dashboard';
+@use 'components/toast';
+@use 'components/perfil-usuario';
+
+
+
+// 5. Temas (variantes de usuario, gestor y común)
+@use 'themes/usuario';
+@use 'themes/gestor';
+@use 'themes/comun';
+
+@use 'ngx-toastr/toastr';
+
+// ===========================
+// RESPONSIVE DESIGN
+// ===========================
+
+@include responsive(lg) {
+  .registro-card {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+  
+  .form-section {
+    padding: $spacing-xl;
+  }
+  
+  .tips-section {
+    padding: $spacing-xl;
+  }
+}
+
+@include responsive(md) {
+  .registro-container {
+    padding: $spacing-md;
+  }
+  
+  .form-section {
+    padding: $spacing-lg;
+  }
+  
+  .tips-section {
+    padding: $spacing-lg;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .logo {
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+  
+  .brand-name {
+    font-size: 1.8rem;
+  }
+  
+  .form-title h2 {
+    font-size: $spacing-lg;
+  }
+  
+  .tips-title {
+    font-size: 1.2rem;
+    margin-bottom: $spacing-lg;
+  }
+  
+  .form-textarea {
+    min-height: 80px;
+  }
+}
+
+@include responsive(sm) {
+  .form-section {
+    padding: $spacing-md;
+  }
+  
+  .tips-section {
+    padding: $spacing-md;
+  }
+  
+  .brand-name {
+    font-size: $spacing-lg;
+  }
+  
+  .form-title h2 {
+    font-size: 1.3rem;
+  }
+  
+  .btn-primary {
+    padding: 0.75rem $spacing-lg;
+    font-size: $font-size-base;
+  }
+}

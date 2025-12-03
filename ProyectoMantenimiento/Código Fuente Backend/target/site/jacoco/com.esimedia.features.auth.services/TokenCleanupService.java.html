@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TokenCleanupService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">TokenCleanupService.java</span></div><h1>TokenCleanupService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.Sesion;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.enums.EstadoSesion;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.SesionRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+import jakarta.transaction.Transactional;
+
+@Service
+public class TokenCleanupService {
+<span class="fc" id="L23">    private static final Logger logger = LoggerFactory.getLogger(TokenCleanupService.class);</span>
+
+    private final SesionRepository sesionRepository;
+    private final UsuarioNormalRepository usuarioRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+
+<span class="fc" id="L29">    public TokenCleanupService(SesionRepository sesionRepository, UsuarioNormalRepository usuarioRepository, CreadorContenidoRepository creadorContenidoRepository) {</span>
+<span class="fc" id="L30">        this.sesionRepository = sesionRepository;</span>
+<span class="fc" id="L31">        this.usuarioRepository = usuarioRepository;</span>
+<span class="fc" id="L32">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * Ejecutado todos los días a las 3:00 AM. Elimina sesiones expiradas (más de 24h)
+     * y también elimina usuarios no validados si ya no tienen sesión activa.
+     */
+    @Scheduled(cron = &quot;0 0 3 * * *&quot;)
+    @Transactional
+    public void deleteExpiredSessionsAndUnconfirmedUsers() {
+<span class="fc" id="L42">        LocalDateTime fechaLimite = LocalDateTime.now().minusHours(24);</span>
+
+        // Eliminar sesiones expiradas
+<span class="fc" id="L45">        List&lt;Sesion&gt; sesionesExpiradas = sesionRepository.findByEstadoAndFechaUltimaActividadBefore(</span>
+            EstadoSesion.EXPIRADA, fechaLimite
+        );
+<span class="fc" id="L48">        int sesionesEliminadas = sesionesExpiradas.size();</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (Sesion sesion : sesionesExpiradas) {</span>
+<span class="fc" id="L50">            sesionRepository.delete(sesion);</span>
+<span class="fc" id="L51">        }</span>
+
+
+        // Eliminar usuarios normales no validados sin sesiones activas
+<span class="fc" id="L55">        List&lt;UsuarioNormal&gt; usuariosNormales = usuarioRepository.findAll();</span>
+<span class="fc" id="L56">        int usuariosEliminados = 0;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (UsuarioNormal usuario : usuariosNormales) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (!usuario.isConfirmado()) {</span>
+<span class="fc" id="L59">                long sesionesActivas = sesionRepository.countByIdUsuarioAndEstado(usuario.getIdUsuario(), EstadoSesion.ACTIVA);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (sesionesActivas == 0) {</span>
+<span class="fc" id="L61">                    usuarioRepository.delete(usuario);</span>
+<span class="fc" id="L62">                    usuariosEliminados++;</span>
+<span class="fc" id="L63">                    logger.info(&quot;[TokenCleanup] Usuario normal no confirmado eliminado: {}&quot;, usuario.getAlias());</span>
+                }
+            }
+<span class="fc" id="L66">        }</span>
+
+        // Eliminar creadores de contenido no validados sin sesiones activas
+<span class="fc" id="L69">        List&lt;CreadorContenido&gt; creadores = creadorContenidoRepository.findAll();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (CreadorContenido creador : creadores) {</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (!creador.isValidado()) {</span>
+<span class="fc" id="L72">            long sesionesActivas = sesionRepository.countByIdUsuarioAndEstado(creador.getIdUsuario(), EstadoSesion.ACTIVA);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (sesionesActivas == 0) {</span>
+<span class="fc" id="L74">                creadorContenidoRepository.delete(creador);</span>
+<span class="fc" id="L75">                usuariosEliminados++;</span>
+<span class="fc" id="L76">                logger.info(&quot;[TokenCleanup] Creador de contenido no validado eliminado: {}&quot;, creador.getAlias());</span>
+            }
+            }
+<span class="fc" id="L79">        }</span>
+
+<span class="fc bfc" id="L81" title="All 4 branches covered.">        if (sesionesEliminadas &gt; 0 || usuariosEliminados &gt; 0) {</span>
+<span class="fc" id="L82">        logger.info(&quot;[TokenCleanup] Eliminadas {} sesiones expiradas y {} usuarios no confirmados.&quot;, sesionesEliminadas, usuariosEliminados);</span>
+        }
+<span class="fc" id="L84">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

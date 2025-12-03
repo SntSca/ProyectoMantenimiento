@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContenidoListaResponseDTO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.lists.dto</a> &gt; <span class="el_source">ContenidoListaResponseDTO.java</span></div><h1>ContenidoListaResponseDTO.java</h1><pre class="source lang-java linenums">package com.esimedia.features.lists.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+/**
+ * DTO para representar un contenido dentro de una lista
+ * Incluye solo la información necesaria para mostrar en una lista
+ */
+<span class="pc bpc" id="L14" title="46 of 136 branches missed.">@Data</span>
+<span class="fc" id="L15">@NoArgsConstructor</span>
+<span class="fc" id="L16">@AllArgsConstructor</span>
+<span class="pc" id="L17">@Builder</span>
+public class ContenidoListaResponseDTO {
+    
+<span class="fc" id="L20">    private String id;</span>
+<span class="fc" id="L21">    private String titulo;</span>
+<span class="fc" id="L22">    private String descripcion;</span>
+<span class="fc" id="L23">    private int duracion;</span>
+<span class="fc" id="L24">    private String especialidad;</span>
+<span class="fc" id="L25">    private boolean visibilidad;</span>
+<span class="fc" id="L26">    private List&lt;String&gt; tags;</span>
+    
+    // Campos adicionales que se incluyen en getAllContent
+<span class="fc" id="L29">    private boolean esVIP;</span>
+<span class="fc" id="L30">    private String miniatura;</span>
+<span class="fc" id="L31">    private String formatoMiniatura;</span>
+<span class="fc" id="L32">    private String fechaSubida;</span>
+<span class="fc" id="L33">    private String fechaExpiracion;</span>
+<span class="fc" id="L34">    private Double valoracionMedia;</span>
+<span class="fc" id="L35">    private Integer restriccionEdad;</span>
+    
+    // Para videos
+<span class="fc" id="L38">    private String urlArchivo;</span>
+<span class="fc" id="L39">    private String resolucion;</span>
+    
+    // Para audios
+<span class="fc" id="L42">    private String fichero;</span>
+<span class="fc" id="L43">    private String ficheroExtension;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SesionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">SesionService.java</span></div><h1>SesionService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.auth.enums.EstadoSesion;
+import com.esimedia.features.auth.entity.Sesion;
+import com.esimedia.features.auth.repository.SesionRepository;
+
+/**
+ * Servicio para gestión de sesiones de usuario
+ */
+@Service
+public class SesionService {
+
+<span class="fc" id="L23">    private static final Logger logger = LoggerFactory.getLogger(SesionService.class);</span>
+    private static final int MAX_SESIONES_POR_USUARIO = 5; 
+
+    private final SesionRepository sesionRepository;
+
+<span class="fc" id="L28">    public SesionService(SesionRepository sesionRepository) {</span>
+<span class="fc" id="L29">        this.sesionRepository = sesionRepository;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Crea una nueva sesión para un usuario
+     */
+    public Sesion crearSesion(String idUsuario, String ipCliente, String jwtTokenId) {
+<span class="fc" id="L36">        logger.info(&quot;Creando nueva sesión para usuario: {} desde IP: {}&quot;, idUsuario, ipCliente);</span>
+
+        // Verificar límite de sesiones activas
+<span class="fc" id="L39">        List&lt;Sesion&gt; sesionesActivas = sesionRepository.findByIdUsuarioAndEstado(idUsuario, EstadoSesion.ACTIVA);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (sesionesActivas.size() &gt;= MAX_SESIONES_POR_USUARIO) {</span>
+<span class="fc" id="L41">            Sesion sesionMasAntigua = sesionesActivas.stream()</span>
+<span class="fc" id="L42">                .min((s1, s2) -&gt; s1.getFechaInicio().compareTo(s2.getFechaInicio()))</span>
+<span class="fc" id="L43">                .orElse(null);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">            if (sesionMasAntigua != null) {</span>
+<span class="fc" id="L45">                eliminarSesion(sesionMasAntigua.getIdSesion());</span>
+<span class="fc" id="L46">                logger.info(&quot;Expirada sesión antigua para usuario: {}&quot;, idUsuario);</span>
+<span class="fc" id="L47">                sesionRepository.delete(sesionMasAntigua);</span>
+            }
+        }
+
+<span class="fc" id="L51">        Sesion nuevaSesion = new Sesion();</span>
+<span class="fc" id="L52">        nuevaSesion.setIdUsuario(idUsuario);</span>
+<span class="fc" id="L53">        nuevaSesion.setIpCliente(ipCliente);</span>
+<span class="fc" id="L54">        nuevaSesion.setJwtTokenId(jwtTokenId);</span>
+<span class="fc" id="L55">        nuevaSesion.setEstado(EstadoSesion.ACTIVA);</span>
+<span class="fc" id="L56">        nuevaSesion.setFechaInicio(LocalDateTime.now());</span>
+<span class="fc" id="L57">        nuevaSesion.setFechaUltimaActividad(LocalDateTime.now());</span>
+<span class="fc" id="L58">        nuevaSesion.setIdSesion(UUID.randomUUID().toString());</span>
+<span class="fc" id="L59">        sesionRepository.save(nuevaSesion);</span>
+<span class="fc" id="L60">        logger.info(&quot;Sesión creada exitosamente: {}&quot;, nuevaSesion.getIdSesion());</span>
+<span class="fc" id="L61">        return nuevaSesion;</span>
+    }
+
+    /**
+     * Busca una sesión por su ID
+     */
+    public Optional&lt;Sesion&gt; findById(String idSesion) {
+<span class="fc" id="L68">        return sesionRepository.findById(idSesion);</span>
+    }
+
+    /**
+     * Valida una sesión (activa, no expirada, IP coincide)
+     */
+    public boolean validarSesion(String jwtTokenId, String ipCliente) {
+<span class="fc" id="L75">        Optional&lt;Sesion&gt; sesionOpt = sesionRepository.findByJwtTokenId(jwtTokenId);</span>
+<span class="fc" id="L76">        boolean found = true;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (!sesionOpt.isPresent()) {</span>
+<span class="fc" id="L78">            logger.warn(&quot;Sesión no encontrada para JWT token ID: {}&quot;, jwtTokenId);</span>
+<span class="fc" id="L79">            found = false;</span>
+        } 
+        else {
+
+<span class="fc" id="L83">            Sesion sesion = sesionOpt.get();</span>
+
+            // Verificar estado
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (!sesion.isActiva()) {</span>
+<span class="fc" id="L87">                logger.warn(&quot;Sesión inactiva: {}&quot;, sesion.getIdSesion());</span>
+<span class="fc" id="L88">                found = false;</span>
+            }
+
+            // Verificar IP (protección contra robo de sesión)
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (!sesion.getIpCliente().equals(ipCliente)) {</span>
+<span class="fc" id="L93">                logger.warn(&quot;IP no coincide para sesión {}: esperado {}, recibido {}&quot;, </span>
+<span class="fc" id="L94">                        sesion.getIdSesion(), sesion.getIpCliente(), ipCliente);</span>
+                // Bloquear la sesión por posible robo
+<span class="fc" id="L96">                eliminarSesion(sesion.getIdSesion());</span>
+<span class="fc" id="L97">                found = false;</span>
+            }
+
+            // Verificar expiración (24 horas de inactividad)
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (sesion.getFechaUltimaActividad().isBefore(LocalDateTime.now().minusHours(24))) {</span>
+<span class="fc" id="L102">                logger.warn(&quot;Sesión expirada por inactividad: {}&quot;, sesion.getIdSesion());</span>
+<span class="fc" id="L103">                eliminarSesion(sesion.getIdSesion());</span>
+<span class="fc" id="L104">                found = false;</span>
+            }
+        }
+<span class="fc" id="L107">        return found;</span>
+    }
+
+    /**
+     * Expira una sesión
+     */
+    public void eliminarSesion(String idSesion) {
+<span class="fc" id="L114">        Optional&lt;Sesion&gt; sesionOpt = sesionRepository.findById(idSesion);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (sesionOpt.isPresent()) {</span>
+<span class="fc" id="L116">            sesionRepository.delete(sesionOpt.get());</span>
+        }
+<span class="fc" id="L118">    }</span>
+
+    /**
+     * Obtiene todas las sesiones activas de un usuario
+     */
+    public List&lt;Sesion&gt; getSesionesActivasUsuario(String idUsuario) {
+<span class="fc" id="L124">        return sesionRepository.findByIdUsuarioAndEstado(idUsuario, EstadoSesion.ACTIVA);</span>
+    }
+
+    /**
+     * Expira todas las sesiones de un usuario (útil para logout global o cambio de contraseña)
+     */
+    public void eliminarTodasSesionesUsuario(String idUsuario) {
+<span class="fc" id="L131">        sesionRepository.deleteByIdUsuario(idUsuario);</span>
+<span class="fc" id="L132">        logger.info(&quot;Eliminadas todas las sesiones para usuario: {}&quot;, idUsuario);</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Rota sesión por fixation: expira todas las sesiones anteriores y crea nueva
+     */
+    public Sesion rotarSesionPorFixation(String idUsuario, String ipCliente, String jwtTokenId) {
+<span class="fc" id="L139">        logger.info(&quot;Rotando sesión por fixation para usuario: {}&quot;, idUsuario);</span>
+        // Expirar todas las sesiones activas anteriores
+<span class="fc" id="L141">        eliminarTodasSesionesUsuario(idUsuario);</span>
+        // Crear nueva sesión
+<span class="fc" id="L143">        return crearSesion(idUsuario, ipCliente, jwtTokenId);</span>
+    }
+
+    /**
+     * Expira todas las sesiones activas (usado al cerrar la aplicación)
+     */
+    public void expirarTodasSesionesActivas() {
+<span class="fc" id="L150">        List&lt;Sesion&gt; sesionesActivas = sesionRepository.findByEstado(EstadoSesion.ACTIVA);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (Sesion sesion : sesionesActivas) {</span>
+<span class="fc" id="L152">            sesion.expirarSesion();</span>
+<span class="fc" id="L153">            sesionRepository.save(sesion);</span>
+<span class="fc" id="L154">        }</span>
+<span class="fc" id="L155">        logger.info(&quot;Expiradas {} sesiones activas al cerrar la app.&quot;, sesionesActivas.size());</span>
+<span class="fc" id="L156">    }</span>
+
+    /**
+     * Limpia sesiones expiradas e inválidas al iniciar la aplicación
+     */
+    public void limpiarSesionesExpiradasEInvalidas() {
+<span class="fc" id="L162">        logger.info(&quot;Buscando sesiones para limpiar...&quot;);</span>
+
+        // Limpiar sesiones con jwtTokenId null
+<span class="fc" id="L165">        List&lt;Sesion&gt; sesionesNull = sesionRepository.findAll().stream()</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            .filter(s -&gt; s.getJwtTokenId() == null)</span>
+<span class="fc" id="L167">            .toList();</span>
+
+        // Limpiar todas las sesiones previas del usuario
+<span class="fc" id="L170">        List&lt;Sesion&gt; sesionesExpiradasPorEstado = sesionRepository.findByEstado(EstadoSesion.EXPIRADA);</span>
+<span class="fc" id="L171">        sesionesExpiradasPorEstado.addAll(sesionRepository.findByEstado(EstadoSesion.BLOQUEADA));</span>
+        
+        // Limpiar sesiones expiradas por inactividad (&gt;24 horas)
+<span class="fc" id="L174">        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);</span>
+<span class="fc" id="L175">        List&lt;Sesion&gt; sesionesExpiradasPorTiempo = sesionRepository.findByFechaUltimaActividadBefore(cutoff)</span>
+<span class="fc" id="L176">            .stream()</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">            .filter(s -&gt; !sesionesNull.contains(s) &amp;&amp; !sesionesExpiradasPorEstado.contains(s))</span>
+<span class="fc" id="L178">            .toList();</span>
+
+        // Combinar todas para eliminar
+<span class="fc" id="L181">        List&lt;Sesion&gt; sesionesParaEliminar = new ArrayList&lt;&gt;(sesionesNull);</span>
+<span class="fc" id="L182">        sesionesParaEliminar.addAll(sesionesExpiradasPorEstado);</span>
+<span class="fc" id="L183">        sesionesParaEliminar.addAll(sesionesExpiradasPorTiempo);</span>
+
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (!sesionesParaEliminar.isEmpty()) {</span>
+<span class="fc" id="L186">            sesionRepository.deleteAll(sesionesParaEliminar);</span>
+<span class="fc" id="L187">            logger.info(&quot;Sesiones limpiadas: {} con null, {} expiradas por estado, {} expiradas por tiempo, total: {}&quot;,</span>
+<span class="fc" id="L188">                       sesionesNull.size(), sesionesExpiradasPorEstado.size(), sesionesExpiradasPorTiempo.size(), sesionesParaEliminar.size());</span>
+        } 
+		else {
+<span class="nc" id="L191">            logger.info(&quot;No hay sesiones para limpiar.&quot;);</span>
+        }
+<span class="fc" id="L193">    }</span>
+
+    public void limpiarTodasLasSesiones(String idUsuario) {
+<span class="fc" id="L196">        logger.info(&quot;Buscando sesiones para limpiar...&quot;);</span>
+<span class="fc" id="L197">        sesionRepository.deleteByIdUsuario(idUsuario);</span>
+<span class="fc" id="L198">        logger.info(&quot;Sesiones limpiadas para el usuario: {}&quot;, idUsuario);</span>
+
+<span class="fc" id="L200">    }</span>
+
+    /**
+     * Elimina la sesión asociada a un JWT específico (logout)
+     */
+    public boolean eliminarSesionPorJwt(String jwtTokenId) {
+<span class="fc" id="L206">        Optional&lt;Sesion&gt; sesionOpt = sesionRepository.findByJwtTokenId(jwtTokenId);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (sesionOpt.isPresent()) {</span>
+<span class="fc" id="L208">            Sesion sesion = sesionOpt.get();</span>
+<span class="fc" id="L209">            sesionRepository.delete(sesion);</span>
+<span class="fc" id="L210">            logger.info(&quot;Sesión eliminada para logout: {} del usuario: {}&quot;, sesion.getIdSesion(), sesion.getIdUsuario());</span>
+<span class="fc" id="L211">            return true;</span>
+        } 
+		else {
+<span class="fc" id="L214">            logger.warn(&quot;No se encontró sesión para eliminar con JWT: {}&quot;, jwtTokenId);</span>
+<span class="fc" id="L215">            return false;</span>
+        }
+    }
+
+    /**
+     * Elimina una sesión específica por su ID
+     */
+    public boolean eliminarSesionPorId(String idSesion) {
+<span class="fc" id="L223">        Optional&lt;Sesion&gt; sesionOpt = sesionRepository.findById(idSesion);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        if (sesionOpt.isPresent()) {</span>
+<span class="fc" id="L225">            Sesion sesion = sesionOpt.get();</span>
+<span class="fc" id="L226">            sesionRepository.delete(sesion);</span>
+<span class="fc" id="L227">            logger.info(&quot;Sesión eliminada por ID: {} del usuario: {}&quot;, sesion.getIdSesion(), sesion.getIdUsuario());</span>
+<span class="fc" id="L228">            return true;</span>
+        }
+        else {
+<span class="fc" id="L231">            logger.warn(&quot;No se encontró sesión para eliminar con ID: {}&quot;, idSesion);</span>
+<span class="fc" id="L232">            return false;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

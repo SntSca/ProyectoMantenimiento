@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TipoImagen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.enums</a> &gt; <span class="el_source">TipoImagen.java</span></div><h1>TipoImagen.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.enums;
+
+import lombok.Getter;
+
+<span class="nc" id="L5">@Getter</span>
+public enum TipoImagen {
+<span class="nc" id="L7">    JPEG(&quot;image/jpeg&quot;, &quot;jpeg&quot;),</span>
+<span class="nc" id="L8">    JPG(&quot;image/jpg&quot;, &quot;jpg&quot;),</span>
+<span class="nc" id="L9">    PNG(&quot;image/png&quot;, &quot;png&quot;),</span>
+<span class="nc" id="L10">    WEBP(&quot;image/webp&quot;, &quot;webp&quot;);</span>
+    
+<span class="nc" id="L12">    private final String mimeType;</span>
+<span class="nc" id="L13">    private final String extension;</span>
+    
+<span class="nc" id="L15">    TipoImagen(String mimeType, String extension) {</span>
+<span class="nc" id="L16">        this.mimeType = mimeType;</span>
+<span class="nc" id="L17">        this.extension = extension;</span>
+<span class="nc" id="L18">    }</span>
+    
+    /**
+     * Obtiene el TipoImagen basado en el MIME type
+     */
+    public static TipoImagen fromMimeType(String mimeType) {
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (mimeType == null) {</span>
+<span class="nc" id="L25">            return null;</span>
+        }
+        
+<span class="nc" id="L28">        String mimeTypeLower = mimeType.toLowerCase();</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        for (TipoImagen tipo : values()) {</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">            if (tipo.getMimeType().equals(mimeTypeLower)) {</span>
+<span class="nc" id="L31">                return tipo;</span>
+            }
+        }
+<span class="nc" id="L34">        return null;</span>
+    }
+    
+    /**
+     * Obtiene el TipoImagen basado en la extensión
+     */
+    public static TipoImagen fromExtension(String extension) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (extension == null) {</span>
+<span class="nc" id="L42">            return null;</span>
+        }
+        
+<span class="nc" id="L45">        String extensionLower = extension.toLowerCase().replace(&quot;.&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (TipoImagen tipo : values()) {</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            if (tipo.getExtension().equals(extensionLower)) {</span>
+<span class="nc" id="L48">                return tipo;</span>
+            }
+        }
+<span class="nc" id="L51">        return null;</span>
+    }
+    
+    /**
+     * Valida si un MIME type es soportado
+     */
+    public static boolean isSoportado(String mimeType) {
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        return fromMimeType(mimeType) != null;</span>
+    }
+    
+    @Override
+    public String toString() {
+<span class="nc" id="L63">        return mimeType;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

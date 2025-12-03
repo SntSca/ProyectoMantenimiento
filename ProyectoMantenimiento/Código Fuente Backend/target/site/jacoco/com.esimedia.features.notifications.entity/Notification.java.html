@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Notification.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.notifications.entity</a> &gt; <span class="el_source">Notification.java</span></div><h1>Notification.java</h1><pre class="source lang-java linenums">package com.esimedia.features.notifications.entity;
+
+import com.esimedia.features.notifications.enums.NotificationSubtype;
+import com.esimedia.features.notifications.enums.NotificationType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.time.LocalDateTime;
+
+<span class="pc bpc" id="L15" title="57 of 94 branches missed.">@Data</span>
+<span class="fc" id="L16">@NoArgsConstructor</span>
+<span class="fc" id="L17">@AllArgsConstructor</span>
+<span class="pc bfc" id="L18" title="All 6 branches covered.">@Builder</span>
+@Document(collection = &quot;notifications&quot;)
+public class Notification {
+
+    @Id
+<span class="fc" id="L23">    private String id;</span>
+
+    @Field(&quot;userId&quot;)
+<span class="fc" id="L26">    private String userId; // idUsuario de UsuarioNormal</span>
+
+    @Field(&quot;type&quot;)
+<span class="fc" id="L29">    private NotificationType type;</span>
+
+    @Field(&quot;subtype&quot;)
+<span class="fc" id="L32">    private NotificationSubtype subtype;</span>
+
+    @Field(&quot;title&quot;)
+<span class="fc" id="L35">    private String title;</span>
+
+    @Field(&quot;body&quot;)
+<span class="fc" id="L38">    private String body;</span>
+
+    @Field(&quot;payload&quot;)
+<span class="fc" id="L41">    private String payload;</span>
+
+    @Field(&quot;read&quot;)
+    @Builder.Default
+<span class="fc" id="L45">    private boolean read = false;</span>
+
+    @Field(&quot;deleted&quot;)
+    @Builder.Default
+<span class="fc" id="L49">    private boolean deleted = false;</span>
+
+    @Field(&quot;createdAt&quot;)
+    @Builder.Default
+<span class="fc" id="L53">    private LocalDateTime createdAt = LocalDateTime.now();</span>
+
+    @Field(&quot;readAt&quot;)
+<span class="fc" id="L56">    private LocalDateTime readAt;</span>
+
+    @Field(&quot;deletedAt&quot;)
+<span class="fc" id="L59">    private LocalDateTime deletedAt;</span>
+
+    public void markAsRead() {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (!this.read) {</span>
+<span class="fc" id="L63">            this.read = true;</span>
+<span class="fc" id="L64">            this.readAt = LocalDateTime.now();</span>
+        }
+<span class="fc" id="L66">    }</span>
+
+    public void markAsDeleted() {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (!this.deleted) {</span>
+<span class="fc" id="L70">            this.deleted = true;</span>
+<span class="fc" id="L71">            this.deletedAt = LocalDateTime.now();</span>
+        }
+<span class="fc" id="L73">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

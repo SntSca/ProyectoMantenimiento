@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AudioContentManagementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.services</a> &gt; <span class="el_source">AudioContentManagementService.java</span></div><h1>AudioContentManagementService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.services;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.services.ContentAuthorizationService;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.content.dto.ContentUpdateDTO;
+import com.esimedia.features.content.entity.ContenidoAudioTag;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.features.content.entity.ValoracionContenido;
+import com.esimedia.features.content.repository.ContenidoAudioTagRepository;
+import com.esimedia.features.content.repository.ContenidosAudioRepository;
+import com.esimedia.features.content.repository.TagsRepository;
+import com.esimedia.features.content.repository.ValoracionContenidoRepository;
+import com.esimedia.shared.util.ContentProcessingUtil;
+import com.esimedia.shared.util.ContentTagProcessor;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+import java.util.List;
+
+@Service
+public class AudioContentManagementService {
+
+<span class="fc" id="L32">    private static final Logger logger = LoggerFactory.getLogger(AudioContentManagementService.class);</span>
+    private static final String ERROR_INTERNO_SERVIDOR = &quot;Error interno del servidor&quot;;
+    private static final String AUDIO_NOT_FOUND = &quot;Contenido de audio no encontrado&quot;;
+
+    private final JwtValidationUtil jwtValidationService;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final ValidationService validationService;
+    private final ContenidosAudioRepository contenidoAudioRepository;
+    private final ContenidoAudioTagRepository contenidoAudioTagRepository;
+    private final ValoracionContenidoRepository valoracionRepository;
+    private final ContentTagProcessor tagProcessor;
+    private final ContentAuthorizationService contentAuthorizationService;
+
+    public AudioContentManagementService(
+        JwtValidationUtil jwtValidationService,
+        CreadorContenidoRepository creadorContenidoRepository,
+        ValidationService validationService,
+        ContenidosAudioRepository contenidoAudioRepository,
+        ContenidoAudioTagRepository contenidoAudioTagRepository,
+        TagsRepository tagsRepository,
+        ValoracionContenidoRepository valoracionRepository,
+        ContentAuthorizationService contentAuthorizationService
+<span class="fc" id="L54">    ) {</span>
+<span class="fc" id="L55">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L56">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L57">        this.validationService = validationService;</span>
+<span class="fc" id="L58">        this.contenidoAudioRepository = contenidoAudioRepository;</span>
+<span class="fc" id="L59">        this.contenidoAudioTagRepository = contenidoAudioTagRepository;</span>
+<span class="fc" id="L60">        this.valoracionRepository = valoracionRepository;</span>
+<span class="fc" id="L61">        this.contentAuthorizationService = contentAuthorizationService;</span>
+<span class="fc" id="L62">        this.tagProcessor = new ContentTagProcessor(tagsRepository, ContenidoAudioTag::new);</span>
+<span class="fc" id="L63">    }</span>
+
+    public String updateAudioContent(String authHeader, String contentId, ContentUpdateDTO updateDTO) {
+        try {
+<span class="fc" id="L67">            String username = jwtValidationService.validateContentUpload(authHeader, TipoContenido.AUDIO);</span>
+
+<span class="fc" id="L69">            CreadorContenido creador = creadorContenidoRepository.findById(username).orElseThrow(() -&gt;</span>
+<span class="fc" id="L70">                new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Creador no encontrado&quot;));</span>
+
+<span class="fc" id="L72">            validationService.validateContentEditPermission(creador, TipoContenido.AUDIO);</span>
+
+<span class="fc" id="L74">            ContenidosAudio existingContent = contenidoAudioRepository.findById(contentId).orElseThrow(() -&gt;</span>
+<span class="fc" id="L75">                new ResponseStatusException(HttpStatus.NOT_FOUND, AUDIO_NOT_FOUND));</span>
+
+<span class="fc" id="L77">            String validationResult = validationService.validateContentUpdate(updateDTO);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (validationResult != null) {</span>
+<span class="fc" id="L79">                return validationResult;</span>
+            }
+
+<span class="fc" id="L82">            updateContentFields(existingContent, updateDTO);</span>
+
+<span class="fc" id="L84">            tagProcessor.updateContentTags(</span>
+                contentId,
+<span class="fc" id="L86">                updateDTO.getTags(),</span>
+<span class="fc" id="L87">                () -&gt; contenidoAudioTagRepository.findByIdContenido(contentId)</span>
+<span class="fc" id="L88">                         .stream().map(ContenidoAudioTag::getIdTag).toList(),</span>
+<span class="nc" id="L89">                tagId -&gt; contenidoAudioTagRepository.deleteByIdContenidoAndIdTag(contentId, tagId),</span>
+<span class="nc" id="L90">                relation -&gt; contenidoAudioTagRepository.save((ContenidoAudioTag) relation)</span>
+            );
+
+<span class="fc" id="L93">            contenidoAudioRepository.save(existingContent);</span>
+
+<span class="fc" id="L95">            logger.info(&quot;Contenido de audio {} actualizado exitosamente por {}&quot;, contentId, username);</span>
+<span class="fc" id="L96">            return &quot;SUCCESS:Contenido de audio actualizado exitosamente&quot;;</span>
+
+        } 
+<span class="fc" id="L99">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L100">            throw e;</span>
+        } 
+<span class="fc" id="L102">        catch (Exception e) {</span>
+<span class="fc" id="L103">            logger.error(&quot;Error actualizando contenido de audio {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="fc" id="L104">            return ERROR_INTERNO_SERVIDOR;</span>
+        }
+    }
+
+    public void deleteAudioContent(String authHeader, String contentId) {
+        try {
+<span class="fc" id="L110">            contentAuthorizationService.validateContentDeletion(authHeader, contentId);</span>
+
+<span class="fc" id="L112">            contenidoAudioRepository.findById(contentId).orElseThrow(() -&gt;</span>
+<span class="fc" id="L113">                new ResponseStatusException(HttpStatus.NOT_FOUND, AUDIO_NOT_FOUND));</span>
+
+<span class="fc" id="L115">            contenidoAudioTagRepository.deleteByIdContenido(contentId);</span>
+
+<span class="fc" id="L117">            List&lt;ValoracionContenido&gt; valoraciones = valoracionRepository.findByIdContenido(contentId);</span>
+<span class="fc" id="L118">            valoracionRepository.deleteAll(valoraciones);</span>
+
+<span class="fc" id="L120">            contenidoAudioRepository.deleteById(contentId);</span>
+
+<span class="fc" id="L122">            logger.info(&quot;Contenido de audio {} eliminado exitosamente&quot;, contentId);</span>
+        } 
+<span class="fc" id="L124">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L125">            throw e;</span>
+        } 
+<span class="fc" id="L127">        catch (Exception e) {</span>
+<span class="fc" id="L128">            logger.error(&quot;Error eliminando contenido de audio {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="fc" id="L129">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO_SERVIDOR);</span>
+<span class="fc" id="L130">        }</span>
+<span class="fc" id="L131">    }</span>
+
+    public void incrementarVisualizaciones(String contentId) {
+        try {
+<span class="fc" id="L135">            ContenidosAudio content = contenidoAudioRepository.findById(contentId).orElseThrow(() -&gt;</span>
+<span class="fc" id="L136">                new ResponseStatusException(HttpStatus.NOT_FOUND, AUDIO_NOT_FOUND));</span>
+<span class="fc" id="L137">            content.setVisualizaciones(content.getVisualizaciones() + 1);</span>
+<span class="fc" id="L138">            contenidoAudioRepository.save(content);</span>
+<span class="fc" id="L139">            logger.info(&quot;Visualizaciones incrementadas para audio {}&quot;, contentId);</span>
+        } 
+<span class="fc" id="L141">        catch (Exception e) {</span>
+<span class="fc" id="L142">            logger.error(&quot;Error incrementando visualizaciones para audio {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="fc" id="L143">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO_SERVIDOR);</span>
+<span class="fc" id="L144">        }</span>
+<span class="fc" id="L145">    }</span>
+
+    private void updateContentFields(ContenidosAudio content, ContentUpdateDTO updateDTO) {
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (updateDTO.getTitulo() != null) {</span>
+<span class="fc" id="L149">            content.setTitulo(updateDTO.getTitulo());</span>
+        }
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (updateDTO.getDescripcion() != null) {</span>
+<span class="fc" id="L152">            content.setDescripcion(updateDTO.getDescripcion());</span>
+        }
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (updateDTO.getEsVIP() != null) {</span>
+<span class="nc" id="L155">            content.setEsVIP(updateDTO.getEsVIP());</span>
+        }
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (updateDTO.getVisibilidad() != null) {</span>
+<span class="nc" id="L158">            content.setVisibilidad(updateDTO.getVisibilidad());</span>
+        }
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (updateDTO.getFechaExpiracion() != null) {</span>
+<span class="nc" id="L161">            content.setFechaDisponibleHasta(ContentProcessingUtil.parseFechaExpiracion(updateDTO.getFechaExpiracion()));</span>
+        }
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (updateDTO.getRestriccionEdad() != null) {</span>
+<span class="nc" id="L164">            content.setRestriccionEdad(getRestriccionEdadFromValue(updateDTO.getRestriccionEdad()));</span>
+        }
+<span class="fc" id="L166">    }</span>
+
+    private RestriccionEdad getRestriccionEdadFromValue(Integer valor) {
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (valor == null) return null;</span>
+
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        for (RestriccionEdad restriccion : RestriccionEdad.values()) {</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (restriccion.getValor() == valor) {</span>
+<span class="nc" id="L173">                return restriccion;</span>
+            }
+        }
+<span class="fc" id="L176">        throw new IllegalArgumentException(&quot;Valor de restricción de edad no válido: &quot; + valor);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

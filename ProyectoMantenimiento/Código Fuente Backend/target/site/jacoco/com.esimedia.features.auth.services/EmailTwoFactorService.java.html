@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EmailTwoFactorService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">EmailTwoFactorService.java</span></div><h1>EmailTwoFactorService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Optional;
+
+import com.esimedia.features.auth.enums.TipoVerificacion;
+import com.esimedia.features.auth.entity.CodigoVerificacion;
+import com.esimedia.features.auth.entity.Usuario;
+import com.esimedia.features.auth.repository.CodigoVerificacionRepository;
+import com.esimedia.features.user_management.services.UserRetrievalService;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import jakarta.mail.MessagingException;
+
+@Service
+public class EmailTwoFactorService {
+
+    private static final int EMAIL_CODE_LENGTH = 6;
+    private static final int EMAIL_CODE_EXPIRATION_MINUTES = 10;
+
+    private final EmailService emailService;
+    private final CodigoVerificacionRepository codigoVerificacionRepository;
+    private final UserRetrievalService userRetrievalService;
+
+    public EmailTwoFactorService(EmailService emailService,
+                                 CodigoVerificacionRepository codigoVerificacionRepository,
+<span class="nc" id="L31">                                 UserRetrievalService userRetrievalService) {</span>
+<span class="nc" id="L32">        this.emailService = emailService;</span>
+<span class="nc" id="L33">        this.codigoVerificacionRepository = codigoVerificacionRepository;</span>
+<span class="nc" id="L34">        this.userRetrievalService = userRetrievalService;</span>
+<span class="nc" id="L35">    }</span>
+
+    public String sendEmailVerificationCode(String userId) {
+        try {
+<span class="nc" id="L39">            Usuario usuario = userRetrievalService.findAnyUserById(userId)</span>
+<span class="nc" id="L40">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Usuario no encontrado&quot;));</span>
+
+<span class="nc" id="L42">            invalidateExistingCodes(userId, TipoVerificacion.EMAIL_2FA);</span>
+
+<span class="nc" id="L44">            String codigo = generateNumericCode(EMAIL_CODE_LENGTH);</span>
+
+<span class="nc" id="L46">            CodigoVerificacion codigoVerificacion = new CodigoVerificacion(</span>
+                userId, codigo, TipoVerificacion.EMAIL_2FA, EMAIL_CODE_EXPIRATION_MINUTES
+            );
+<span class="nc" id="L49">            codigoVerificacionRepository.save(codigoVerificacion);</span>
+
+<span class="nc" id="L51">            sendEmailCode(usuario, codigo);</span>
+
+            
+<span class="nc" id="L54">            return &quot;Código de verificación +&quot; + codigo + &quot; enviado a &quot; + maskEmail(usuario.getEmail());</span>
+            
+        } 
+<span class="nc" id="L57">        catch (MessagingException e) {</span>
+<span class="nc" id="L58">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error al enviar el email&quot;);</span>
+        }
+    }
+    
+    public boolean verifyEmailCode(String userId, String codigo) {
+<span class="nc" id="L63">        Optional&lt;CodigoVerificacion&gt; codigoOpt = codigoVerificacionRepository</span>
+<span class="nc" id="L64">            .findByUserIdAndCodigoAndTipo(userId, codigo, TipoVerificacion.EMAIL_2FA);</span>
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!codigoOpt.isPresent()) {</span>
+<span class="nc" id="L67">            return false;</span>
+        }
+
+<span class="nc" id="L70">        CodigoVerificacion codigoVerificacion = codigoOpt.get();</span>
+        
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (!codigoVerificacion.isValido()) {</span>
+<span class="nc" id="L73">            return false;</span>
+        }
+
+        // Marcar como usado
+<span class="nc" id="L77">        codigoVerificacion.setUsado(true);</span>
+<span class="nc" id="L78">        codigoVerificacionRepository.save(codigoVerificacion);</span>
+<span class="nc" id="L79">        return true;</span>
+    }
+
+    private void invalidateExistingCodes(String userId, TipoVerificacion tipo) {
+<span class="nc" id="L83">        List&lt;CodigoVerificacion&gt; existingCodes = codigoVerificacionRepository</span>
+<span class="nc" id="L84">            .findByUserIdAndTipoAndUsadoFalse(userId, tipo);</span>
+        
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (CodigoVerificacion codigo : existingCodes) {</span>
+<span class="nc" id="L87">            codigo.setUsado(true);</span>
+<span class="nc" id="L88">            codigoVerificacionRepository.save(codigo);</span>
+<span class="nc" id="L89">        }</span>
+<span class="nc" id="L90">    }</span>
+
+    private String generateNumericCode(int length) {
+<span class="nc" id="L93">        StringBuilder code = new StringBuilder();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        for (int i = 0; i &lt; length; i++) {</span>
+<span class="nc" id="L95">            code.append(new SecureRandom().nextInt(10));</span>
+        }
+<span class="nc" id="L97">        return code.toString();</span>
+    }
+
+    private void sendEmailCode(Usuario usuario, String codigo) throws MessagingException {
+<span class="nc" id="L101">        emailService.sendTwoFactorCode(usuario, codigo, EMAIL_CODE_EXPIRATION_MINUTES);</span>
+<span class="nc" id="L102">    }</span>
+
+    private String maskEmail(String email) {
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        if (email == null || !email.contains(&quot;@&quot;)) {</span>
+<span class="nc" id="L106">            return &quot;email&quot;;</span>
+        }
+        
+<span class="nc" id="L109">        String[] parts = email.split(&quot;@&quot;);</span>
+<span class="nc" id="L110">        String username = parts[0];</span>
+<span class="nc" id="L111">        String domain = parts[1];</span>
+        
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (username.length() &lt;= 2) {</span>
+<span class="nc" id="L114">            return &quot;**@&quot; + domain;</span>
+        }
+        
+<span class="nc" id="L117">        return username.substring(0, 2) + &quot;***@&quot; + domain;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

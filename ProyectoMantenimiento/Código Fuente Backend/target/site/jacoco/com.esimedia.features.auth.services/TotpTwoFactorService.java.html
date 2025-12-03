@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TotpTwoFactorService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.auth.services</a> &gt; <span class="el_source">TotpTwoFactorService.java</span></div><h1>TotpTwoFactorService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.auth.services;
+
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.esimedia.features.auth.dto.TotpSetupResponse;
+import com.esimedia.features.auth.entity.Administrador;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.AdminRepository;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+
+import com.warrenstrange.googleauth.GoogleAuthenticator;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class TotpTwoFactorService {
+
+    private static final String APP_NAME = &quot;EsiMedia&quot;;
+    private static final String TOTP_ACTIVATION_SUCCESS_MESSAGE = &quot;3FA activado exitosamente. Guarda tus códigos de respaldo en un lugar seguro.&quot;;
+    private static final int BACKUP_CODES_COUNT = 10;
+    private static final int BACKUP_CODE_LENGTH = 8;
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado&quot;;
+    private static final String NO_CONFIG_TOTP_PENDIENTE = &quot;No hay configuración TOTP pendiente&quot;;
+    private static final String CODIGO_TOTP_INVALIDO = &quot;Código TOTP inválido&quot;;
+
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final AdminRepository adminRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+
+    private final GoogleAuthenticator googleAuthenticator;
+    private final SecureRandom secureRandom;
+
+    public TotpTwoFactorService(UsuarioNormalRepository usuarioNormalRepository,
+                                AdminRepository adminRepository,
+<span class="nc" id="L44">                                CreadorContenidoRepository creadorContenidoRepository) {</span>
+<span class="nc" id="L45">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="nc" id="L46">        this.adminRepository = adminRepository;</span>
+<span class="nc" id="L47">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="nc" id="L48">        this.googleAuthenticator = new GoogleAuthenticator();</span>
+<span class="nc" id="L49">        this.secureRandom = new SecureRandom();</span>
+<span class="nc" id="L50">    }</span>
+
+    // For UsuarioNormal
+
+    public TotpSetupResponse setupTotp(String userId) {
+<span class="nc" id="L55">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L56">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L58">        GoogleAuthenticatorKey key = googleAuthenticator.createCredentials();</span>
+<span class="nc" id="L59">        String secretKey = key.getKey();</span>
+
+<span class="nc" id="L61">        String qrCodeUrl = GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(</span>
+<span class="nc" id="L62">            APP_NAME, usuario.getEmail(), key</span>
+        );
+
+<span class="nc" id="L65">        usuario.setTotpSecret(secretKey);</span>
+<span class="nc" id="L66">        usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L68">        return new TotpSetupResponse(qrCodeUrl, secretKey);</span>
+    }
+
+    public String confirmTotpSetup(String userId, String verificationCode) {
+<span class="nc" id="L72">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L73">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.BAD_REQUEST, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L76">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, NO_CONFIG_TOTP_PENDIENTE);</span>
+        }
+
+<span class="nc" id="L79">        boolean isValidCode = googleAuthenticator.authorize(usuario.getTotpSecret(), Integer.parseInt(verificationCode));</span>
+
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (!isValidCode) {</span>
+<span class="nc" id="L82">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, CODIGO_TOTP_INVALIDO);</span>
+        }
+
+<span class="nc" id="L85">        usuario.setThirdFactorEnabled(true);</span>
+<span class="nc" id="L86">        usuario.setBackupCodes(generateBackupCodes());</span>
+<span class="nc" id="L87">        usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L89">        return TOTP_ACTIVATION_SUCCESS_MESSAGE;</span>
+    }
+
+    public boolean verifyTotpCode(String userId, String code) {
+<span class="nc" id="L93">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L94">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L96" title="All 4 branches missed.">        if (!usuario.isTwoFactorEnabled() || usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L97">            return false;</span>
+        }
+
+        try {
+<span class="nc" id="L101">            int totpCode = Integer.parseInt(code);</span>
+<span class="nc" id="L102">            return googleAuthenticator.authorize(usuario.getTotpSecret(), totpCode);</span>
+        }
+<span class="nc" id="L104">        catch (NumberFormatException e) {</span>
+<span class="nc" id="L105">            return false;</span>
+        }
+    }
+
+    public String disableTwoFactor(String userId) {
+<span class="nc" id="L110">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L111">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L113">        usuario.setTwoFactorEnabled(false);</span>
+<span class="nc" id="L114">        usuario.setTotpSecret(null);</span>
+<span class="nc" id="L115">        usuario.setBackupCodes(null);</span>
+<span class="nc" id="L116">        usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L118">        return &quot;2FA desactivado exitosamente&quot;;</span>
+    }
+
+    public String disableThirdFactor(String userId) {
+<span class="nc" id="L122">        UsuarioNormal usuario = usuarioNormalRepository.findById(userId)</span>
+<span class="nc" id="L123">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L125">        usuario.setThirdFactorEnabled(false);</span>
+<span class="nc" id="L126">        usuario.setTotpSecret(null);</span>
+<span class="nc" id="L127">        usuario.setBackupCodes(null);</span>
+<span class="nc" id="L128">        usuarioNormalRepository.save(usuario);</span>
+
+<span class="nc" id="L130">        return &quot;3FA desactivado exitosamente&quot;;</span>
+    }
+
+    // For Administrador
+
+    public TotpSetupResponse setupTotpAdmin(String userId) {
+<span class="nc" id="L136">        Administrador usuario = adminRepository.findById(userId)</span>
+<span class="nc" id="L137">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L139">        GoogleAuthenticatorKey key = googleAuthenticator.createCredentials();</span>
+<span class="nc" id="L140">        String secretKey = key.getKey();</span>
+
+<span class="nc" id="L142">        String qrCodeUrl = GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(</span>
+<span class="nc" id="L143">            APP_NAME, usuario.getEmail(), key</span>
+        );
+
+<span class="nc" id="L146">        usuario.setTotpSecret(secretKey);</span>
+<span class="nc" id="L147">        adminRepository.save(usuario);</span>
+
+<span class="nc" id="L149">        return new TotpSetupResponse(qrCodeUrl, secretKey);</span>
+    }
+
+    public String confirmTotpSetupAdmin(String userId, String verificationCode) {
+<span class="nc" id="L153">        Administrador usuario = adminRepository.findById(userId)</span>
+<span class="nc" id="L154">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.BAD_REQUEST, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L157">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, NO_CONFIG_TOTP_PENDIENTE);</span>
+        }
+
+<span class="nc" id="L160">        boolean isValidCode = googleAuthenticator.authorize(usuario.getTotpSecret(), Integer.parseInt(verificationCode));</span>
+
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (!isValidCode) {</span>
+<span class="nc" id="L163">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, CODIGO_TOTP_INVALIDO);</span>
+        }
+
+<span class="nc" id="L166">        usuario.setThirdFactorEnabled(true);</span>
+<span class="nc" id="L167">        usuario.setBackupCodes(generateBackupCodes());</span>
+<span class="nc" id="L168">        adminRepository.save(usuario);</span>
+
+<span class="nc" id="L170">        return TOTP_ACTIVATION_SUCCESS_MESSAGE;</span>
+    }
+
+    public boolean verifyTotpCodeAdmin(String userId, String code) {
+<span class="nc" id="L174">        Administrador usuario = adminRepository.findById(userId)</span>
+<span class="nc" id="L175">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L177" title="All 4 branches missed.">        if (!usuario.isTwoFactorEnabled() || usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L178">            return false;</span>
+        }
+
+        try {
+<span class="nc" id="L182">            int totpCode = Integer.parseInt(code);</span>
+<span class="nc" id="L183">            return googleAuthenticator.authorize(usuario.getTotpSecret(), totpCode);</span>
+        }
+<span class="nc" id="L185">        catch (NumberFormatException e) {</span>
+<span class="nc" id="L186">            return false;</span>
+        }
+    }
+
+    // For CreadorContenido
+
+    public TotpSetupResponse setupTotpCreador(String userId) {
+<span class="nc" id="L193">        CreadorContenido usuario = creadorContenidoRepository.findById(userId)</span>
+<span class="nc" id="L194">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L196">        GoogleAuthenticatorKey key = googleAuthenticator.createCredentials();</span>
+<span class="nc" id="L197">        String secretKey = key.getKey();</span>
+
+<span class="nc" id="L199">        String qrCodeUrl = GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(</span>
+<span class="nc" id="L200">            APP_NAME, usuario.getEmail(), key</span>
+        );
+
+<span class="nc" id="L203">        usuario.setTotpSecret(secretKey);</span>
+<span class="nc" id="L204">        creadorContenidoRepository.save(usuario);</span>
+
+<span class="nc" id="L206">        return new TotpSetupResponse(qrCodeUrl, secretKey);</span>
+    }
+
+    public String confirmTotpSetupCreador(String userId, String verificationCode) {
+<span class="nc" id="L210">        CreadorContenido usuario = creadorContenidoRepository.findById(userId)</span>
+<span class="nc" id="L211">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.BAD_REQUEST, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L214">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, NO_CONFIG_TOTP_PENDIENTE);</span>
+        }
+
+<span class="nc" id="L217">        boolean isValidCode = googleAuthenticator.authorize(usuario.getTotpSecret(), Integer.parseInt(verificationCode));</span>
+
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (!isValidCode) {</span>
+<span class="nc" id="L220">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, CODIGO_TOTP_INVALIDO);</span>
+        }
+
+<span class="nc" id="L223">        usuario.setThirdFactorEnabled(true);</span>
+<span class="nc" id="L224">        usuario.setBackupCodes(generateBackupCodes());</span>
+<span class="nc" id="L225">        creadorContenidoRepository.save(usuario);</span>
+
+<span class="nc" id="L227">        return TOTP_ACTIVATION_SUCCESS_MESSAGE;</span>
+    }
+
+    public boolean verifyTotpCodeCreador(String userId, String code) {
+<span class="nc" id="L231">        CreadorContenido usuario = creadorContenidoRepository.findById(userId)</span>
+<span class="nc" id="L232">            .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc bnc" id="L234" title="All 4 branches missed.">        if (!usuario.isTwoFactorEnabled() || usuario.getTotpSecret() == null) {</span>
+<span class="nc" id="L235">            return false;</span>
+        }
+
+        try {
+<span class="nc" id="L239">            int totpCode = Integer.parseInt(code);</span>
+<span class="nc" id="L240">            return googleAuthenticator.authorize(usuario.getTotpSecret(), totpCode);</span>
+        }
+<span class="nc" id="L242">        catch (NumberFormatException e) {</span>
+<span class="nc" id="L243">            return false;</span>
+        }
+    }
+
+    private List&lt;String&gt; generateBackupCodes() {
+<span class="nc" id="L248">        List&lt;String&gt; codes = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        for (int i = 0; i &lt; BACKUP_CODES_COUNT; i++) {</span>
+<span class="nc" id="L250">            codes.add(generateAlphanumericCode(BACKUP_CODE_LENGTH));</span>
+        }
+<span class="nc" id="L252">        return codes;</span>
+    }
+
+    private String generateAlphanumericCode(int length) {
+<span class="nc" id="L256">        String chars = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&quot;;</span>
+<span class="nc" id="L257">        StringBuilder code = new StringBuilder();</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        for (int i = 0; i &lt; length; i++) {</span>
+<span class="nc" id="L259">            code.append(chars.charAt(secureRandom.nextInt(chars.length())));</span>
+        }
+<span class="nc" id="L261">        return code.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

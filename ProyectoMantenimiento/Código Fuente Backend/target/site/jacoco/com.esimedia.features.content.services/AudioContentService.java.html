@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AudioContentService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.services</a> &gt; <span class="el_source">AudioContentService.java</span></div><h1>AudioContentService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.services;
+
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.content.dto.ContentAudioUploadDTO;
+import com.esimedia.features.content.dto.ContentUpdateDTO;
+import com.esimedia.features.content.entity.ContenidosAudio;
+import com.esimedia.shared.util.JwtValidationUtil;
+
+import java.util.List;
+
+@Service
+public class AudioContentService {
+    
+<span class="fc" id="L19">    private static final Logger logger = LoggerFactory.getLogger(AudioContentService.class);</span>
+    private static final String ERROR_INTERNO_SERVIDOR = &quot;Error interno del servidor&quot;;
+
+    private final AudioContentUploadService uploadService;
+    private final AudioContentRetrievalService retrievalService;
+    private final AudioContentManagementService managementService;
+    private final JwtValidationUtil jwtValidationService;
+
+    public AudioContentService(
+        AudioContentUploadService uploadService,
+        AudioContentRetrievalService retrievalService,
+        AudioContentManagementService managementService,
+        JwtValidationUtil jwtValidationService
+<span class="fc" id="L32">    ) {</span>
+<span class="fc" id="L33">        this.uploadService = uploadService;</span>
+<span class="fc" id="L34">        this.retrievalService = retrievalService;</span>
+<span class="fc" id="L35">        this.managementService = managementService;</span>
+<span class="fc" id="L36">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L37">    }</span>
+
+    public String uploadAudioContent(String authHeader, ContentAudioUploadDTO audioDTO) {
+        try {
+            // Validar autorización usando servicio centralizado
+<span class="fc" id="L42">            String username = jwtValidationService.validateContentUpload(authHeader, TipoContenido.AUDIO);</span>
+
+<span class="fc" id="L44">            return uploadService.uploadAudioContent(username, audioDTO);</span>
+        } 
+<span class="fc" id="L46">        catch (Exception e) {</span>
+<span class="fc" id="L47">            logger.error(&quot;Error procesando contenido de audio: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L48">            return ERROR_INTERNO_SERVIDOR;</span>
+        }
+    }
+
+    // La funcionalidad de decodificar miniaturas y extraer MIME se delega a ContentUtil.processImageContent(...)
+
+    public List&lt;ContentAudioUploadDTO&gt; getAllAudiosAsDTO(String authHeader) {
+<span class="fc" id="L55">        return retrievalService.getAllAudiosAsDTO(authHeader);</span>
+    }
+    
+    public ContenidosAudio getAudioById(String id) {
+<span class="fc" id="L59">        return retrievalService.getAudioById(id);</span>
+    }
+
+    /**
+     * Obtiene un audio por ID y lo devuelve como DTO con data URIs completos.
+     * @param authHeader Header de autorización con JWT
+     * @param id ID del audio
+     * @return DTO con campos de contenido como data URIs
+     */
+    public ContentAudioUploadDTO getAudioByIdAsDTO(String authHeader, String id) {
+<span class="fc" id="L69">        return retrievalService.getAudioByIdAsDTO(authHeader, id);</span>
+    }
+
+    public String updateAudioContent(String authHeader, String contentId, ContentUpdateDTO updateDTO) {
+<span class="nc" id="L73">        return managementService.updateAudioContent(authHeader, contentId, updateDTO);</span>
+    }
+
+    public void incrementarVisualizaciones(String contentId) {
+<span class="nc" id="L77">        managementService.incrementarVisualizaciones(contentId);</span>
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Elimina un contenido de audio
+     * @param authHeader Header de autorización con JWT
+     * @param contentId ID del contenido de audio a eliminar
+     */
+    public void deleteAudioContent(String authHeader, String contentId) {
+<span class="nc" id="L86">        managementService.deleteAudioContent(authHeader, contentId);</span>
+<span class="nc" id="L87">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

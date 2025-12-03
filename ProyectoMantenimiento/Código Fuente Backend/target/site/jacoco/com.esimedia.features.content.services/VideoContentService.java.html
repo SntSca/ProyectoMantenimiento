@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VideoContentService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">G07-EsiMedia-PI-User-Backend</a> &gt; <a href="index.source.html" class="el_package">com.esimedia.features.content.services</a> &gt; <span class="el_source">VideoContentService.java</span></div><h1>VideoContentService.java</h1><pre class="source lang-java linenums">package com.esimedia.features.content.services;
+
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.esimedia.features.content.enums.Resolucion;
+import com.esimedia.features.content.enums.RestriccionEdad;
+import com.esimedia.features.auth.enums.Rol;
+import com.esimedia.features.auth.enums.TipoContenido;
+import com.esimedia.features.auth.entity.CreadorContenido;
+import com.esimedia.features.auth.entity.UsuarioNormal;
+import com.esimedia.features.auth.repository.CreadorContenidoRepository;
+import com.esimedia.features.auth.repository.UsuarioNormalRepository;
+import com.esimedia.shared.util.ContentUtil;
+import com.esimedia.shared.util.JwtValidationUtil;
+import com.esimedia.shared.util.ContentProcessingUtil;
+import com.esimedia.shared.util.ContentTagProcessor;
+import com.esimedia.features.auth.services.ContentAuthorizationService;
+import com.esimedia.features.auth.services.ValidationService;
+import com.esimedia.features.content.dto.ContentUpdateDTO;
+import com.esimedia.features.content.dto.ContentVideoUploadDTO;
+import com.esimedia.features.content.entity.ContenidoVideoTag;
+import com.esimedia.features.content.entity.ContenidosVideo;
+import com.esimedia.features.content.entity.Tags;
+import com.esimedia.features.content.entity.ValoracionContenido;
+import com.esimedia.features.content.repository.ContenidoVideoTagRepository;
+import com.esimedia.features.content.repository.ContenidosVideoRepository;
+import com.esimedia.features.content.repository.TagsRepository;
+import com.esimedia.features.content.repository.ValoracionContenidoRepository;
+import com.esimedia.features.notifications.services.NotificationService;
+
+
+import java.util.List;
+import java.util.Date;
+
+@Service
+public class VideoContentService {
+    
+<span class="fc" id="L43">    private static final Logger logger = LoggerFactory.getLogger(VideoContentService.class);</span>
+    
+    private static final String CONTENIDO_VIDEO_NO_ENCONTRADO = &quot;Contenido de video no encontrado&quot;;
+    private static final String ERROR_INTERNO_SERVIDOR = &quot;Error interno del servidor&quot;;
+    
+    private final ValidationService validationService;
+    private final JwtValidationUtil jwtValidationService;
+    private final ContentAuthorizationService contentAuthorizationService;
+    private final ContenidosVideoRepository contenidoVideoRepository;
+    private final ContenidoVideoTagRepository contenidoVideoTagRepository;
+    private final TagsRepository tagsRepository;
+    private final CreadorContenidoRepository creadorContenidoRepository;
+    private final ValoracionContenidoRepository valoracionRepository;
+    private final UsuarioNormalRepository usuarioNormalRepository;
+    private final ContentTagProcessor tagProcessor;
+    private final NotificationService notificationService;
+
+
+    public VideoContentService(
+        ValidationService validationService,
+        ContenidosVideoRepository contenidoVideoRepository,
+        ContenidoVideoTagRepository contenidoVideoTagRepository,
+        TagsRepository tagRepository,
+        JwtValidationUtil jwtValidationService,
+        ContentAuthorizationService contentAuthorizationService,
+        CreadorContenidoRepository creadorContenidoRepository,
+        ValoracionContenidoRepository valoracionRepository,
+        UsuarioNormalRepository usuarioNormalRepository,
+        NotificationService notificationService
+<span class="fc" id="L72">    ) {</span>
+<span class="fc" id="L73">        this.validationService = validationService;</span>
+<span class="fc" id="L74">        this.contenidoVideoRepository = contenidoVideoRepository;</span>
+<span class="fc" id="L75">        this.contenidoVideoTagRepository = contenidoVideoTagRepository;</span>
+<span class="fc" id="L76">        this.tagsRepository = tagRepository;</span>
+<span class="fc" id="L77">        this.jwtValidationService = jwtValidationService;</span>
+<span class="fc" id="L78">        this.contentAuthorizationService = contentAuthorizationService;</span>
+<span class="fc" id="L79">        this.creadorContenidoRepository = creadorContenidoRepository;</span>
+<span class="fc" id="L80">        this.valoracionRepository = valoracionRepository;</span>
+<span class="fc" id="L81">        this.usuarioNormalRepository = usuarioNormalRepository;</span>
+<span class="fc" id="L82">        this.notificationService = notificationService;</span>
+<span class="fc" id="L83">        this.tagProcessor = new ContentTagProcessor(tagRepository, (contenidoId, tagId) -&gt; {</span>
+<span class="nc" id="L84">            ContenidoVideoTag videoTag = new ContenidoVideoTag();</span>
+<span class="nc" id="L85">            videoTag.setIdContenido(contenidoId);</span>
+<span class="nc" id="L86">            videoTag.setIdTag(tagId);</span>
+<span class="nc" id="L87">            return videoTag;</span>
+        });
+<span class="fc" id="L89">    }</span>
+
+    public String uploadVideoContent(String authHeader, ContentVideoUploadDTO videoDTO) {
+        try {
+            // Validar autorización usando servicio centralizado
+<span class="fc" id="L94">            String username = jwtValidationService.validateContentUpload(authHeader, TipoContenido.VIDEO);</span>
+            
+<span class="fc" id="L96">            String validationResult = validationService.validateVideoContent(videoDTO);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (validationResult != null) {</span>
+<span class="fc" id="L98">                return validationResult; </span>
+            }
+<span class="fc" id="L100">            return processVideoContent(username, videoDTO);</span>
+        } 
+<span class="fc" id="L102">        catch (Exception e) {</span>
+<span class="fc" id="L103">            logger.error(&quot;Error procesando contenido de video: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L104">            return ERROR_INTERNO_SERVIDOR;</span>
+        }
+    }    private String processVideoContent(String userId, ContentVideoUploadDTO videoDTO) {
+        try {
+<span class="fc" id="L108">            String validationError = validateVideoProcessingInputs(videoDTO);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (validationError != null) {</span>
+<span class="fc" id="L110">                return validationError;</span>
+            }
+            
+<span class="nc" id="L113">            return createAndSaveVideoContent(userId, videoDTO);</span>
+            
+        } 
+<span class="fc" id="L116">        catch (Exception e) {</span>
+<span class="fc" id="L117">            logger.error(&quot;Error procesando contenido de video: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L118">            return ERROR_INTERNO_SERVIDOR;</span>
+        }
+    }
+    
+    private String validateVideoProcessingInputs(ContentVideoUploadDTO videoDTO) {
+<span class="fc" id="L123">        String videoUrl = videoDTO.getUrlArchivo();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (!isValidUrl(videoUrl)) {</span>
+<span class="fc" id="L125">            return &quot;La URL del video no es válida&quot;;</span>
+        }
+        
+<span class="fc" id="L128">        Resolucion resolucion = mapResolutionString(videoDTO.getResolucion());</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (resolucion == null) {</span>
+<span class="fc" id="L130">            return &quot;Resolución inválida. Use: 720, 1080 o 4k&quot;;</span>
+        }
+        
+<span class="fc" id="L133">        return null;</span>
+    }
+    
+    private String createAndSaveVideoContent(String userId, ContentVideoUploadDTO videoDTO) {
+<span class="fc" id="L137">        String videoUrl = videoDTO.getUrlArchivo();</span>
+<span class="fc" id="L138">        Resolucion resolucion = mapResolutionString(videoDTO.getResolucion());</span>
+        
+        // Procesar miniatura (base64 puro) y formato (MIME tipo directo)
+<span class="fc" id="L141">        byte[] imagenArchivo = null;</span>
+<span class="fc" id="L142">        String formatoImagen = null;</span>
+        
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">        if (videoDTO.getMiniatura() != null &amp;&amp; !videoDTO.getMiniatura().trim().isEmpty()) {</span>
+<span class="fc" id="L145">            imagenArchivo = ContentUtil.decodeImage(videoDTO.getMiniatura());</span>
+<span class="fc" id="L146">            formatoImagen = videoDTO.getFormatoMiniatura();</span>
+        }
+        
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        boolean visible = videoDTO.getVisibilidad() != null ? videoDTO.getVisibilidad() : false;</span>
+
+        // Obtener especialidad del creador
+<span class="fc" id="L152">        CreadorContenido creador = creadorContenidoRepository.findById(userId).orElseThrow(() -&gt;</span>
+<span class="nc" id="L153">            new RuntimeException(&quot;Creador no encontrado&quot;));</span>
+<span class="fc" id="L154">        String especialidad = creador.getEspecialidad();</span>
+
+        // Crear contenido de video usando la factoría y builder
+<span class="fc" id="L157">        ContenidosVideo contenidoVideo = ContenidosVideo.builder()</span>
+<span class="fc" id="L158">            .titulo(videoDTO.getTitulo())</span>
+<span class="fc" id="L159">            .descripcion(videoDTO.getDescripcion())</span>
+<span class="fc" id="L160">            .duracion(videoDTO.getDuracion())</span>
+<span class="fc" id="L161">            .idCreador(userId)</span>
+<span class="fc" id="L162">            .especialidad(especialidad)</span>
+<span class="fc" id="L163">            .urlArchivo(videoUrl)</span>
+<span class="fc" id="L164">            .resolucion(resolucion)</span>
+<span class="fc" id="L165">            .esVIP(Boolean.TRUE.equals(videoDTO.getEsVIP()))</span>
+<span class="fc" id="L166">            .fechaSubida(Date.from(Instant.now()))</span>
+<span class="fc" id="L167">            .fechaDisponibleHasta(ContentProcessingUtil.parseFechaExpiracion(videoDTO.getFechaExpiracion()))</span>
+<span class="fc" id="L168">            .miniatura(imagenArchivo)</span>
+<span class="fc" id="L169">            .formatoMiniatura(formatoImagen)</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            .restriccionEdad(videoDTO.getRestriccionEdad() != null ? </span>
+<span class="fc" id="L171">                getRestriccionEdadFromValue(videoDTO.getRestriccionEdad()) : null)</span>
+<span class="fc" id="L172">            .visibilidad(visible)</span>
+<span class="fc" id="L173">            .build();</span>
+        
+        // Validar reglas de negocio
+<span class="fc" id="L176">        contenidoVideo.validar();</span>
+        
+        // Guardar contenido
+<span class="fc" id="L179">        ContenidosVideo savedContent = contenidoVideoRepository.save(contenidoVideo);</span>
+        
+        // Procesar tags
+<span class="nc" id="L182">        tagProcessor.processContentTags(savedContent.getId(), videoDTO.getTags(), </span>
+<span class="nc" id="L183">            relation -&gt; contenidoVideoTagRepository.save((ContenidoVideoTag) relation));</span>
+        // Crear notificaciones para nuevos contenidos
+<span class="nc" id="L185">        notificationService.createNotificationsForNewContent(savedContent);</span>
+
+<span class="nc" id="L187">        logger.info(&quot;Contenido de video creado exitosamente con ID: {}&quot;, savedContent.getId());</span>
+<span class="nc" id="L188">        return &quot;SUCCESS:Contenido de video subido exitosamente&quot;;</span>
+    }
+    
+    private boolean isValidUrl(String url) {
+<span class="fc bfc" id="L192" title="All 4 branches covered.">        if (url == null || url.trim().isEmpty()) {</span>
+<span class="fc" id="L193">            return false;</span>
+        }
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">        return url.toLowerCase().startsWith(&quot;http://&quot;) || url.toLowerCase().startsWith(&quot;https://&quot;);</span>
+    }
+    
+    /**
+     * Mapea la cadena de resolución al enum correspondiente
+     */
+    private Resolucion mapResolutionString(String resolucionStr) {
+<span class="fc" id="L202">        Resolucion result = null;</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">        switch (resolucionStr) {</span>
+            case &quot;720&quot;:
+<span class="fc" id="L205">                result = Resolucion.HD_720;</span>
+<span class="fc" id="L206">                break;</span>
+            case &quot;1080&quot;:
+<span class="fc" id="L208">                result = Resolucion.FHD_1080;</span>
+<span class="fc" id="L209">                break;</span>
+            case &quot;4K&quot;:
+<span class="nc" id="L211">                result = Resolucion.UHD_2160;</span>
+<span class="nc" id="L212">                break;</span>
+            default:
+                break;
+        }
+<span class="fc" id="L216">        return result;</span>
+    }
+
+    /**
+     * Convierte un valor entero a RestriccionEdad
+     */
+    private RestriccionEdad getRestriccionEdadFromValue(Integer valor) {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (valor == null) return null;</span>
+        
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        for (RestriccionEdad restriccion : RestriccionEdad.values()) {</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">            if (restriccion.getValor() == valor) {</span>
+<span class="fc" id="L227">                return restriccion;</span>
+            }
+        }
+<span class="nc" id="L230">        throw new IllegalArgumentException(&quot;Valor de restricción de edad no válido: &quot; + valor);</span>
+    }
+
+    public ContenidosVideo getVideoById(String id) {
+        try {
+<span class="fc" id="L235">            return contenidoVideoRepository.findById(id).orElse(null);</span>
+        } 
+<span class="fc" id="L237">        catch (NumberFormatException e) {</span>
+<span class="fc" id="L238">            return null;</span>
+        }
+    }
+
+    /**
+     * Obtiene todos los videos como DTOs con data URIs completos.
+     * Solo creadores de VIDEO, usuarios NORMAL y ADMINISTRADORES pueden acceder.
+     * @param authHeader Header de autorización con JWT
+     * @return Lista de DTOs de video
+     */
+    public List&lt;ContentVideoUploadDTO&gt; getAllVideosAsDTO(String authHeader) {
+        // Validar que el usuario puede acceder a contenido de video usando servicio centralizado
+<span class="fc" id="L250">        String username = jwtValidationService.validateContentAccess(authHeader, TipoContenido.VIDEO);</span>
+<span class="fc" id="L251">        Rol userRole = jwtValidationService.getRolFromToken(authHeader);</span>
+<span class="fc" id="L252">        logger.debug(&quot;Usuario {} con rol {} autorizado para ver lista de videos&quot;, username, userRole);</span>
+        
+        // Obtener edad del usuario si es NORMAL
+<span class="fc" id="L255">        Integer userAge = getUserAge(username, userRole);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        logger.debug(&quot;Usuario NORMAL encontrado: {}, edad calculada: {}&quot;, userRole == Rol.NORMAL, userAge);</span>
+        
+<span class="fc" id="L258">        List&lt;ContenidosVideo&gt; videos = contenidoVideoRepository.findAll();</span>
+        // Actualizar visibilidad si expirado
+<span class="fc" id="L260">        updateExpiredVideos(videos);</span>
+<span class="fc" id="L261">        return videos.stream()</span>
+<span class="fc" id="L262">            .filter(video -&gt; isVideoAccessible(video, userRole, userAge))</span>
+<span class="fc" id="L263">            .map(video -&gt; mapVideoToDTO(video, username))</span>
+<span class="fc" id="L264">            .toList();</span>
+    }
+
+    private Integer getUserAge(String username, Rol userRole) {
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        if (userRole != Rol.NORMAL) return null;</span>
+<span class="fc" id="L269">        UsuarioNormal user = usuarioNormalRepository.findById(username).orElse(null);</span>
+<span class="pc bpc" id="L270" title="1 of 4 branches missed.">        return (user != null &amp;&amp; user.getFechaNacimiento() != null) ? validationService.calculateAge(user.getFechaNacimiento()) : null;</span>
+    }
+
+    private void updateExpiredVideos(List&lt;ContenidosVideo&gt; videos) {
+<span class="fc" id="L274">        videos.forEach(video -&gt; {</span>
+<span class="pc bpc" id="L275" title="1 of 4 branches missed.">            if (video.getFechaDisponibleHasta() != null &amp;&amp; video.getFechaDisponibleHasta().before(new Date())) {</span>
+<span class="fc" id="L276">                video.setVisibilidad(false);</span>
+<span class="fc" id="L277">                contenidoVideoRepository.save(video);</span>
+            }
+<span class="fc" id="L279">        });</span>
+<span class="fc" id="L280">    }</span>
+
+    private boolean isVideoAccessible(ContenidosVideo video, Rol userRole, Integer userAge) {
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        if (userRole != Rol.NORMAL) return true;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        if (!video.isVisibilidad()) return false;</span>
+<span class="pc bpc" id="L285" title="2 of 6 branches missed.">        if (video.getRestriccionEdad() != null &amp;&amp; userAge != null &amp;&amp; userAge &lt; video.getRestriccionEdad().getValor()) return false;</span>
+<span class="fc" id="L286">        return true;</span>
+    }
+
+    private ContentVideoUploadDTO mapVideoToDTO(ContenidosVideo video, String username) {
+<span class="fc" id="L290">        ContentVideoUploadDTO dto = new ContentVideoUploadDTO();</span>
+<span class="fc" id="L291">        dto.setId(video.getId());</span>
+<span class="fc" id="L292">        dto.setTitulo(video.getTitulo());</span>
+<span class="fc" id="L293">        dto.setDescripcion(video.getDescripcion());</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        dto.setRestriccionEdad(video.getRestriccionEdad() != null ? video.getRestriccionEdad().getValor() : null);</span>
+<span class="fc" id="L295">        dto.setDuracion(video.getDuracion());</span>
+<span class="fc" id="L296">        dto.setUrlArchivo(video.getUrlArchivo());</span>
+<span class="fc" id="L297">        dto.setResolucion(video.getResolucion().toString());</span>
+<span class="fc" id="L298">        dto.setEsVIP(video.isEsVIP());</span>
+<span class="fc" id="L299">        dto.setEspecialidad(video.getEspecialidad());</span>
+<span class="fc" id="L300">        dto.setValoracionMedia(video.getValoracionMedia());</span>
+<span class="fc" id="L301">        dto.setVisualizaciones(video.getVisualizaciones());</span>
+
+        // Obtener valoración del usuario
+<span class="fc" id="L304">        ValoracionContenido userRating = valoracionRepository.findByIdContenidoAndIdUsuario(video.getId(), username);</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        dto.setValoracionUsuario(userRating != null ? userRating.getValoracion() : null);</span>
+
+        // Formatear fechas en formato yyyy-MM-dd (consistente con fecha de expiración)
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (video.getFechaSubida() != null) {</span>
+<span class="fc" id="L309">            dto.setFechaSubida(ContentProcessingUtil.formatDate(video.getFechaSubida()));</span>
+        } 
+        else {
+<span class="nc" id="L312">            logger.warn(&quot;Video {} tiene fechaSubida null&quot;, video.getId());</span>
+<span class="nc" id="L313">            dto.setFechaSubida(null);</span>
+        }
+        
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        if (video.getFechaDisponibleHasta() != null) {</span>
+<span class="fc" id="L317">            dto.setFechaExpiracion(ContentProcessingUtil.formatDate(video.getFechaDisponibleHasta()));</span>
+        }
+
+        // Obtener tags del contenido
+<span class="fc" id="L321">        List&lt;ContenidoVideoTag&gt; videoTags = contenidoVideoTagRepository.findByIdContenido(video.getId());</span>
+<span class="fc" id="L322">        List&lt;String&gt; tagIds = videoTags.stream()</span>
+<span class="fc" id="L323">            .map(ContenidoVideoTag::getIdTag)</span>
+<span class="fc" id="L324">            .toList();</span>
+        
+<span class="fc" id="L326">        List&lt;Tags&gt; tags = tagsRepository.findByIdTagIn(tagIds);</span>
+<span class="fc" id="L327">        List&lt;String&gt; tagNames = tags.stream()</span>
+<span class="fc" id="L328">            .map(Tags::getNombre)</span>
+<span class="fc" id="L329">            .toList();</span>
+<span class="fc" id="L330">        dto.setTags(tagNames);</span>
+
+        // Convertir miniatura binaria a data URI
+<span class="fc" id="L333">        String miniaturaDataUri = ContentUtil.createDataUri(video.getMiniatura(), video.getFormatoMiniatura());</span>
+<span class="fc" id="L334">        dto.setMiniatura(miniaturaDataUri);</span>
+<span class="fc" id="L335">        dto.setFormatoMiniatura(video.getFormatoMiniatura());</span>
+        
+<span class="fc" id="L337">        dto.setVisibilidad(video.isVisibilidad());</span>
+
+<span class="fc" id="L339">        return dto;</span>
+    }
+
+    /**
+     * Obtiene un video por ID y lo devuelve como DTO con data URIs completos.
+     * @param authHeader Header de autorización con JWT
+     * @param id ID del video
+     * @return DTO con campos de contenido como data URIs
+     */
+    public ContentVideoUploadDTO getVideoByIdAsDTO(String authHeader, String id) {
+        // Validar autorización para acceder a contenido de video
+<span class="fc" id="L350">        String username = jwtValidationService.validateContentAccess(authHeader, TipoContenido.VIDEO);</span>
+<span class="fc" id="L351">        ContenidosVideo video = getVideoById(id);</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        if (video == null) {</span>
+<span class="fc" id="L353">            return null;</span>
+        }
+
+<span class="fc" id="L356">        ContentVideoUploadDTO dto = new ContentVideoUploadDTO();</span>
+<span class="fc" id="L357">        dto.setId(video.getId());</span>
+<span class="fc" id="L358">        dto.setTitulo(video.getTitulo());</span>
+<span class="fc" id="L359">        dto.setDescripcion(video.getDescripcion());</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        dto.setRestriccionEdad(video.getRestriccionEdad() != null ? video.getRestriccionEdad().getValor() : null);</span>
+<span class="fc" id="L361">        dto.setDuracion(video.getDuracion());</span>
+<span class="fc" id="L362">        dto.setUrlArchivo(video.getUrlArchivo());</span>
+<span class="fc" id="L363">        dto.setResolucion(video.getResolucion().toString());</span>
+<span class="fc" id="L364">        dto.setEsVIP(video.isEsVIP());</span>
+<span class="fc" id="L365">        dto.setEspecialidad(video.getEspecialidad());</span>
+<span class="fc" id="L366">        dto.setValoracionMedia(video.getValoracionMedia());</span>
+<span class="fc" id="L367">        dto.setVisualizaciones(video.getVisualizaciones());</span>
+
+        // Obtener valoración del usuario
+<span class="fc" id="L370">        ValoracionContenido userRating = valoracionRepository.findByIdContenidoAndIdUsuario(id, username);</span>
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">        dto.setValoracionUsuario(userRating != null ? userRating.getValoracion() : null);</span>
+
+        // Formatear fechas en formato yyyy-MM-dd (consistente con fecha de expiración)
+<span class="fc" id="L374">        dto.setFechaSubida(ContentProcessingUtil.formatDate(video.getFechaSubida()));</span>
+
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (video.getFechaDisponibleHasta() != null) {</span>
+<span class="nc" id="L377">            dto.setFechaExpiracion(ContentProcessingUtil.formatDate(video.getFechaDisponibleHasta()));</span>
+        }
+
+        // Obtener tags del contenido
+<span class="fc" id="L381">        List&lt;ContenidoVideoTag&gt; videoTags = contenidoVideoTagRepository.findByIdContenido(id);</span>
+
+        // Extraer los IDs de las tags
+<span class="fc" id="L384">        List&lt;String&gt; tagIds = videoTags.stream()</span>
+<span class="fc" id="L385">            .map(ContenidoVideoTag::getIdTag)</span>
+<span class="fc" id="L386">            .toList();</span>
+        
+        // Buscar las tags por sus IDs y extraer los nombres
+<span class="fc" id="L389">        List&lt;Tags&gt; tags = tagsRepository.findByIdTagIn(tagIds);</span>
+<span class="fc" id="L390">        List&lt;String&gt; tagNames = tags.stream()</span>
+<span class="fc" id="L391">            .map(Tags::getNombre)</span>
+<span class="fc" id="L392">            .toList();</span>
+<span class="fc" id="L393">        dto.setTags(tagNames);</span>
+
+        // Convertir miniatura binaria a data URI
+<span class="fc" id="L396">        String miniaturaDataUri = ContentUtil.createDataUri(video.getMiniatura(), video.getFormatoMiniatura());</span>
+<span class="fc" id="L397">        dto.setMiniatura(miniaturaDataUri);</span>
+<span class="fc" id="L398">        dto.setFormatoMiniatura(video.getFormatoMiniatura());</span>
+        
+<span class="fc" id="L400">        return dto;</span>
+    }
+
+    /**
+     * Actualiza un contenido de video existente.
+     * Solo creadores de VIDEO pueden editar contenido de video.
+     * @param authHeader Header de autorización con JWT
+     * @param contentId ID del contenido a actualizar
+     * @param updateDTO DTO con los campos a actualizar
+     * @return Mensaje de resultado
+     */
+    public String updateVideoContent(String authHeader, String contentId, ContentUpdateDTO updateDTO) {
+        try {
+            // Validar autorización para subida (solo creadores de VIDEO)
+<span class="fc" id="L414">            String username = jwtValidationService.validateContentUpload(authHeader, TipoContenido.VIDEO);</span>
+
+            // Obtener el creador
+<span class="fc" id="L417">            CreadorContenido creador = creadorContenidoRepository.findById(username).orElseThrow(() -&gt; </span>
+<span class="fc" id="L418">                new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Creador no encontrado&quot;));</span>
+
+            // Validar permisos de edición
+<span class="fc" id="L421">            validationService.validateContentEditPermission(creador, TipoContenido.VIDEO);</span>
+
+            // Obtener contenido existente
+<span class="fc" id="L424">            ContenidosVideo existingContent = contenidoVideoRepository.findById(contentId).orElseThrow(() -&gt; </span>
+<span class="fc" id="L425">                new ResponseStatusException(HttpStatus.NOT_FOUND, CONTENIDO_VIDEO_NO_ENCONTRADO));</span>
+
+            // Validar datos del DTO
+<span class="fc" id="L428">            String validationResult = validationService.validateContentUpdate(updateDTO);</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">            if (validationResult != null) {</span>
+<span class="fc" id="L430">                return validationResult;</span>
+            }
+
+            // Actualizar campos
+<span class="fc bfc" id="L434" title="All 2 branches covered.">            if (updateDTO.getTitulo() != null) {</span>
+<span class="fc" id="L435">                existingContent.setTitulo(updateDTO.getTitulo());</span>
+            }
+<span class="fc bfc" id="L437" title="All 2 branches covered.">            if (updateDTO.getDescripcion() != null) {</span>
+<span class="fc" id="L438">                existingContent.setDescripcion(updateDTO.getDescripcion());</span>
+            }
+<span class="fc bfc" id="L440" title="All 2 branches covered.">            if (updateDTO.getEsVIP() != null) {</span>
+<span class="fc" id="L441">                existingContent.setEsVIP(updateDTO.getEsVIP());</span>
+            }
+            // Si se cambia flagVip a false y la resolución era 4K, cambiarla a 1080 por defecto
+<span class="pc bpc" id="L444" title="2 of 6 branches missed.">            if (updateDTO.getEsVIP() != null &amp;&amp; !updateDTO.getEsVIP() &amp;&amp; existingContent.getResolucion() == Resolucion.UHD_2160) {</span>
+<span class="fc" id="L445">                existingContent.setResolucion(Resolucion.FHD_1080);</span>
+            }
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">            if (updateDTO.getVisibilidad() != null) {</span>
+<span class="nc" id="L448">                existingContent.setVisibilidad(updateDTO.getVisibilidad());</span>
+            }
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">            if (updateDTO.getFechaExpiracion() != null) {</span>
+<span class="nc" id="L451">                existingContent.setFechaDisponibleHasta(ContentProcessingUtil.parseFechaExpiracion(updateDTO.getFechaExpiracion()));</span>
+            }
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">            if (updateDTO.getRestriccionEdad() != null) {</span>
+<span class="nc" id="L454">                existingContent.setRestriccionEdad(getRestriccionEdadFromValue(updateDTO.getRestriccionEdad()));</span>
+            }
+
+            // Actualizar tags
+<span class="fc" id="L458">            tagProcessor.updateContentTags(</span>
+                contentId,
+<span class="fc" id="L460">                updateDTO.getTags(),</span>
+<span class="fc" id="L461">                () -&gt; contenidoVideoTagRepository.findByIdContenido(contentId)</span>
+<span class="fc" id="L462">                         .stream().map(ContenidoVideoTag::getIdTag).toList(),</span>
+<span class="nc" id="L463">                tagId -&gt; contenidoVideoTagRepository.deleteByIdContenidoAndIdTag(contentId, tagId),</span>
+<span class="nc" id="L464">                relation -&gt; contenidoVideoTagRepository.save((ContenidoVideoTag) relation)</span>
+            );
+
+            // Guardar cambios
+<span class="fc" id="L468">            contenidoVideoRepository.save(existingContent);</span>
+
+<span class="fc" id="L470">            logger.info(&quot;Contenido de video {} actualizado exitosamente por {}&quot;, contentId, username);</span>
+<span class="fc" id="L471">            return &quot;SUCCESS:Contenido de video actualizado exitosamente&quot;;</span>
+
+        }
+<span class="fc" id="L474">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L475">            throw e;</span>
+        }
+<span class="nc" id="L477">        catch (Exception e) {</span>
+<span class="nc" id="L478">            logger.error(&quot;Error actualizando contenido de video {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="nc" id="L479">            return ERROR_INTERNO_SERVIDOR;</span>
+        }
+    }
+
+    public void incrementarVisualizaciones(String contentId) {
+        try {
+<span class="fc" id="L485">            ContenidosVideo content = contenidoVideoRepository.findById(contentId).orElseThrow(() -&gt; </span>
+<span class="fc" id="L486">                new ResponseStatusException(HttpStatus.NOT_FOUND, CONTENIDO_VIDEO_NO_ENCONTRADO));</span>
+<span class="fc" id="L487">            content.setVisualizaciones(content.getVisualizaciones() + 1);</span>
+<span class="fc" id="L488">            contenidoVideoRepository.save(content);</span>
+<span class="fc" id="L489">            logger.info(&quot;Visualizaciones incrementadas para video {}&quot;, contentId);</span>
+        } 
+<span class="fc" id="L491">        catch (Exception e) {</span>
+<span class="fc" id="L492">            logger.error(&quot;Error incrementando visualizaciones para video {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="fc" id="L493">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO_SERVIDOR);</span>
+<span class="fc" id="L494">        }</span>
+<span class="fc" id="L495">    }</span>
+
+    /**
+     * Elimina un contenido de video tomando un id
+     * @param authHeader Header de autorización con JWT
+     * @param contentId ID del contenido de video a eliminar
+     */
+    public void deleteVideoContent(String authHeader, String contentId) {
+        try {
+            // Validar autorización para eliminar
+<span class="fc" id="L505">            contentAuthorizationService.validateContentDeletion(authHeader, contentId);</span>
+            
+            // Verificar que el contenido existe (lanzar NOT_FOUND si no existe)
+<span class="fc" id="L508">            contenidoVideoRepository.findById(contentId).orElseThrow(() -&gt; </span>
+<span class="fc" id="L509">                new ResponseStatusException(HttpStatus.NOT_FOUND, CONTENIDO_VIDEO_NO_ENCONTRADO));</span>
+            
+            // Eliminar relaciones con tags
+<span class="fc" id="L512">            contenidoVideoTagRepository.deleteByIdContenido(contentId);</span>
+            
+            // Eliminar valoraciones
+<span class="fc" id="L515">            List&lt;ValoracionContenido&gt; valoraciones = valoracionRepository.findByIdContenido(contentId);</span>
+<span class="fc" id="L516">            valoracionRepository.deleteAll(valoraciones);</span>
+            
+            // Eliminar el contenido
+<span class="fc" id="L519">            contenidoVideoRepository.deleteById(contentId);</span>
+            
+<span class="fc" id="L521">            logger.info(&quot;Contenido de video {} eliminado exitosamente&quot;, contentId);</span>
+        } 
+<span class="fc" id="L523">        catch (ResponseStatusException e) {</span>
+<span class="fc" id="L524">            throw e;</span>
+        } 
+<span class="nc" id="L526">        catch (Exception e) {</span>
+<span class="nc" id="L527">            logger.error(&quot;Error eliminando contenido de video {}: {}&quot;, contentId, e.getMessage());</span>
+<span class="nc" id="L528">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INTERNO_SERVIDOR);</span>
+<span class="fc" id="L529">        }</span>
+<span class="fc" id="L530">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
