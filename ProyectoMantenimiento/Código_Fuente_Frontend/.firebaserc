@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "esimedia-frontend-9b8cd"
-  }
+    "default": "esimedia-frontend-2fbb6"
+  },
+  "targets": {},
+  "etags": {}
 }
